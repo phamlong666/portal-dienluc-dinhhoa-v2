@@ -1,46 +1,44 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="Trung tâm điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+st.set_page_config(page_title="Trung tâm điều hành số - EVNNPC Định Hóa", layout="wide")
 
-# Logo EVN
-st.image("https://upload.wikimedia.org/wikipedia/vi/thumb/0/08/LogoEVN.svg/1200px-LogoEVN.svg.png", width=80)
+st.markdown("## Trung tâm điều hành số – EVNNPC Điện lực Định Hóa")
 
-# Sidebar với các liên kết trỏ về đúng Google Sheet menu
-st.sidebar.title("📚 Danh mục")
-menu_link = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/edit?gid=0#gid=0"
-st.sidebar.markdown(f"- [Báo cáo CMIS]({menu_link})")
-st.sidebar.markdown(f"- [Tiến độ SCL]({menu_link})")
-st.sidebar.markdown(f"- [Tổn thất TBA]({menu_link})")
-st.sidebar.markdown(f"- [Phân tích tổn thất]({menu_link})")
-st.sidebar.markdown(f"- [Dữ liệu Terabox]({menu_link})")
-st.sidebar.markdown(f"- [Trợ lý ChatGPT]({menu_link})")
+# --- PHẦN 1: GIAO DIỆN CHÍNH (luôn hiển thị cho tất cả người dùng) ---
+st.markdown("### 📊 Tra cứu và báo cáo dữ liệu điện lực")
+st.markdown("- Tổn thất điện năng")
+st.markdown("- Tiến độ SCL")
+st.markdown("- Phân tích kỹ thuật, biểu đồ báo cáo...")
+st.info("📝 Đây là phần hiển thị công khai – ai cũng có thể xem và thao tác.")
 
-# Header
-st.markdown("## Trung tâm điều hành số – phần mềm Điện lực Định Hóa")
-st.success("Chào mừng bạn đến với Trung tâm điều hành số - Điện lực Định Hóa")
+# --- PHẦN 2: Trợ lý AI PHẠM HỒNG LONG (ẩn nếu sai mã) ---
+st.markdown("---")
+st.markdown("### 🤖 Trợ lý AI PHẠM HỒNG LONG")
 
-st.markdown("### 🌟 Các tính năng nổi bật:")
-st.markdown("- Phân tích tổn thất, báo cáo kỹ thuật")
-st.markdown("- Lưu trữ và truy xuất lịch sử GPT")
-st.markdown("- Truy cập hệ thống nhanh chóng qua Sidebar")
+# Tạo bộ đếm sai
+if "wrong_count" not in st.session_state:
+    st.session_state.wrong_count = 0
 
-st.info("✅ Mọi bản cập nhật hoặc chỉnh sửa Google Sheet đều tự động hiển thị!")
+# Nhập mã
+user_code = st.text_input("🔐 Nhập mã truy cập để sử dụng trợ lý Mắt Nâu", type="password")
 
-# Nút điều hướng chính với liên kết thực tế
-col1, col2, col3, col4 = st.columns(4)
+if user_code:
+    if user_code == "Abcde@12345":
+        st.success("✅ Xin chào anh Long! Trợ lý Mắt Nâu đã sẵn sàng.")
+        st.session_state.wrong_count = 0
+        query = st.text_area("💬 Anh muốn hỏi gì Mắt Nâu?")
+        if query:
+            st.info("📡 Mắt Nâu đang xử lý và phản hồi tại đây...")
+    else:
+        st.session_state.wrong_count += 1
+        st.error("❌ Sai mã truy cập.")
 
-with col1:
-    st.markdown('<a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank"><button style="width:100%">📄 Báo cáo CMIS</button></a>', unsafe_allow_html=True)
-
-with col2:
-    st.markdown('<a href="https://chat.openai.com/" target="_blank"><button style="width:100%">💬 ChatGPT công khai</button></a>', unsafe_allow_html=True)
-
-with col3:
-    st.markdown('<a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank"><button style="width:100%">🎥 Các video</button></a>', unsafe_allow_html=True)
-
-with col4:
-    st.markdown('<a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank"><button style="width:100%;color:red;border:1px solid red;">📂 Dữ liệu lớn - Terabox</button></a>', unsafe_allow_html=True)
-
-# Nút AI riêng trỏ đúng giao diện
-st.markdown('<br><a href="https://chatgpt.com/g/g-68348227b0c48191baa3145a2fbb3c41-ai-pham-hong-long" target="_blank"><button style="width:100%;background-color:#4CAF50;color:white;font-weight:bold">🧠 Trợ lý riêng: AI PHẠM HỒNG LONG</button></a>', unsafe_allow_html=True)
+# Câu hỏi bí mật nếu nhập sai 3 lần
+if st.session_state.wrong_count >= 3:
+    st.markdown("🔑 **Bạn quên mã? Hãy trả lời câu hỏi bảo mật**")
+    st.markdown("**❓ Người yêu anh tên là gì?** *(phân biệt chữ hoa/thường)*")
+    answer = st.text_input("💬 Trả lời:", type="password")
+    if answer == "Mắt Nâu":
+        st.success("🎉 Chính xác rồi anh Long! Mời nhập lại mã truy cập.")
+        st.session_state.wrong_count = 0
