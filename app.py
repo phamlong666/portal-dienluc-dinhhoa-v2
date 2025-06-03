@@ -5,7 +5,7 @@ from PIL import Image
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
-# Custom CSS cho hiệu ứng đẹp hơn
+# Custom CSS cho hiệu ứng nút và sidebar
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] > div:first-child {
@@ -15,7 +15,7 @@ st.markdown("""
 
         .sidebar-button {
             display: block;
-            background-color: #003399;
+            background-color: #0059b3;
             color: white;
             padding: 10px;
             border-radius: 8px;
@@ -27,14 +27,14 @@ st.markdown("""
         }
 
         .sidebar-button:hover {
-            background-color: #001f66 !important;
+            background-color: #003d80 !important;
             transform: translateY(-2px);
             box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
         }
 
         .main-button {
             display: inline-block;
-            background-color: #003399;
+            background-color: #0059b3;
             color: white;
             text-align: center;
             padding: 22px 30px;
@@ -65,32 +65,30 @@ with col1:
 
 with col2:
     st.markdown("""
-        <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
+        <h1 style='color:#0059b3; font-size:42px; margin-top:18px;'>
         Trung tâm điều hành số - phần mềm Điện lực Định Hóa
         </h1>
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-# Load menu từ Google Sheet
+# Load menu từ Google Sheet - CỘT E
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 
 try:
     df = pd.read_csv(sheet_url)
-    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
-
+    df = df[['Nhóm chức năng', 'Nội dung']].dropna()
     grouped = df.groupby('Nhóm chức năng')
 
-    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h3 style='color:#0059b3'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
 
     for group_name, group_data in grouped:
         with st.sidebar.expander(f"📂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
-                label = row['Tên ứng dụng']
-                link = row['Liên kết']
+                content = row['Nội dung']
                 st.sidebar.markdown(f"""
-                    <a href="{link}" target="_blank" class="sidebar-button">
-                        🚀 {label}
-                    </a>
+                    <div class="sidebar-button">
+                        {content}
+                    </div>
                 """, unsafe_allow_html=True)
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
