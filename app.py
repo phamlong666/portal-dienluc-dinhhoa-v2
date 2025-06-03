@@ -1,58 +1,119 @@
 
 import streamlit as st
-from streamlit_option_menu import option_menu
+import pandas as pd
+from PIL import Image
 
-st.set_page_config(layout="wide", page_title="Trung tâm điều hành số - phần mềm Điện lực Định Hóa")
+st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
-# === SIDEBAR DANH MỤC HỆ THỐNG ===
-with st.sidebar:
-    st.markdown("## 📚 Danh mục hệ thống")
-    selected = option_menu(
-        menu_title=None,
-        options=[
-            "An toàn", "An toàn, điều độ", "Báo cáo", "Công nghệ thông tin",
-            "Kinh doanh", "Kỹ thuật", "Quản trị nội bộ", "Thiên tai - cứu nạn", "Điều chỉnh độ"
-        ],
-        icons=["folder"] * 9,
-        menu_icon="cast",
-        default_index=0,
-        styles={
-            "container": {"padding": "5px", "background-color": "#f0f2f6"},
-            "icon": {"color": "blue", "font-size": "18px"},
-            "nav-link": {"font-size": "16px", "text-align": "left", "margin": "4px", "--hover-color": "#eee"},
-            "nav-link-selected": {"background-color": "#cfe2ff", "font-weight": "bold"},
+# Custom CSS cho hiệu ứng đẹp hơn
+st.markdown("""
+    <style>
+        section[data-testid="stSidebar"] > div:first-child {
+            max-height: 95vh;
+            overflow-y: auto;
         }
-    )
 
-# === HEADER CHÍNH VÀ LOGO ===
-col_logo, col_title = st.columns([1, 9])
-with col_logo:
-    st.image("https://i.imgur.com/EK9V7i6.png", width=80)
-with col_title:
-    st.markdown("<h1 style='color:#003399;'>Trung tâm điều hành số – phần mềm Điện lực Định Hóa</h1>", unsafe_allow_html=True)
-    st.caption("Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes")
+        .sidebar-button {
+            display: block;
+            background-color: #003399;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-weight: bold;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+        }
 
-# === GIỚI THIỆU VÀ TÍNH NĂNG ===
-with st.container():
-    st.success("👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa")
-    st.markdown("""
-    ### ✨ Các tính năng nổi bật:
-    - 📊 Phân tích tổn thất, báo cáo kỹ thuật
-    - 📁 Lưu trữ và truy xuất lịch sử GPT
-    - 🧭 Truy cập hệ thống nhanh chóng qua Sidebar
-    """)
-    st.info("✅ Mọi bản cập nhật hoặc chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!")
+        .sidebar-button:hover {
+            background-color: #001f66 !important;
+            transform: translateY(-2px);
+            box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
+        }
 
-# === NÚT CHÍNH DƯỚI TRANG ===
-st.markdown("### ")
-col1, col2, col3, col4 = st.columns(4)
-button_style = "display:inline-block;background-color:#003399;padding:1em 1em;border-radius:12px;color:white;text-align:center;font-weight:bold;text-decoration:none;font-size:16px;width:100%"
+        .main-button {
+            display: inline-block;
+            background-color: #003399;
+            color: white;
+            text-align: center;
+            padding: 22px 30px;
+            border-radius: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            margin: 14px;
+            transition: 0.3s;
+            font-size: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
 
+        .main-button:hover {
+            transform: scale(1.07);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# Header logo + tiêu đề
+col1, col2 = st.columns([1, 10])
 with col1:
-    st.markdown(f'<a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" style="{button_style}">📦 Dữ liệu lớn_Terabox</a>', unsafe_allow_html=True)
+    try:
+        logo = Image.open("assets/logo_hinh_tron_hoan_chinh.png")
+        st.image(logo, width=70)
+    except:
+        st.warning("⚠️ Không tìm thấy logo.")
+
 with col2:
-    st.markdown(f'<a href="https://chat.openai.com" target="_blank" style="{button_style}">💬 ChatGPT công khai</a>', unsafe_allow_html=True)
-with col3:
-    st.markdown(f'<a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" style="{button_style}">🎬 video tuyên truyền</a>', unsafe_allow_html=True)
-with col4:
-    st.markdown(f'<a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" style="{button_style}">📄 Báo cáo CMIS</a>', unsafe_allow_html=True)
+    st.markdown("""
+        <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
+        Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+        </h1>
+        <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
+    """, unsafe_allow_html=True)
+
+# Load menu từ Google Sheet
+sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
+
+try:
+    df = pd.read_csv(sheet_url)
+    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
+
+    grouped = df.groupby('Nhóm chức năng')
+
+    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+
+    for group_name, group_data in grouped:
+        with st.sidebar.expander(f"📂 {group_name}", expanded=False):
+            for _, row in group_data.iterrows():
+                label = row['Tên ứng dụng']
+                link = row['Liên kết']
+                st.sidebar.markdown(f"""
+                    <a href="{link}" target="_blank" class="sidebar-button">
+                        🚀 {label}
+                    </a>
+                """, unsafe_allow_html=True)
+except Exception as e:
+    st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
+
+# Thông tin chào mừng
+st.info("""
+👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+
+📌 **Các tính năng nổi bật:**
+- Phân tích tổn thất, báo cáo kỹ thuật
+- Lưu trữ và truy xuất lịch sử GPT
+- Truy cập hệ thống nhanh chóng qua Sidebar
+
+✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
+""")
+
+# Nút chính 3D mượt mà
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("""
+<div style="display: flex; justify-content: center; flex-wrap: wrap;">
+    <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
+    <a href="https://chat.openai.com" target="_blank" class="main-button">💬 ChatGPT công khai</a>
+    <a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" class="main-button">🎬 video tuyên truyền</a>
+    <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
+</div>
+""", unsafe_allow_html=True)
