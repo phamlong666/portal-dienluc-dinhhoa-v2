@@ -5,7 +5,7 @@ from PIL import Image
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
-# Custom CSS cho hiệu ứng nút và sidebar
+# Custom CSS
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] > div:first-child {
@@ -54,7 +54,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Header logo + tiêu đề
+# Logo và tiêu đề
 col1, col2 = st.columns([1, 10])
 with col1:
     try:
@@ -71,29 +71,26 @@ with col2:
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-# Load menu từ Google Sheet - CỘT E
+# Sidebar: lấy từ cột D (Nhóm) và cột E (Nội dung + link)
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 
 try:
     df = pd.read_csv(sheet_url)
-    df = df[['Nhóm chức năng', 'Nội dung']].dropna()
-    grouped = df.groupby('Nhóm chức năng')
+    df = df[['D', 'E']].rename(columns={'D': 'Nhóm', 'E': 'Nội dung'}).dropna()
+    grouped = df.groupby('Nhóm')
 
     st.sidebar.markdown("<h3 style='color:#0059b3'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
 
     for group_name, group_data in grouped:
         with st.sidebar.expander(f"📂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
-                content = row['Nội dung']
-                st.sidebar.markdown(f"""
-                    <div class="sidebar-button">
-                        {content}
-                    </div>
-                """, unsafe_allow_html=True)
+                link_html = row['Nội dung']
+                st.sidebar.markdown(f"<div class='sidebar-button'>{link_html}</div>", unsafe_allow_html=True)
+
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
 
-# Thông tin chào mừng
+# Phần giới thiệu
 st.info("""
 👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
@@ -105,7 +102,7 @@ st.info("""
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
 """)
 
-# Nút chính 3D mượt mà
+# Nút chính 3D mượt
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("""
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
