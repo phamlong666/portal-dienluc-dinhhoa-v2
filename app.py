@@ -15,7 +15,7 @@ st.markdown("""
 
         .sidebar-button {
             display: block;
-            background-color: #0059b3;
+            background-color: #66a3ff;
             color: white;
             padding: 10px;
             border-radius: 8px;
@@ -27,14 +27,14 @@ st.markdown("""
         }
 
         .sidebar-button:hover {
-            background-color: #003d80 !important;
+            background-color: #3385ff !important;
             transform: translateY(-2px);
             box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
         }
 
         .main-button {
             display: inline-block;
-            background-color: #0059b3;
+            background-color: #66a3ff;
             color: white;
             text-align: center;
             padding: 22px 30px;
@@ -71,26 +71,26 @@ with col2:
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-# Sidebar: lấy từ cột D (Nhóm) và cột E (Nội dung + link)
+# Sidebar lấy từ Google Sheet
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 
 try:
     df = pd.read_csv(sheet_url)
-    df = df[['D', 'E']].rename(columns={'D': 'Nhóm', 'E': 'Nội dung'}).dropna()
-    grouped = df.groupby('Nhóm')
+    df = df[['Nhóm chức năng', 'Nội dung']].dropna()
+    grouped = df.groupby('Nhóm chức năng')
 
     st.sidebar.markdown("<h3 style='color:#0059b3'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
 
     for group_name, group_data in grouped:
         with st.sidebar.expander(f"📂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
-                link_html = row['Nội dung']
-                st.sidebar.markdown(f"<div class='sidebar-button'>{link_html}</div>", unsafe_allow_html=True)
+                content = row['Nội dung']
+                st.sidebar.markdown(f"<div class='sidebar-button'>{content}</div>", unsafe_allow_html=True)
 
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
 
-# Phần giới thiệu
+# Giới thiệu
 st.info("""
 👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
@@ -102,7 +102,7 @@ st.info("""
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
 """)
 
-# Nút chính 3D mượt
+# Nút chính 3D
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("""
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
