@@ -5,7 +5,6 @@ from PIL import Image
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
-# Custom CSS
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] > div:first-child {
@@ -29,7 +28,7 @@ st.markdown("""
         .sidebar-button:hover {
             background-color: #3385ff !important;
             transform: translateY(-2px);
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
         }
 
         .main-button {
@@ -54,7 +53,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Logo và tiêu đề
 col1, col2 = st.columns([1, 10])
 with col1:
     try:
@@ -65,32 +63,35 @@ with col1:
 
 with col2:
     st.markdown("""
-        <h1 style='color:#0059b3; font-size:42px; margin-top:18px;'>
+        <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
         Trung tâm điều hành số - phần mềm Điện lực Định Hóa
         </h1>
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-# Sidebar lấy từ Google Sheet
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 
 try:
     df = pd.read_csv(sheet_url)
-    df = df[['Nhóm chức năng', 'Nội dung']].dropna()
+    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
+
     grouped = df.groupby('Nhóm chức năng')
 
-    st.sidebar.markdown("<h3 style='color:#0059b3'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
 
     for group_name, group_data in grouped:
         with st.sidebar.expander(f"📂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
-                content = row['Nội dung']
-                st.sidebar.markdown(f"<div class='sidebar-button'>{content}</div>", unsafe_allow_html=True)
-
+                label = row['Tên ứng dụng']
+                link = row['Liên kết']
+                st.markdown(f"""
+                    <a href="{link}" target="_blank" class="sidebar-button">
+                        🚀 {label}
+                    </a>
+                """, unsafe_allow_html=True)
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
 
-# Giới thiệu
 st.info("""
 👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
@@ -102,7 +103,6 @@ st.info("""
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
 """)
 
-# Nút chính 3D
 st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("""
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
