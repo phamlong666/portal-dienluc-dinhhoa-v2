@@ -1,5 +1,7 @@
+
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 from PIL import Image
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
@@ -7,30 +9,12 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 if "view" not in st.session_state:
     st.session_state["view"] = "home"
 
+# Style
 st.markdown("""
     <style>
         section[data-testid="stSidebar"] > div:first-child {
             max-height: 95vh;
             overflow-y: auto;
-        }
-
-        .sidebar-button {
-            display: block;
-            background-color: #66a3ff;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 5px 0;
-            font-weight: bold;
-            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-            transition: all 0.2s ease-in-out;
-            text-decoration: none;
-        }
-
-        .sidebar-button:hover {
-            background-color: #3385ff !important;
-            transform: translateY(-2px);
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
         }
 
         .main-button {
@@ -71,69 +55,42 @@ with col2:
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
+# Giao diện chính
+if st.session_state["view"] == "home":
+    st.markdown("""
+    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
+        <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
+        <a href="https://chat.openai.com" target="_blank" class="main-button">💬 ChatGPT công khai</a>
+        <a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" class="main-button">🎬 video tuyên truyền</a>
+        <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
+    </div>
+    """, unsafe_allow_html=True)
 
-try:
-    df = pd.read_csv(sheet_url)
-    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
-    grouped = df.groupby('Nhóm chức năng')
+    if st.button("📊 TỔN THẤT", key="btn-ton-that"):
+        st.session_state["view"] = "ton_that"
 
-    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+# Giao diện phân tích tổn thất
+elif st.session_state["view"] == "ton_that":
+    st.markdown("## 📊 PHÂN TÍCH TỔN THẤT TOÀN ĐƠN VỊ")
 
-    for group_name, group_data in grouped:
-        with st.sidebar.expander(f"📂 {group_name}", expanded=False):
-            for _, row in group_data.iterrows():
-                label = row['Tên ứng dụng']
-                link = row['Liên kết']
-                st.markdown(f"""
-                    <a href="{link}" target="_blank" class="sidebar-button">
-                        🚀 {label}
-                    </a>
-                """, unsafe_allow_html=True)
-except Exception as e:
-    st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
+    col1, col2 = st.columns(2)
+    month = col1.selectbox("Chọn tháng", list(range(1, 13)))
+    year = col2.selectbox("Chọn năm", list(range(2018, 2026)))
 
-st.info("""
-👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+    data = pd.DataFrame({
+        "Tháng": list(range(1, 13)),
+        "Tỷ lệ tổn thất": [round(7.5 + (i % 4) * 0.3 + (year - 2020) * 0.05, 2) for i in range(12)]
+    })
 
-📌 **Các tính năng nổi bật:**
-- Phân tích tổn thất, báo cáo kỹ thuật
-- Lưu trữ và truy xuất lịch sử GPT
-- Truy cập hệ thống nhanh chóng qua Sidebar
+    fig, ax = plt.subplots()
+    ax.plot(data["Tháng"], data["Tỷ lệ tổn thất"], marker='o')
+    ax.set_title(f"Tỷ lệ tổn thất năm {year}")
+    ax.set_xlabel("Tháng")
+    ax.set_ylabel("Tỷ lệ tổn thất (%)")
+    st.pyplot(fig)
 
-✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
-""")
+    st.markdown("### 📊 Bảng dữ liệu tổn thất")
+    st.dataframe(data)
 
-st.markdown("<br>", unsafe_allow_html=True)
-if st.button("📊 TỔN THẤT"):
-    st.session_state["view"] = "ton_that"
-
-st.markdown("""
-<div style="display: flex; justify-content: center; flex-wrap: wrap;">
-    <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
-    <a href="https://chat.openai.com" target="_blank" class="main-button">💬 ChatGPT công khai</a>
-    <a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" class="main-button">🎬 video tuyên truyền</a>
-    <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
-</div>
-""", unsafe_allow_html=True)
-
-# Hiển thị nội dung TỔN THẤT nếu được chọn
-if st.session_state.get("view") == "ton_that":
-    st.markdown("## 📊 TỔN THẤT")
-    tab1, tab2, tab3 = st.tabs([
-        "📊 Tổng toàn bộ đơn vị",
-        "⚡ Tổn thất trung áp",
-        "🔌 Tổn thất hạ áp"
-    ])
-
-    with tab1:
-        st.markdown("### 📊 Phân tích tổn thất toàn đơn vị")
-        st.write("👉 Đây là nơi chọn tháng/năm và xem biểu đồ tổng quát về đơn vị.")
-
-    with tab2:
-        st.markdown("### ⚡ Tổn thất trung áp")
-        st.write("👉 Phân tích trung áp đang được bổ sung.")
-
-    with tab3:
-        st.markdown("### 🔌 Tổn thất hạ áp")
-        st.write("👉 Phân tích hạ áp đang được bổ sung.")
+    if st.button("📥 Xuất báo cáo PDF"):
+        st.success("✅ Đã chuẩn bị xuất PDF (chức năng sẽ tích hợp sau).")
