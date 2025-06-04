@@ -1,9 +1,11 @@
-
 import streamlit as st
 import pandas as pd
 from PIL import Image
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+
+if "view" not in st.session_state:
+    st.session_state["view"] = "home"
 
 st.markdown("""
     <style>
@@ -74,7 +76,6 @@ sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY2
 try:
     df = pd.read_csv(sheet_url)
     df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
-
     grouped = df.groupby('Nhóm chức năng')
 
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
@@ -104,6 +105,9 @@ st.info("""
 """)
 
 st.markdown("<br>", unsafe_allow_html=True)
+if st.button("📊 TỔN THẤT"):
+    st.session_state["view"] = "ton_that"
+
 st.markdown("""
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
     <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
@@ -112,3 +116,24 @@ st.markdown("""
     <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
+
+# Hiển thị nội dung TỔN THẤT nếu được chọn
+if st.session_state.get("view") == "ton_that":
+    st.markdown("## 📊 TỔN THẤT")
+    tab1, tab2, tab3 = st.tabs([
+        "📊 Tổng toàn bộ đơn vị",
+        "⚡ Tổn thất trung áp",
+        "🔌 Tổn thất hạ áp"
+    ])
+
+    with tab1:
+        st.markdown("### 📊 Phân tích tổn thất toàn đơn vị")
+        st.write("👉 Đây là nơi chọn tháng/năm và xem biểu đồ tổng quát về đơn vị.")
+
+    with tab2:
+        st.markdown("### ⚡ Tổn thất trung áp")
+        st.write("👉 Phân tích trung áp đang được bổ sung.")
+
+    with tab3:
+        st.markdown("### 🔌 Tổn thất hạ áp")
+        st.write("👉 Phân tích hạ áp đang được bổ sung.")
