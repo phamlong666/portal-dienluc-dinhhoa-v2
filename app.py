@@ -9,23 +9,19 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 if "view" not in st.session_state:
     st.session_state["view"] = "home"
 
-# Lấy query param nếu có
-params = st.query_params
-if params.get("view") == ["ton_that"]:
-    st.session_state["view"] = "ton_that"
-
-# Sidebar từ Google Sheet
+# Sidebar từ Google Sheet (cột E)
 st.sidebar.markdown("## 📁 Menu chức năng")
 try:
-    menu_link = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSErV8WZ7kq-3BT7i77tbmTuWqfYgEZtV-kPjJvHgS0eYknUPoEK9hruXNWPE5_EBT02TrdDIW0a4NW/pub?output=csv"
+    # Link CSV công khai xuất từ Google Sheet
+    menu_link = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/export?format=csv"
     df_menu = pd.read_csv(menu_link)
     if "E" in df_menu.columns:
         for item in df_menu["E"].dropna():
             st.sidebar.markdown(f"- {item}")
     else:
-        st.sidebar.warning("⚠️ Không tìm thấy cột E trong Google Sheet.")
+        st.sidebar.warning("⚠️ Không tìm thấy cột E.")
 except Exception as e:
-    st.sidebar.warning(f"⚠️ Không thể tải menu: {e}")
+    st.sidebar.warning(f"⚠️ Lỗi tải menu: {e}")
 
 # Style nút chính
 st.markdown("""
@@ -51,7 +47,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Header logo
+# Header
 col1, col2 = st.columns([1, 10])
 with col1:
     try:
@@ -75,21 +71,22 @@ if st.session_state["view"] == "home":
         <a href="https://chat.openai.com" target="_blank" class="main-button">💬 ChatGPT công khai</a>
         <a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" class="main-button">🎬 video tuyên truyền</a>
         <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
-        <a href="?view=ton_that" class="main-button">📊 TỔN THẤT</a>
     </div>
     """, unsafe_allow_html=True)
 
-# Giao diện tổn thất tách riêng
+    if st.button("📊 TỔN THẤT"):
+        st.session_state["view"] = "ton_that"
+        st.experimental_rerun()
+
+# Giao diện tổn thất
 elif st.session_state["view"] == "ton_that":
     st.markdown("## 📊 PHÂN TÍCH TỔN THẤT TOÀN ĐƠN VỊ")
 
     mode = st.radio("Hiển thị dữ liệu:", ["Tháng", "Lũy kế"], horizontal=True)
-
     col1, col2 = st.columns(2)
     year = col1.selectbox("Chọn năm", list(range(2018, 2026)), index=7)
     month = col2.selectbox("Chọn tháng", list(range(1, 13)), index=4)
 
-    # Dữ liệu mẫu
     if mode == "Tháng":
         data = pd.DataFrame({
             "STT": list(range(1, 13)),
