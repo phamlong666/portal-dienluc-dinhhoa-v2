@@ -9,7 +9,7 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 if "view" not in st.session_state:
     st.session_state["view"] = "home"
 
-# Sidebar lấy từ Google Sheet
+# --- Sidebar từ Google Sheet ---
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 try:
     df = pd.read_csv(sheet_url)
@@ -20,23 +20,14 @@ try:
     for group_name, group_data in grouped:
         with st.sidebar.expander(f"📂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
-                label = row['Tên ứng dụng']
-                link = row['Liên kết']
-                st.markdown(f"""
-                    <a href="{link}" target="_blank" class="sidebar-button">
-                        🚀 {label}
-                    </a>
-                """, unsafe_allow_html=True)
+                st.markdown(f"<a href='{row['Liên kết']}' target='_blank' class='sidebar-button'>🚀 {row['Tên ứng dụng']}</a>", unsafe_allow_html=True)
 except Exception as e:
-    st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
+    st.sidebar.error(f"🚫 Không thể tải menu: {e}")
 
-# Style
+# --- Style ---
 st.markdown("""
     <style>
-        section[data-testid="stSidebar"] > div:first-child {
-            max-height: 95vh;
-            overflow-y: auto;
-        }
+        section[data-testid="stSidebar"] > div:first-child { max-height: 95vh; overflow-y: auto; }
         .sidebar-button {
             display: block;
             background-color: #66a3ff;
@@ -52,7 +43,6 @@ st.markdown("""
         .sidebar-button:hover {
             background-color: #3385ff !important;
             transform: translateY(-2px);
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
         }
         .main-button {
             display: inline-block;
@@ -70,12 +60,11 @@ st.markdown("""
         }
         .main-button:hover {
             transform: scale(1.07);
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
     </style>
 """, unsafe_allow_html=True)
 
-# Header
+# --- Header ---
 col1, col2 = st.columns([1, 10])
 with col1:
     try:
@@ -91,16 +80,8 @@ with col2:
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-# Giao diện chính
+# --- Giao diện chính ---
 if st.session_state["view"] == "home":
-    st.info("""
-👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
-
-📌 **Các tính năng nổi bật:**
-- Phân tích tổn thất, báo cáo kỹ thuật
-- Lưu trữ và truy xuất lịch sử GPT
-- Truy cập hệ thống nhanh chóng qua Sidebar
-""")
     st.markdown("""
     <div style="display: flex; justify-content: center; flex-wrap: wrap;">
         <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
@@ -114,25 +95,36 @@ if st.session_state["view"] == "home":
         st.session_state["view"] = "ton_that"
         st.rerun()
 
-# Giao diện tổn thất
+# --- Giao diện tổn thất ---
 elif st.session_state["view"] == "ton_that":
+    st.button("🔙 Về trang chính", on_click=lambda: st.session_state.update({"view": "home"}))
+
     st.markdown("## 📊 PHÂN TÍCH TỔN THẤT TOÀN ĐƠN VỊ")
     col1, col2 = st.columns(2)
     year = col1.selectbox("Chọn năm", list(range(2018, 2026)), index=7)
-    month = col2.selectbox("Chọn tháng", list(range(1, 13)), index=4)
+    max_month = 5 if year == 2025 else 12
+    month = col2.selectbox("Chọn tháng", list(range(1, max_month + 1)), index=max_month - 1)
 
-    data = pd.DataFrame({
-        "Tháng": list(range(1, 13)),
-        "Tỷ lệ tổn thất": [round(7.1 + (i % 4) * 0.3 + (year - 2021)*0.05, 2) for i in range(1, 13)]
+    months = list(range(1, max_month + 1))
+    values_now = [round(7.1 + (i % 4) * 0.3 + (year - 2021)*0.05, 2) for i in months]
+    values_last = [round(7.1 + (i % 3) * 0.2 + (year - 2022)*0.04, 2) for i in months]
+
+    df = pd.DataFrame({
+        "Tháng": months,
+        "Tỷ lệ tổn thất": values_now,
+        "Cùng kỳ năm trước": values_last
     })
 
-    with st.expander("📈 Biểu đồ tổn thất dạng line (zích zắc)", expanded=True):
-        fig, ax = plt.subplots(figsize=(10, 4))
-        ax.plot(data["Tháng"], data["Tỷ lệ tổn thất"], marker='o', linestyle='-', color="#007acc")
-        ax.set_title(f"Tỷ lệ tổn thất năm {year}", fontsize=16)
+    with st.expander("📈 Biểu đồ tổn thất theo năm", expanded=True):
+        fig, ax = plt.subplots(figsize=(6, 3))
+        ax.plot(df["Tháng"], df["Tỷ lệ tổn thất"], marker='o', label=f"Năm {year}")
+        ax.plot(df["Tháng"], df["Cùng kỳ năm trước"], marker='x', linestyle='--', label=f"Năm {year - 1}", color='gray')
+        ax.set_title(f"Tỷ lệ tổn thất năm {year}")
         ax.set_xlabel("Tháng")
         ax.set_ylabel("Tỷ lệ tổn thất (%)")
         ax.grid(True)
-        st.pyplot(fig)
+        ax.legend()
+        st.pyplot(fig, use_container_width=True)
 
-    st.dataframe(data)
+    st.markdown("### 📊 Bảng số liệu tổn thất")
+    st.dataframe(df.style.format({"Tỷ lệ tổn thất": "{:.2f}", "Cùng kỳ năm trước": "{:.2f}"}), use_container_width=True)
