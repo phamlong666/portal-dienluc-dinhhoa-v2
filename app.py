@@ -111,26 +111,3 @@ st.markdown("""
     <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
-    with col5:
-        if st.button("📊 TỔN THẤT", use_container_width=True):
-            st.session_state["page"] = "ton_that"
-
-
-
-# ======================= TRANG PHÂN TÍCH TỔN THẤT =========================
-elif st.session_state.get("page") == "ton_that":
-    st.title("📊 PHÂN TÍCH TỔN THẤT ĐIỆN NĂNG")
-
-    if st.button("🔙 Quay về trang chính"):
-        st.session_state["page"] = "main"
-
-    analysis_tab = st.radio("Chọn loại tổn thất", ["Toàn đơn vị", "Trung áp", "Hạ áp"], horizontal=True)
-
-    if analysis_tab == "Toàn đơn vị":
-        st.info("Phân tích tổn thất từ sheet: Đơn vị_Cấp điện áp (Đang phát triển...)")
-
-    elif analysis_tab == "Trung áp":
-        st.info("Phân tích tổn thất từ sheet: Tổn thất trung-hạ áp (Trung thế)...")
-
-    elif analysis_tab == "Hạ áp":
-        st.info("Phân tích tổn thất từ sheet: Tổn thất trung-hạ áp (Hạ thế)...")
