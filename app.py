@@ -56,6 +56,9 @@ st.markdown("""
             display: flex;
             justify-content: center;
         }
+        .dataframe td, .dataframe th {
+            font-size: 20px !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -106,6 +109,7 @@ elif st.session_state["view"] == "ton_that":
         month = col2.selectbox(f"{view_name} - Chọn tháng", list(range(1, max_month + 1)), index=max_month - 1)
 
         months = list(range(1, 13))
+        # TODO: Gắn dữ liệu thật thay vì random
         values_now = [round(6 + np.random.rand() * 3, 2) if i <= max_month else None for i in months]
         values_last = [round(6 + np.random.rand() * 3, 2) for i in months]
 
@@ -115,18 +119,20 @@ elif st.session_state["view"] == "ton_that":
             "Cùng kỳ năm trước": values_last
         })
 
-        fig, ax = plt.subplots(figsize=(4.5, 1.5))
-        ax.plot(months, values_now, marker='o', label=f"Năm {year}", linewidth=2)
-        ax.plot(months, values_last, marker='s', label=f"Năm {year-1}", linewidth=2, color='gray')
+        fig, ax = plt.subplots(figsize=(4, 1.2))
+        ax.plot(months, values_now, marker='o', label=f"Năm {year}", linewidth=1.2)
+        ax.plot(months, values_last, marker='s', label=f"Năm {year-1}", linewidth=1.2, linestyle='--', color='gray')
         ax.set_xticks(months)
-        ax.set_xlabel("Tháng")
-        ax.set_ylabel("Tỷ lệ tổn thất (%)")
-        ax.set_title(f"Tỷ lệ tổn thất năm {year}", pad=10)
+        ax.set_xlabel("Tháng", fontsize=8)
+        ax.set_ylabel("Tỷ lệ tổn thất (%)", fontsize=8)
+        ax.tick_params(axis='both', labelsize=8)
+        ax.set_title(f"Tỷ lệ tổn thất năm {year}", fontsize=12, pad=10)
         ax.grid(True)
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.12), ncol=2)
+        ax.legend(loc="upper center", bbox_to_anchor=(0.5, 1.25), ncol=2, fontsize=8)
         st.pyplot(fig)
 
-        st.dataframe(df.style.format({"Tỷ lệ tổn thất": "{:.2f}", "Cùng kỳ năm trước": "{:.2f}"}), use_container_width=True)
+        st.markdown("### 📊 Bảng dữ liệu tổn thất")
+        st.dataframe(df.style.format({"Tỷ lệ tổn thất": "{:.2f}", "Cùng kỳ năm trước": "{:.2f}"}), use_container_width=True, height=500)
 
     with tab1:
         show_chart("Toàn đơn vị")
