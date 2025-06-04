@@ -9,23 +9,51 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 if "view" not in st.session_state:
     st.session_state["view"] = "home"
 
-# Sidebar từ Google Sheet
-st.sidebar.markdown("## 📁 Menu chức năng")
+# Sidebar lấy từ Google Sheet
+sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 try:
-    menu_link = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/export?format=csv"
-    df_menu = pd.read_csv(menu_link)
-    if "Nhóm chức năng" in df_menu.columns:
-        menu_items = df_menu["Nhóm chức năng"].dropna().unique().tolist()
-        for item in menu_items:
-            st.sidebar.markdown(f"- {item}")
-    else:
-        st.sidebar.warning("⚠️ Không tìm thấy cột 'Nhóm chức năng'")
-except Exception as e:
-    st.sidebar.warning(f"⚠️ Lỗi tải menu: {e}")
+    df = pd.read_csv(sheet_url)
+    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
+    grouped = df.groupby('Nhóm chức năng')
 
-# Style nút chính
+    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    for group_name, group_data in grouped:
+        with st.sidebar.expander(f"📂 {group_name}", expanded=False):
+            for _, row in group_data.iterrows():
+                label = row['Tên ứng dụng']
+                link = row['Liên kết']
+                st.markdown(f"""
+                    <a href="{link}" target="_blank" class="sidebar-button">
+                        🚀 {label}
+                    </a>
+                """, unsafe_allow_html=True)
+except Exception as e:
+    st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
+
+# Style
 st.markdown("""
     <style>
+        section[data-testid="stSidebar"] > div:first-child {
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .sidebar-button {
+            display: block;
+            background-color: #66a3ff;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-weight: bold;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+        }
+        .sidebar-button:hover {
+            background-color: #3385ff !important;
+            transform: translateY(-2px);
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+        }
         .main-button {
             display: inline-block;
             background-color: #66a3ff;
@@ -65,6 +93,14 @@ with col2:
 
 # Giao diện chính
 if st.session_state["view"] == "home":
+    st.info("""
+👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+
+📌 **Các tính năng nổi bật:**
+- Phân tích tổn thất, báo cáo kỹ thuật
+- Lưu trữ và truy xuất lịch sử GPT
+- Truy cập hệ thống nhanh chóng qua Sidebar
+""")
     st.markdown("""
     <div style="display: flex; justify-content: center; flex-wrap: wrap;">
         <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
@@ -81,33 +117,22 @@ if st.session_state["view"] == "home":
 # Giao diện tổn thất
 elif st.session_state["view"] == "ton_that":
     st.markdown("## 📊 PHÂN TÍCH TỔN THẤT TOÀN ĐƠN VỊ")
-
-    mode = st.radio("Hiển thị dữ liệu:", ["Tháng", "Lũy kế"], horizontal=True)
     col1, col2 = st.columns(2)
     year = col1.selectbox("Chọn năm", list(range(2018, 2026)), index=7)
     month = col2.selectbox("Chọn tháng", list(range(1, 13)), index=4)
 
-    if mode == "Tháng":
-        data = pd.DataFrame({
-            "STT": list(range(1, 13)),
-            "Tháng": [f"Tháng {i}" for i in range(1, 13)],
-            "Tỷ lệ tổn thất (%)": [round(7.1 + (i % 4) * 0.3 + (year - 2021)*0.05, 2) for i in range(1, 13)]
-        })
-    else:
-        data = pd.DataFrame({
-            "STT": [1],
-            "Tháng": [f"Lũy kế đến tháng {month}"],
-            "Tỷ lệ tổn thất (%)": [round(7.8 + (year - 2021) * 0.1, 2)]
-        })
+    data = pd.DataFrame({
+        "Tháng": list(range(1, 13)),
+        "Tỷ lệ tổn thất": [round(7.1 + (i % 4) * 0.3 + (year - 2021)*0.05, 2) for i in range(1, 13)]
+    })
 
-    with st.expander("📈 Biểu đồ tổn thất", expanded=True):
-        fig, ax = plt.subplots(figsize=(8, 4))
-        ax.bar(data["Tháng"], data["Tỷ lệ tổn thất (%)"], color="#3399FF")
-        ax.set_title(f"Tỷ lệ tổn thất năm {year}")
+    with st.expander("📈 Biểu đồ tổn thất dạng line (zích zắc)", expanded=True):
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.plot(data["Tháng"], data["Tỷ lệ tổn thất"], marker='o', linestyle='-', color="#007acc")
+        ax.set_title(f"Tỷ lệ tổn thất năm {year}", fontsize=16)
+        ax.set_xlabel("Tháng")
         ax.set_ylabel("Tỷ lệ tổn thất (%)")
-        st.pyplot(fig, use_container_width=True)
+        ax.grid(True)
+        st.pyplot(fig)
 
-    st.dataframe(data, use_container_width=True)
-
-    if st.button("📥 Xuất báo cáo PDF"):
-        st.success("✅ Đang phát triển chức năng xuất PDF.")
+    st.dataframe(data)
