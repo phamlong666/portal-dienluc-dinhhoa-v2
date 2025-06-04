@@ -39,8 +39,11 @@ st.markdown("""
         .sidebar-button:hover {
             background-color: #3385ff;
         }
+        div[data-testid="column"] div:has(button) {
+            display: flex;
+            justify-content: center;
+        }
         .main-button {
-            display: inline-block;
             background-color: #66a3ff;
             color: white;
             padding: 20px 30px;
@@ -50,7 +53,7 @@ st.markdown("""
             margin: 14px;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-            text-decoration: none;
+            width: 100%;
         }
         .main-button:hover {
             transform: scale(1.07);
@@ -75,23 +78,24 @@ with col2:
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
 
-# Giao diện chính
+# Trang chính
 if st.session_state["view"] == "home":
-    st.markdown("""
-    <div style="display: flex; justify-content: center; flex-wrap: wrap;">
-        <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
-        <a href="https://chat.openai.com" target="_blank" class="main-button">💬 ChatGPT công khai</a>
-        <a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" class="main-button">🎬 video tuyên truyền</a>
-        <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
-        <a href="#" onclick="window.location.search='?ton_that=1'" class="main-button">📊 TỔN THẤT</a>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 🌟 Chức năng chính")
+    colA, colB, colC, colD, colE = st.columns(5)
+    with colA:
+        st.markdown('<a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank"><button class="main-button">📦 Bigdata_Terabox</button></a>', unsafe_allow_html=True)
+    with colB:
+        st.markdown('<a href="https://chat.openai.com" target="_blank"><button class="main-button">💬 ChatGPT công khai</button></a>', unsafe_allow_html=True)
+    with colC:
+        st.markdown('<a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank"><button class="main-button">🎬 video tuyên truyền</button></a>', unsafe_allow_html=True)
+    with colD:
+        st.markdown('<a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank"><button class="main-button">📄 Báo cáo CMIS</button></a>', unsafe_allow_html=True)
+    with colE:
+        if st.button("📊 TỔN THẤT", key="btn-ton-that"):
+            st.session_state["view"] = "ton_that"
+            st.rerun()
 
-    if st.query_params.get("ton_that") == ["1"]:
-        st.session_state["view"] = "ton_that"
-        st.rerun()
-
-# Giao diện tổn thất
+# Trang tổn thất
 elif st.session_state["view"] == "ton_that":
     st.button("🔙 Về trang chính", on_click=lambda: st.session_state.update({"view": "home"}))
     st.markdown("## 📊 PHÂN TÍCH TỔN THẤT TOÀN ĐƠN VỊ")
@@ -101,7 +105,6 @@ elif st.session_state["view"] == "ton_that":
     max_month = 5 if year == 2025 else 12
     month = col2.selectbox("Chọn tháng", list(range(1, max_month + 1)), index=max_month - 1)
 
-    # Dữ liệu đủ 12 tháng, riêng 2025 chỉ đến tháng 5
     full_months = list(range(1, 13))
     values_now = [round(7.1 + (i % 4) * 0.3 + (year - 2021)*0.05, 2) if i <= max_month else None for i in full_months]
     values_last = [round(7.1 + (i % 3) * 0.2 + (year - 2022)*0.04, 2) for i in full_months]
@@ -113,7 +116,7 @@ elif st.session_state["view"] == "ton_that":
     })
 
     with st.expander("📈 Biểu đồ tổn thất", expanded=True):
-        fig, ax = plt.subplots(figsize=(5, 2))  # nhỏ hơn nữa
+        fig, ax = plt.subplots(figsize=(5, 2))
         ax.plot(full_months, values_now, marker='o', label=f"Năm {year}")
         ax.plot(full_months, values_last, marker='s', linestyle='-', color='gray', label=f"Năm {year-1}")
         ax.set_xticks(full_months)
