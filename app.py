@@ -9,17 +9,17 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 if "view" not in st.session_state:
     st.session_state["view"] = "home"
 
-# Sidebar từ Google Sheet (cột E)
+# Sidebar từ Google Sheet
 st.sidebar.markdown("## 📁 Menu chức năng")
 try:
-    # Link CSV công khai xuất từ Google Sheet
     menu_link = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/export?format=csv"
     df_menu = pd.read_csv(menu_link)
-    if "E" in df_menu.columns:
-        for item in df_menu["E"].dropna():
+    if "Nhóm chức năng" in df_menu.columns:
+        menu_items = df_menu["Nhóm chức năng"].dropna().unique().tolist()
+        for item in menu_items:
             st.sidebar.markdown(f"- {item}")
     else:
-        st.sidebar.warning("⚠️ Không tìm thấy cột E.")
+        st.sidebar.warning("⚠️ Không tìm thấy cột 'Nhóm chức năng'")
 except Exception as e:
     st.sidebar.warning(f"⚠️ Lỗi tải menu: {e}")
 
@@ -76,7 +76,7 @@ if st.session_state["view"] == "home":
 
     if st.button("📊 TỔN THẤT"):
         st.session_state["view"] = "ton_that"
-        st.experimental_rerun()
+        st.rerun()
 
 # Giao diện tổn thất
 elif st.session_state["view"] == "ton_that":
