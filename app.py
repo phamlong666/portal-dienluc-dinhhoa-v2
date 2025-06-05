@@ -14,7 +14,7 @@ st.markdown("""
 
         .sidebar-button {
             display: block;
-            background-color: #42A5F5;
+            background-color: #66a3ff;
             color: white;
             padding: 10px;
             border-radius: 8px;
@@ -26,14 +26,14 @@ st.markdown("""
         }
 
         .sidebar-button:hover {
-            background-color: #1E88E5 !important;
+            background-color: #3385ff !important;
             transform: translateY(-2px);
             box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
         }
 
         .main-button {
             display: inline-block;
-            background-color: #FFCC80;
+            background-color: #66a3ff;
             color: white;
             text-align: center;
             padding: 22px 30px;
@@ -43,11 +43,12 @@ st.markdown("""
             margin: 14px;
             transition: 0.3s;
             font-size: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
 
         .main-button:hover {
-            transform: scale(1.05);
-            box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
+            transform: scale(1.07);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -92,10 +93,10 @@ except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
 
 st.info("""
-👋 Chào mừng anh Long đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
 📌 **Các tính năng nổi bật:**
-- Phân tích thất bại, báo cáo kỹ thuật
+- Phân tích tổn thất, báo cáo kỹ thuật
 - Lưu trữ và truy xuất lịch sử GPT
 - Truy cập hệ thống nhanh chóng qua Sidebar
 
@@ -106,8 +107,8 @@ st.markdown("<br>", unsafe_allow_html=True)
 st.markdown("""
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
     <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
-    <a href="https://chat.openai.com/c/2d132e26-7b53-46b3-bbd3-8a5229e77973" target="_blank" class="main-button">🤖 AI. PHẠM HỒNG LONG</a>
-    <a href="https://www.youtube.com" target="_blank" class="main-button">🎬 video tuyên truyền</a>
-    <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
+    <a href="https://chat.openai.com" target="_blank" class="main-button">💬 ChatGPT công khai</a>
+    <a href="https://www.youtube.com/@dienlucdinhhoa" target="_blank" class="main-button">🎬 video tuyên truyền</a>
+    <a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
