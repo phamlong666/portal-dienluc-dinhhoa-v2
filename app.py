@@ -1,4 +1,52 @@
 
+import matplotlib.pyplot as plt
+import pandas as pd
+
+# Tạo menu chính
+selected_menu = st.sidebar.radio("📂 Menu chức năng", ["🏠 Trang chính", "📊 TỔN THẤT"])
+
+if selected_menu == "🏠 Trang chính":
+    st.title("🏠 Trung tâm điều hành số - Điện lực Định Hóa")
+    # Các nút chính khác giữ nguyên tại đây
+    st.markdown("### Chào mừng bạn đến với hệ thống điều hành số")
+
+elif selected_menu == "📊 TỔN THẤT":
+    st.title("📊 Phân tích tổn thất điện năng")
+    sub_tab = st.radio("Chọn phân tích", ["Tổn thất toàn đơn vị", "Tổn thất trung áp", "Tổn thất hạ áp"])
+
+    if sub_tab == "Tổn thất toàn đơn vị":
+        st.subheader("📈 Biểu đồ tổn thất toàn đơn vị")
+        sheet_url = "https://docs.google.com/spreadsheets/d/13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg/export?format=csv&id=13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg&gid=2115988437"
+        df = pd.read_csv(sheet_url)
+        df = df.rename(columns={df.columns[0]: "Năm"})
+        years = df["Năm"].dropna().unique()
+        selected_year = st.selectbox("Chọn năm", sorted(years, reverse=True))
+        df_selected = df[df["Năm"] == selected_year].reset_index(drop=True)
+        df_selected = df_selected.drop(columns=["Năm"], errors="ignore")
+        months = list(range(1, len(df_selected.columns) + 1))
+
+        fig, ax = plt.subplots()
+        for idx in range(1, 6):
+            if idx < len(df_selected):
+                ax.plot(months, df_selected.iloc[idx], label=f"Dòng {idx+1}", marker="o")
+
+        ax.set_xticks(months)
+        ax.set_xticklabels([f"Tháng {m}" for m in months])
+        ax.set_title(f"Tổn thất toàn đơn vị - Năm {selected_year}")
+        ax.set_xlabel("Tháng")
+        ax.set_ylabel("Giá trị")
+        ax.legend()
+        ax.grid(True)
+        st.pyplot(fig)
+
+    elif sub_tab == "Tổn thất trung áp":
+        st.info("🔧 Đang cập nhật: Phân tích tổn thất trung áp")
+
+    elif sub_tab == "Tổn thất hạ áp":
+        st.info("🔧 Đang cập nhật: Phân tích tổn thất hạ áp")
+
+
+
 import streamlit as st
 import pandas as pd
 from PIL import Image
@@ -111,39 +159,3 @@ st.markdown("""
     <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
-
-
-
-elif selected_menu == "📊 TỔN THẤT":
-    st.markdown("## 📊 Phân tích tổn thất điện năng")
-    sub_tab = st.selectbox("Chọn mục phân tích", ["Toàn đơn vị", "Trung áp", "Hạ áp"])
-
-    if sub_tab == "Toàn đơn vị":
-        sheet_url = "https://docs.google.com/spreadsheets/d/13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg/export?format=csv&id=13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg&gid=2115988437"
-        df = pd.read_csv(sheet_url)
-        df = df.rename(columns={df.columns[0]: "Năm"})
-        years = df["Năm"].dropna().unique()
-        selected_year = st.selectbox("Chọn năm", sorted(years, reverse=True))
-        df_selected = df[df["Năm"] == selected_year].reset_index(drop=True)
-        df_selected = df_selected.drop(columns=["Năm"], errors="ignore")
-        months = list(range(1, len(df_selected.columns) + 1))
-
-        fig, ax = plt.subplots()
-        for idx in range(1, 6):
-            if idx < len(df_selected):
-                ax.plot(months, df_selected.iloc[idx], label=df_selected.iloc[idx - 1, 0], marker="o")
-
-        ax.set_xticks(months)
-        ax.set_xticklabels([f"Tháng {m}" for m in months])
-        ax.set_title(f"Tổn thất toàn đơn vị năm {selected_year}")
-        ax.set_xlabel("Tháng")
-        ax.set_ylabel("Giá trị")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
-
-    elif sub_tab == "Trung áp":
-        st.info("🔧 Chức năng đang cập nhật: Sẽ lấy dữ liệu từ sheet 'Tổn thất trung-hạ áp'")
-
-    elif sub_tab == "Hạ áp":
-        st.info("🔧 Chức năng đang cập nhật: Sẽ lấy dữ liệu từ sheet 'Tổn thất trung-hạ áp'")
