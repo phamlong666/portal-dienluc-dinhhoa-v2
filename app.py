@@ -1,5 +1,30 @@
 
 import streamlit as st
+
+
+# Menu bên trái
+selected_menu = st.sidebar.radio("📂 Menu chức năng", ["🏠 Trang chính", "📊 TỔN THẤT"])
+
+if selected_menu == "🏠 Trang chính":
+    # Giao diện chính
+    st.title("🏠 TRUNG TÂM ĐIỀU HÀNH SỐ - ĐIỆN LỰC ĐỊNH HÓA")
+    # Các nút chính khác ở đây...
+
+elif selected_menu == "📊 TỔN THẤT":
+    st.title("📊 PHÂN TÍCH TỔN THẤT ĐIỆN NĂNG")
+    st.write("Chọn loại tổn thất:")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("Tổn thất toàn đơn vị"):
+            st.success("Tải dữ liệu tổn thất toàn đơn vị...")
+            # Placeholder xử lý
+    with col2:
+        if st.button("Tổn thất trung áp"):
+            st.warning("Chưa có dữ liệu trung áp")
+    with col3:
+        if st.button("Tổn thất hạ áp"):
+            st.warning("Chưa có dữ liệu hạ áp")
+
 import pandas as pd
 from PIL import Image
 
