@@ -1,53 +1,5 @@
 
 import streamlit as st
-import matplotlib.pyplot as plt
-import pandas as pd
-
-# Giao diện menu bên trái
-selected_menu = st.sidebar.radio("📂 Menu chức năng", ["🏠 Trang chính", "📊 TỔN THẤT"])
-
-if selected_menu == "🏠 Trang chính":
-    st.title("🏠 Trung tâm điều hành số - Điện lực Định Hóa")
-    st.markdown("### Chào mừng bạn đến với hệ thống điều hành số")
-
-elif selected_menu == "📊 TỔN THẤT":
-    st.title("📊 Phân tích tổn thất điện năng")
-    sub_tab = st.radio("Chọn phân tích", ["Tổn thất toàn đơn vị", "Tổn thất trung áp", "Tổn thất hạ áp"])
-
-    if sub_tab == "Tổn thất toàn đơn vị":
-        st.subheader("📈 Biểu đồ tổn thất toàn đơn vị")
-        sheet_url = "https://docs.google.com/spreadsheets/d/13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg/export?format=csv&id=13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg&gid=2115988437"
-        df = pd.read_csv(sheet_url)
-        df = df.rename(columns={df.columns[0]: "Năm"})
-        years = df["Năm"].dropna().unique()
-        selected_year = st.selectbox("Chọn năm", sorted(years, reverse=True))
-        df_selected = df[df["Năm"] == selected_year].reset_index(drop=True)
-        df_selected = df_selected.drop(columns=["Năm"], errors="ignore")
-        months = list(range(1, len(df_selected.columns) + 1))
-
-        fig, ax = plt.subplots()
-        for idx in range(1, 6):
-            if idx < len(df_selected):
-                ax.plot(months, df_selected.iloc[idx], label=f"Dòng {idx+1}", marker="o")
-
-        ax.set_xticks(months)
-        ax.set_xticklabels([f"Tháng {m}" for m in months])
-        ax.set_title(f"Tổn thất toàn đơn vị - Năm {selected_year}")
-        ax.set_xlabel("Tháng")
-        ax.set_ylabel("Giá trị")
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
-
-    elif sub_tab == "Tổn thất trung áp":
-        st.info("🔧 Đang cập nhật: Phân tích tổn thất trung áp")
-
-    elif sub_tab == "Tổn thất hạ áp":
-        st.info("🔧 Đang cập nhật: Phân tích tổn thất hạ áp")
-
-
-
-import streamlit as st
 import pandas as pd
 from PIL import Image
 
