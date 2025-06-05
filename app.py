@@ -1,13 +1,13 @@
 
+import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# Tạo menu chính
+# Giao diện menu bên trái
 selected_menu = st.sidebar.radio("📂 Menu chức năng", ["🏠 Trang chính", "📊 TỔN THẤT"])
 
 if selected_menu == "🏠 Trang chính":
     st.title("🏠 Trung tâm điều hành số - Điện lực Định Hóa")
-    # Các nút chính khác giữ nguyên tại đây
     st.markdown("### Chào mừng bạn đến với hệ thống điều hành số")
 
 elif selected_menu == "📊 TỔN THẤT":
