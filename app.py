@@ -6,13 +6,14 @@ import datetime
 tab = st.session_state.get("tab", "Trang chính")
 
 if tab == "Trang chính":
+    st.set_page_config(page_title="Trung tâm điều hành số - Điện lực Định Hóa", layout="wide")
     st.title("🌐 Trung tâm điều hành số – Điện lực Định Hóa")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         if st.button("🧾 Phục vụ họp", use_container_width=True):
             st.session_state["tab"] = "Phục vụ họp"
-            st.experimental_rerun()
+            st.rerun()
     with col2:
         st.link_button("📦 Dữ liệu lớn_Terabox", "https://terabox.com")
     with col3:
@@ -24,7 +25,7 @@ elif tab == "Phục vụ họp":
     st.header("🧾 Phục vụ họp – Ghi báo cáo và xuất file")
     if st.button("🔙 Quay về trang chính"):
         st.session_state["tab"] = "Trang chính"
-        st.experimental_rerun()
+        st.rerun()
 
     # --- Giao diện nhập cuộc họp ---
     ten = st.text_input("Tên cuộc họp")
@@ -57,4 +58,5 @@ elif tab == "Phục vụ họp":
     st.markdown("---")
     st.subheader("📚 Lịch sử cuộc họp đã lưu")
     for cuoc_hop in st.session_state["lich_su"]:
-        st.markdown(f"📅 **{cuoc_hop['ngay']}** – `{cuoc_hop['ten']}`  \n{cuoc_hop['nd']}")
+        st.markdown(f"📅 **{cuoc_hop['ngay']}** – `{cuoc_hop['ten']}`  
+{cuoc_hop['nd']}")
