@@ -58,5 +58,5 @@ elif tab == "Phục vụ họp":
     st.markdown("---")
     st.subheader("📚 Lịch sử cuộc họp đã lưu")
     for cuoc_hop in st.session_state["lich_su"]:
-        st.markdown(f"📅 **{cuoc_hop['ngay']}** – `{cuoc_hop['ten']}`  
+        st.markdown(f"📅 **{cuoc_hop['ngay']}** – `{cuoc_hop['ten']}`  \
 {cuoc_hop['nd']}")
