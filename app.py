@@ -157,13 +157,26 @@ if "hop" in query:
             st.success("✅ Đã lưu vào file CSV")
 
     st.markdown("---")
-    st.subheader("📚 Lịch sử cuộc họp đã lưu")
+    
+st.subheader("📚 Lịch sử cuộc họp đã lưu")
+if st.button("🗑️ Xoá toàn bộ lịch sử"):
+    os.remove("lich_su_cuoc_hop.csv")
+    st.warning("🗑️ Đã xoá toàn bộ lịch sử cuộc họp")
+    st.stop()
+
     if os.path.exists("lich_su_cuoc_hop.csv"):
         lich_su = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
         for _, row in lich_su.iterrows():
             st.markdown(f"📅 **{row['Ngày']} {row['Giờ']}** – `{row['Tên cuộc họp']}`  <br>{row['Nội dung']}", unsafe_allow_html=True)
             if pd.notna(row["Tệp đính kèm"]):
                 for f in row["Tệp đính kèm"].split(", "):
-                    st.markdown(f"📎 {f}")
+                    
+if f.lower().endswith(('.png', '.jpg', '.jpeg')):
+    st.image(f, width=300)
+elif f.lower().endswith('.pdf'):
+    st.markdown(f'<iframe src="{f}" width="100%" height="400px"></iframe>', unsafe_allow_html=True)
+else:
+    st.markdown(f"📎 {f}")
+
     else:
         st.info("Chưa có lịch sử nào.")
