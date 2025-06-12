@@ -186,7 +186,9 @@ with col2:
         stream = BytesIO()
         pdf.output(stream)
         stream.seek(0)
-        return stream        for f in files:
+        return stream
+
+for f in files:
             save_path = os.path.join(UPLOAD_FOLDER, f.name)
             with open(save_path, "wb") as out_file:
                 out_file.write(f.read())
