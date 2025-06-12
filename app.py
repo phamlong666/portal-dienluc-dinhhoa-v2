@@ -121,7 +121,8 @@ def save_data(row):
 if not df.empty:
     st.subheader("📚 Lịch sử cuộc họp")
     for idx, row in df.iterrows():
-        with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
+        if all(k in row for k in ['Ngày', 'Giờ', 'Tên cuộc họp']):
+            with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
             st.markdown(row['Nội dung'])
             file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
             for file in file_list:
@@ -236,7 +237,8 @@ df = load_data()
 if not df.empty:
     st.subheader("📚 Lịch sử cuộc họp")
     for idx, row in df.iterrows():
-        with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
+        if all(k in row for k in ['Ngày', 'Giờ', 'Tên cuộc họp']):
+            with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
             st.markdown(row['Nội dung'])
             file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
             for file in file_list:
