@@ -164,9 +164,9 @@ from io import BytesIO
 from fpdf import FPDF
 from docx import Document
 
-    CSV_FILE = "lich_su_cuoc_hop.csv"
-    UPLOAD_FOLDER = "uploaded_files"
-    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+CSV_FILE = "lich_su_cuoc_hop.csv"
+UPLOAD_FOLDER = "uploaded_files"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
     def load_data():
         if os.path.exists(CSV_FILE):
