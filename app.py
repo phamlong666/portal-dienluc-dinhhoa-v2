@@ -138,14 +138,15 @@ def create_pdf_report(row):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    text = f"Biên bản cuộc họp
-
-Ngày: {row['Ngày']} {row['Giờ']}
-Tên cuộc họp: {row['Tên cuộc họp']}
-
-Nội dung:
-{row['Nội dung']}"
-    pdf.multi_cell(0, 10, text)
+    text = f"""Biên bản cuộc họp\n
+    
+    Ngày: {row['Ngày']} {row['Giờ']}
+    Tên cuộc họp: {row['Tên cuộc họp']}
+    
+    Nội dung:
+    {row['Nội dung']}"
+    """
+        pdf.multi_cell(0, 10, text)
     stream = BytesIO()
     pdf_bytes = pdf.output(dest='S').encode('latin-1', 'replace')
     stream.write(pdf_bytes)
