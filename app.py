@@ -189,7 +189,7 @@ with st.expander("📑 Phục vụ họp", expanded=False):
     
 # Outside expander: Hiển thị lịch sử
 df = load_data()
-    if not df.empty:
+if not df.empty:
         st.subheader("📚 Lịch sử cuộc họp")
         for idx, row in df.iterrows():
             with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
