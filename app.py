@@ -97,12 +97,9 @@ if "hop" in query:
         lich_su = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
         
 for i, row in lich_su.iterrows():
-    delete_nd = st.checkbox(f"❌ Xoá nội dung họp dòng {i+1}", key=f"nd_{i}")
-    delete_file = st.checkbox(f"🗑️ Xoá file đính kèm dòng {i+1}", key=f"file_{i}")
+    # Giao diện hiển thị từng dòng lịch sử
     if delete_nd:
-        row['Nội dung'] = ''
     if delete_file:
-        row['Tệp đính kèm'] = ''
 
             st.markdown(f"### 📅 {row['Ngày']} {row['Giờ']} – `{row['Tên cuộc họp']}`")
             st.markdown(f"{row['Nội dung']}")
