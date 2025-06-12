@@ -13,7 +13,6 @@ with col1:
     try:
         logo = Image.open("assets/logo_hinh_tron_hoan_thien.png")
         st.image(logo, width=70)
-    except:
         except:
             st.warning("Không tìm thấy logo.")
 st.warning("⚠️ Không tìm thấy logo.")
