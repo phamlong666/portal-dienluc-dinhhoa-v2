@@ -120,7 +120,7 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
         col1, col2 = st.columns(2)
         with col1:
             ten = st.text_input("Tên cuộc họp")
-            ngay = st.date_input("Ngày họp", format="%d/%m/%Y")
+            ngay = st.date_input("Ngày họp")
             gio = st.time_input("Giờ họp")
         with col2:
             dia_diem = st.text_input("Địa điểm họp")
@@ -131,6 +131,7 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
         ket_luan = st.text_area("Kết luận / Giao việc", height=180)
         submit = st.form_submit_button("💾 Lưu và tạo báo cáo")
     
+        submit = st.form_submit_button("💾 Lưu và tạo báo cáo")
     # --- Tải file đính kèm nâng cao ---
     uploaded_files = st.file_uploader("📎 Tải lên tài liệu đính kèm (Word, PDF, Excel, ảnh...)", accept_multiple_files=True)
     file_states = {}
