@@ -188,18 +188,6 @@ with col2:
         stream.seek(0)
         return stream
 
-for f in files:
-            save_path = os.path.join(UPLOAD_FOLDER, f.name)
-            with open(save_path, "wb") as out_file:
-                out_file.write(f.read())
-            filenames.append(f.name)
-        save_data({
-            "Ngày": ngay.strftime("%d/%m/%Y"),
-            "Giờ": gio.strftime("%H:%M"),
-            "Tên cuộc họp": ten,
-            "Nội dung": noidung,
-            "File đính kèm": ";".join(filenames)
-        })
         st.success("✅ Đã lưu nội dung cuộc họp")
 
     df = load_data()
