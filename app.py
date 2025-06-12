@@ -122,7 +122,7 @@ if not df.empty:
     st.subheader("📚 Lịch sử cuộc họp")
     for idx, row in df.iterrows():
         if all(k in row for k in ['Ngày', 'Giờ', 'Tên cuộc họp']):
-            with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
+    with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
             st.markdown(row['Nội dung'])
             file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
             for file in file_list:
@@ -156,7 +156,7 @@ if not df.empty:
                     df.drop(idx, inplace=True)
                     df.to_csv(CSV_FILE, index=False)
                     st.experimental_rerun()
-def create_word_report(row):
+            def create_word_report(row):
     doc = Document()
     doc.add_heading("Biên bản cuộc họp", 0)
     doc.add_paragraph(f"Ngày: {row['Ngày']} {row['Giờ']}")
@@ -169,7 +169,7 @@ def create_word_report(row):
     return stream
 
 
-def create_pdf_report(row):
+            def create_pdf_report(row):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -190,23 +190,23 @@ def create_pdf_report(row):
 
 
     # --- HÀM NHẮC VIỆC ---
-def load_reminders():
+            def load_reminders():
     if Path(NHAC_VIEC_FILE).exists():
         with open(NHAC_VIEC_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
-def save_reminder(reminder):
+            def save_reminder(reminder):
     data = load_reminders()
     data.append(reminder)
     with open(NHAC_VIEC_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
     # --- GIAO DIỆN CHÍNH ---
-st.markdown("<h1 style='color:#003399'>🚀 Trung tâm điều hành số - Điện lực Định Hóa</h1>", unsafe_allow_html=True)
+            st.markdown("<h1 style='color:#003399'>🚀 Trung tâm điều hành số - Điện lực Định Hóa</h1>", unsafe_allow_html=True)
 
-# --- FORM PHỤC VỤ HỌP ---
-with st.expander("📑 Phục vụ họp", expanded=False):
+            # --- FORM PHỤC VỤ HỌP ---
+    with st.expander("📑 Phục vụ họp", expanded=False):
     with st.form("form_hop"):
         ten = st.text_input("📌 Tên cuộc họp")
         ngay = st.date_input("📅 Ngày họp", format="DD/MM/YYYY")
@@ -232,13 +232,13 @@ with st.expander("📑 Phục vụ họp", expanded=False):
             st.success("✅ Đã lưu nội dung cuộc họp")
 
     
-# Outside expander: Hiển thị lịch sử
-df = load_data()
+            # Outside expander: Hiển thị lịch sử
+            df = load_data()
 if not df.empty:
     st.subheader("📚 Lịch sử cuộc họp")
     for idx, row in df.iterrows():
         if all(k in row for k in ['Ngày', 'Giờ', 'Tên cuộc họp']):
-            with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
+    with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
             st.markdown(row['Nội dung'])
             file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
             for file in file_list:
@@ -272,8 +272,8 @@ if not df.empty:
                     df.drop(idx, inplace=True)
                     df.to_csv(CSV_FILE, index=False)
                     st.experimental_rerun()
-# --- NHẮC VIỆC ---
-with st.expander("⏰ Nhắc việc", expanded=False):
+            # --- NHẮC VIỆC ---
+    with st.expander("⏰ Nhắc việc", expanded=False):
     with st.form("form_nhac"):
         viec = st.text_input("🔔 Việc cần nhắc")
         ngay_nhac = st.date_input("📅 Ngày nhắc", date.today())
