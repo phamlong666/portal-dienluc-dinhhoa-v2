@@ -233,9 +233,17 @@ if not df.empty:
                             st.markdown(f"[📄 Mở PDF]({file_path})")
                 with col3:
                     
+                    
                     with col3:
                         with open(file_path, "rb") as f:
                             st.download_button("⬇️ Tải", f.read(), file_name=file)
+                        if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
+                            os.remove(file_path)
+                            updated_files = [f for f in file_list if f != file]
+                            df.at[idx, "File đính kèm"] = ";".join(updated_files)
+                            df.to_csv(CSV_FILE, index=False)
+                            st.success(f"❌ Đã xóa: {file}")
+                            st.experimental_rerun()
                         if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
                             os.remove(file_path)
                             updated_files = [f for f in file_list if f != file]
