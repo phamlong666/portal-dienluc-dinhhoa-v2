@@ -117,10 +117,44 @@ def load_data():
     return pd.DataFrame(columns=["Ngày", "Giờ", "Tên cuộc họp", "Nội dung", "File đính kèm"])
 
 def save_data(row):
-    df = load_data()
-    df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-    df.to_csv(CSV_FILE, index=False)
-
+df = load_data()
+if not df.empty:
+    st.subheader("📚 Lịch sử cuộc họp")
+    for idx, row in df.iterrows():
+        with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
+            st.markdown(row['Nội dung'])
+            file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
+            for file in file_list:
+                file_path = os.path.join(UPLOAD_FOLDER, file)
+                col1, col2, col3 = st.columns([4,1,1])
+                with col1:
+                    st.write(f"📎 {file}")
+                with col2:
+                    if file.lower().endswith(('.png','.jpg','.jpeg')):
+                        if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):
+                            st.image(file_path)
+                with col3:
+                    with open(file_path, "rb") as f:
+                        st.download_button("⬇️ Tải", f.read(), file_name=file)
+                    if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
+                        os.remove(file_path)
+                        updated_files = [f for f in file_list if f != file]
+                        df.at[idx, "File đính kèm"] = ';'.join(updated_files)
+                        df.to_csv(CSV_FILE, index=False)
+                        st.success(f"❌ Đã xóa: {file}")
+                        st.experimental_rerun()
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                word_file = create_word_report(row)
+                st.download_button("📤 Xuất Word", word_file, file_name=f"{row['Tên cuộc họp']}.docx")
+            with col_b:
+                pdf_file = create_pdf_report(row)
+                st.download_button("📤 Xuất PDF", pdf_file, file_name=f"{row['Tên cuộc họp']}.pdf")
+            with col_c:
+                if st.button("🗑️ Xóa cuộc họp", key=f"delete_{idx}"):
+                    df.drop(idx, inplace=True)
+                    df.to_csv(CSV_FILE, index=False)
+                    st.experimental_rerun()
 def create_word_report(row):
     doc = Document()
     doc.add_heading("Biên bản cuộc họp", 0)
@@ -200,40 +234,42 @@ with st.expander("📑 Phục vụ họp", expanded=False):
 # Outside expander: Hiển thị lịch sử
 df = load_data()
 if not df.empty:
-        st.subheader("📚 Lịch sử cuộc họp")
-        for idx, row in df.iterrows():
-            with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
-                st.markdown(row["Nội dung"])
-                file_list = row["File đính kèm"].split(";") if row["File đính kèm"] else []
-                for file in file_list:
-                    file_path = os.path.join(UPLOAD_FOLDER, file)
-                    col1, col2, col3 = st.columns([4,1,1])
-                    with col1:
-                        st.write(f"📎 {file}")
-                    with col2:
+    st.subheader("📚 Lịch sử cuộc họp")
+    for idx, row in df.iterrows():
+        with st.expander(f"📅 {row['Ngày']} {row['Giờ']} – {row['Tên cuộc họp']}"):
+            st.markdown(row['Nội dung'])
+            file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
+            for file in file_list:
+                file_path = os.path.join(UPLOAD_FOLDER, file)
+                col1, col2, col3 = st.columns([4,1,1])
+                with col1:
+                    st.write(f"📎 {file}")
+                with col2:
+                    if file.lower().endswith(('.png','.jpg','.jpeg')):
                         if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):
-                                                with col3:
-                        with open(file_path, "rb") as f:
-                            st.download_button("⬇️ Tải", f.read(), file_name=file)
-                        if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
-                            os.remove(file_path)
-                            updated_files = [f for f in file_list if f != file]
-                            df.at[idx, "File đính kèm"] = ";".join(updated_files)
-                            df.to_csv(CSV_FILE, index=False)
-                            st.experimental_rerun()
-                col_a, col_b, col_c = st.columns(3)
-                with col_a:
-                    word_file = create_word_report(row)
-                    st.download_button("📤 Xuất Word", word_file, file_name=f"{row['Tên cuộc họp']}.docx")
-                with col_b:
-                    pdf_file = create_pdf_report(row)
-                    st.download_button("📤 Xuất PDF", pdf_file, file_name=f"{row['Tên cuộc họp']}.pdf")
-                with col_c:
-                    if st.button("🗑️ Xóa cuộc họp", key=f"delete_{idx}"):
-                        df.drop(idx, inplace=True)
+                            st.image(file_path)
+                with col3:
+                    with open(file_path, "rb") as f:
+                        st.download_button("⬇️ Tải", f.read(), file_name=file)
+                    if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
+                        os.remove(file_path)
+                        updated_files = [f for f in file_list if f != file]
+                        df.at[idx, "File đính kèm"] = ';'.join(updated_files)
                         df.to_csv(CSV_FILE, index=False)
+                        st.success(f"❌ Đã xóa: {file}")
                         st.experimental_rerun()
-
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                word_file = create_word_report(row)
+                st.download_button("📤 Xuất Word", word_file, file_name=f"{row['Tên cuộc họp']}.docx")
+            with col_b:
+                pdf_file = create_pdf_report(row)
+                st.download_button("📤 Xuất PDF", pdf_file, file_name=f"{row['Tên cuộc họp']}.pdf")
+            with col_c:
+                if st.button("🗑️ Xóa cuộc họp", key=f"delete_{idx}"):
+                    df.drop(idx, inplace=True)
+                    df.to_csv(CSV_FILE, index=False)
+                    st.experimental_rerun()
 # --- NHẮC VIỆC ---
 with st.expander("⏰ Nhắc việc", expanded=False):
     with st.form("form_nhac"):
