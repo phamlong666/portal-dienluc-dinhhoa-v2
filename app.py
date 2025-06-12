@@ -129,7 +129,7 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
 
         noi_dung = st.text_area("Nội dung chính", height=180)
         ket_luan = st.text_area("Kết luận / Giao việc", height=180)
-        submit = st.form_submit_button("Lưu và tạo báo cáo", key="submit_phuc_vu_hop")
+        submit = st.form_submit_button('Lưu và tạo báo cáo', key='submit_phuc_vu_hop')
     
         submit = st.form_submit_button("Lưu và tạo báo cáo", key="submit_phuc_vu_hop")
     # --- Tải file đính kèm nâng cao ---
