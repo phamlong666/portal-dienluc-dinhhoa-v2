@@ -14,8 +14,8 @@ with col1:
         logo = Image.open("assets/logo_hinh_tron_hoan_thien.png")
         st.image(logo, width=70)
     except:
-        st.warning("Không tìm thấy logo.")
-except:
+        except:
+            st.warning("Không tìm thấy logo.")
 st.warning("⚠️ Không tìm thấy logo.")
 with col2:
 st.markdown("""
