@@ -147,7 +147,7 @@ for group_name, group_data in grouped:
                                                                                 else:
                                                                                     # ========== TRANG CHÍNH ==========
                                                                                     st.info("""
-                                                                                    👋 Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+                                                                                     Chào mừng bạn đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
                                                                                     📌 **Các tính năng nổi bật:**
                                                                                     - Phân tích tổn thất, báo cáo kỹ thuật
