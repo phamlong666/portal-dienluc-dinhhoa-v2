@@ -117,7 +117,7 @@ def load_data():
     return pd.DataFrame(columns=["Ngày", "Giờ", "Tên cuộc họp", "Nội dung", "File đính kèm"])
 
 def save_data(row):
-df = load_data()
+    df = load_data()
 if not df.empty:
     st.subheader("📚 Lịch sử cuộc họp")
     for idx, row in df.iterrows():
@@ -188,7 +188,7 @@ def create_pdf_report(row):
     return stream
 
 
-# --- HÀM NHẮC VIỆC ---
+    # --- HÀM NHẮC VIỆC ---
 def load_reminders():
     if Path(NHAC_VIEC_FILE).exists():
         with open(NHAC_VIEC_FILE, "r", encoding="utf-8") as f:
@@ -201,7 +201,7 @@ def save_reminder(reminder):
     with open(NHAC_VIEC_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-# --- GIAO DIỆN CHÍNH ---
+    # --- GIAO DIỆN CHÍNH ---
 st.markdown("<h1 style='color:#003399'>🚀 Trung tâm điều hành số - Điện lực Định Hóa</h1>", unsafe_allow_html=True)
 
 # --- FORM PHỤC VỤ HỌP ---
