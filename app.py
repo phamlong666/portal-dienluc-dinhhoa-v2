@@ -27,11 +27,11 @@ with col2:
 # ====== Sidebar ======
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 try:
-df = pd.read_csv(sheet_url)
-df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
-grouped = df.groupby('Nhóm chức năng')
-st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
-for group_name, group_data in grouped:
+    df = pd.read_csv(sheet_url)
+    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
+    grouped = df.groupby('Nhóm chức năng')
+    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    for group_name, group_data in grouped:
     with st.sidebar.expander(f"📂 {group_name}", expanded=False):
     for _, row in group_data.iterrows():
         st.markdown(f"""
