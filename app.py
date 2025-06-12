@@ -133,16 +133,25 @@ def create_word_report(row):
     stream.seek(0)
     return stream
 
+
 def create_pdf_report(row):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    text = f"Biên bản cuộc họp\n\nNgày: {row['Ngày']} {row['Giờ']}\nTên cuộc họp: {row['Tên cuộc họp']}\n\nNội dung:\n{row['Nội dung']}"
+    text = f"Biên bản cuộc họp
+
+Ngày: {row['Ngày']} {row['Giờ']}
+Tên cuộc họp: {row['Tên cuộc họp']}
+
+Nội dung:
+{row['Nội dung']}"
     pdf.multi_cell(0, 10, text)
     stream = BytesIO()
-    pdf.output(stream)
+    pdf_bytes = pdf.output(dest='S').encode('latin-1', 'replace')
+    stream.write(pdf_bytes)
     stream.seek(0)
     return stream
+
 
 # --- HÀM NHẮC VIỆC ---
 def load_reminders():
