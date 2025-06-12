@@ -1,10 +1,10 @@
+import streamlit as st
+st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
 import streamlit as st
 import pandas as pd
 from PIL import Image
 import datetime
-
-st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
 # ================== CUSTOM CSS ==================
 st.markdown("""
@@ -151,8 +151,6 @@ from io import BytesIO
 from fpdf import FPDF
 from docx import Document
 
-st.set_page_config(page_title="Trung tâm điều hành số - Phục vụ họp", layout="wide")
-
 CSV_FILE = "lich_su_cuoc_hop.csv"
 UPLOAD_FOLDER = "uploaded_files"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -259,3 +257,36 @@ with st.form("form_nhac"):
     submit_nhac = st.form_submit_button("📌 Tạo nhắc việc")
     if submit_nhac:
         st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {gio_nhac.strftime('%H:%M')} ngày {ngay_nhac.strftime('%d/%m/%Y')}")
+
+
+
+# === Hiển thị danh sách nhắc việc ===
+import json
+
+NHAC_VIEC_FILE = "nhac_viec.json"
+
+def load_reminders():
+    if Path(NHAC_VIEC_FILE).exists():
+        with open(NHAC_VIEC_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_reminder(reminder):
+    data = load_reminders()
+    data.append(reminder)
+    with open(NHAC_VIEC_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+if submit_nhac:
+    reminder = {
+        "Việc": viec,
+        "Ngày": ngay_nhac.strftime("%d/%m/%Y"),
+        "Giờ": gio_nhac.strftime("%H:%M")
+    }
+    save_reminder(reminder)
+
+reminders = load_reminders()
+if reminders:
+    st.markdown("### 📋 Danh sách nhắc việc đã tạo")
+    df_remind = pd.DataFrame(reminders)
+    st.dataframe(df_remind)
