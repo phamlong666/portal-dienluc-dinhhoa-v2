@@ -95,8 +95,18 @@ if "hop" in query:
 
     if os.path.exists("lich_su_cuoc_hop.csv"):
         lich_su = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
-        
-for i, row in lich_su.iterrows():
+
+    for i, row in lich_su.iterrows():
+        st.markdown(f"### 📅 {row['Ngày']} {row['Giờ']} – `{row['Tên cuộc họp']}`")
+        st.write(row['Nội dung'])
+        if row['Tệp đính kèm'] != '':
+            st.write('📎 Tệp đính kèm:', row['Tệp đính kèm'])
+        delete_nd = st.checkbox(f'Xoá nội dung dòng {i+1}', key=f'delnd_{i}')
+        delete_file = st.checkbox(f'Xoá file đính kèm dòng {i+1}', key=f'delfile_{i}')
+        if delete_nd:
+            row['Nội dung'] = ''
+        if delete_file:
+            row['Tệp đính kèm'] = ''
     # Giao diện hiển thị từng dòng lịch sử
     if delete_nd:
     if delete_file:
