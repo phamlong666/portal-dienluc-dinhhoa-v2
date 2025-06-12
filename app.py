@@ -118,7 +118,7 @@ with col[3]:
 with col[4]:
     st.markdown('<a href="https://www.dropbox.com/home/3.%20Bao%20cao/4.%20B%C3%A1o%20c%C3%A1o%20CMIS" target="_blank" class="main-button">📄 Báo cáo CMIS</a>', unsafe_allow_html=True)
 
-query = st.experimental_get_query_params()
+query = st.query_params
 if "hop" in query:
     st.header("🧾 Phục vụ họp – Ghi báo cáo và xuất file")
 
