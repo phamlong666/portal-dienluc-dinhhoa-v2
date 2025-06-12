@@ -105,11 +105,15 @@ if "hop" in query:
         delete_file = st.checkbox(f'Xoá file đính kèm dòng {i+1}', key=f'delfile_{i}')
         if delete_nd:
             row['Nội dung'] = ''
+            row['Nội dung'] = ''
         if delete_file:
             row['Tệp đính kèm'] = ''
+            row['Tệp đính kèm'] = ''
     # Giao diện hiển thị từng dòng lịch sử
-    if delete_nd:
-    if delete_file:
+        if delete_nd:
+            row['Nội dung'] = ''
+        if delete_file:
+            row['Tệp đính kèm'] = ''
         row['Tệp đính kèm'] = ''  # Xóa nội dung file đính kèm
 
             st.markdown(f"### 📅 {row['Ngày']} {row['Giờ']} – `{row['Tên cuộc họp']}`")
