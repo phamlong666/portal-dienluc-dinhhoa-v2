@@ -142,7 +142,7 @@ with col2:
             thoi_gian = st.time_input("Giờ cần nhắc")
             ngay_nhac = st.date_input("Ngày nhắc", datetime.date.today(), format="DD/MM/YYYY")
             submit_nhac = st.form_submit_button("🔔 Tạo nhắc việc")
-            if submit_nhac:
+if submit_nhac:
     reminder = {
         "Việc": viec,
         "Ngày": ngay_nhac.strftime("%d/%m/%Y"),
@@ -155,8 +155,6 @@ with col2:
         st.markdown("### 📋 Danh sách nhắc việc đã tạo")
         df_remind = pd.DataFrame(reminders)
         st.dataframe(df_remind)
-
-    reminders = load_reminders()
 st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} lúc {thoi_gian}")
     import streamlit as st
     import pandas as pd
@@ -274,12 +272,6 @@ st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} 
     }
     save_reminder(reminder)
     st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {reminder['Giờ']} ngày {reminder['Ngày']}")
-    reminders = load_reminders()
-    if reminders:
-        st.markdown("### 📋 Danh sách nhắc việc đã tạo")
-        df_remind = pd.DataFrame(reminders)
-        st.dataframe(df_remind)
-
     reminders = load_reminders()
 reminder = {
             "Việc": viec,
