@@ -189,15 +189,7 @@ with col2:
         return stream
 
 
-    with st.form("form_hop"):
-        ten = st.text_input("📌 Tên cuộc họp")
-        ngay = st.date_input("📅 Ngày họp", format="DD/MM/YYYY")
-        gio = st.time_input("⏰ Giờ họp", time(8, 0))
-        noidung = st.text_area("📝 Nội dung cuộc họp")
-        files = st.file_uploader("📎 Tải file đính kèm", accept_multiple_files=True)
-        submit = st.form_submit_button("💾 Lưu nội dung họp")
-
-    if submit:
+        if submit:
         filenames = []
         for f in files:
             save_path = os.path.join(UPLOAD_FOLDER, f.name)
