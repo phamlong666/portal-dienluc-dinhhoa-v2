@@ -151,6 +151,12 @@ with col2:
     save_reminder(reminder)
     st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {reminder['Giờ']} ngày {reminder['Ngày']}")
     reminders = load_reminders()
+    if reminders:
+        st.markdown("### 📋 Danh sách nhắc việc đã tạo")
+        df_remind = pd.DataFrame(reminders)
+        st.dataframe(df_remind)
+
+    reminders = load_reminders()
 st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} lúc {thoi_gian}")
     import streamlit as st
     import pandas as pd
@@ -268,6 +274,12 @@ st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} 
     }
     save_reminder(reminder)
     st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {reminder['Giờ']} ngày {reminder['Ngày']}")
+    reminders = load_reminders()
+    if reminders:
+        st.markdown("### 📋 Danh sách nhắc việc đã tạo")
+        df_remind = pd.DataFrame(reminders)
+        st.dataframe(df_remind)
+
     reminders = load_reminders()
 reminder = {
             "Việc": viec,
