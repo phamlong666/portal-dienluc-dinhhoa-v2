@@ -5,7 +5,8 @@ import datetime
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 # ================== CUSTOM CSS ==================
 st.markdown("""
-    <style>
+st.markdown("""
+<style>
         section[data-testid="stSidebar"] > div:first-child {
             max-height: 95vh;
             overflow-y: auto;
@@ -44,7 +45,8 @@ st.markdown("""
             transform: scale(1.05);
             box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
         }
-    </style>
+</style>
+""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 # ================== HEADER ==================
