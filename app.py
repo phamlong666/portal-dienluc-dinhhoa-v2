@@ -5,21 +5,32 @@ import datetime
 import os
 
 st.set_page_config(page_title="Trung tâm điều hành số", layout="wide")
-menu_options = ["Trang chính", "Phục vụ họp"]
-selected = st.sidebar.selectbox("Chọn chức năng", menu_options)
+if "page" not in st.session_state:
+    st.session_state["page"] = "main"
 
-if selected == "Trang chính":
+def show_main():
     st.title("🌐 Trung tâm điều hành số – Điện lực Định Hóa")
-    st.markdown("Chào mừng bạn đến với hệ thống điều hành số.")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.button("🧾 Phục vụ họp", use_container_width=True):
+            st.session_state["page"] = "phuc_vu_hop"
+    with col2:
+        st.link_button("📦 Bigdata_Terabox", "https://terabox.com")
+    with col3:
+        st.link_button("💬 ChatGPT công khai", "https://chat.openai.com")
+    with col4:
+        st.link_button("📄 Báo cáo CMIS", "https://dropbox.com")
 
-elif selected == "Phục vụ họp":
+def show_phuc_vu_hop():
     st.title("🧾 Phục vụ họp – Ghi báo cáo và xuất file")
+    if st.button("🔙 Quay về trang chính"):
+        st.session_state["page"] = "main"
+        st.rerun()
 
     ten = st.text_input("🔹 Tên cuộc họp")
     ngay = st.date_input("📅 Ngày họp", value=datetime.date.today())
     gio = st.time_input("🕐 Giờ họp", value=datetime.time(7, 30))
     nd = st.text_area("📝 Nội dung cuộc họp", height=250)
-
     uploaded_files = st.file_uploader("📎 Đính kèm tài liệu", accept_multiple_files=True)
 
     def luu_lich_su():
@@ -51,7 +62,6 @@ elif selected == "Phục vụ họp":
 
     st.markdown("---")
     st.subheader("📚 Lịch sử cuộc họp đã lưu")
-
     if os.path.exists("lich_su_cuoc_hop.csv"):
         df_old = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
         for _, row in df_old.iterrows():
@@ -61,3 +71,9 @@ elif selected == "Phục vụ họp":
                     st.markdown(f"📎 {f}")
     else:
         st.info("Chưa có lịch sử nào được lưu.")
+
+# Điều hướng giữa các trang
+if st.session_state["page"] == "main":
+    show_main()
+elif st.session_state["page"] == "phuc_vu_hop":
+    show_phuc_vu_hop()
