@@ -6,6 +6,7 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 # ================== CUSTOM CSS ==================
 st.markdown("""
 st.markdown("""
+st.markdown("""
 <style>
         section[data-testid="stSidebar"] > div:first-child {
             max-height: 95vh;
@@ -46,6 +47,7 @@ st.markdown("""
             box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
         }
 </style>
+""", unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 """, unsafe_allow_html=True)
