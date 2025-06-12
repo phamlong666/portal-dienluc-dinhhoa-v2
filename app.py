@@ -1,62 +1,64 @@
 
 import streamlit as st
+import pandas as pd
 import datetime
+import os
 
-# ====== Điều hướng giữa các giao diện ======
-tab = st.session_state.get("tab", "Trang chính")
+st.set_page_config(page_title="Trung tâm điều hành số", layout="wide")
+menu_options = ["Trang chính", "Phục vụ họp"]
+selected = st.sidebar.selectbox("Chọn chức năng", menu_options)
 
-if tab == "Trang chính":
-    st.set_page_config(page_title="Trung tâm điều hành số - Điện lực Định Hóa", layout="wide")
+if selected == "Trang chính":
     st.title("🌐 Trung tâm điều hành số – Điện lực Định Hóa")
+    st.markdown("Chào mừng bạn đến với hệ thống điều hành số.")
 
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        if st.button("🧾 Phục vụ họp", use_container_width=True):
-            st.session_state["tab"] = "Phục vụ họp"
-            st.rerun()
-    with col2:
-        st.link_button("📦 Dữ liệu lớn_Terabox", "https://terabox.com")
-    with col3:
-        st.link_button("💬 ChatGPT công khai", "https://chat.openai.com")
-    with col4:
-        st.link_button("📄 Báo cáo CMIS", "https://dropbox.com")
+elif selected == "Phục vụ họp":
+    st.title("🧾 Phục vụ họp – Ghi báo cáo và xuất file")
 
-elif tab == "Phục vụ họp":
-    st.header("🧾 Phục vụ họp – Ghi báo cáo và xuất file")
-    if st.button("🔙 Quay về trang chính"):
-        st.session_state["tab"] = "Trang chính"
-        st.rerun()
+    ten = st.text_input("🔹 Tên cuộc họp")
+    ngay = st.date_input("📅 Ngày họp", value=datetime.date.today())
+    gio = st.time_input("🕐 Giờ họp", value=datetime.time(7, 30))
+    nd = st.text_area("📝 Nội dung cuộc họp", height=250)
 
-    # --- Giao diện nhập cuộc họp ---
-    ten = st.text_input("Tên cuộc họp")
-    ngay = st.date_input("Ngày họp", value=datetime.date.today())
-    nd = st.text_area("Nội dung cuộc họp", height=300)
+    uploaded_files = st.file_uploader("📎 Đính kèm tài liệu", accept_multiple_files=True)
+
+    def luu_lich_su():
+        df = pd.DataFrame([{
+            "Tên cuộc họp": ten,
+            "Ngày": ngay.strftime("%d/%m/%Y"),
+            "Giờ": gio.strftime("%H:%M"),
+            "Nội dung": nd,
+            "Tệp đính kèm": ", ".join([f.name for f in uploaded_files]) if uploaded_files else ""
+        }])
+        if os.path.exists("lich_su_cuoc_hop.csv"):
+            df.to_csv("lich_su_cuoc_hop.csv", mode="a", index=False, header=False, encoding="utf-8-sig")
+        else:
+            df.to_csv("lich_su_cuoc_hop.csv", index=False, encoding="utf-8-sig")
 
     col1, col2, col3 = st.columns(3)
-
-    if "lich_su" not in st.session_state:
-        st.session_state["lich_su"] = []
-
-    def save_lich_su():
-        st.session_state["lich_su"].append(
-            {"ten": ten, "ngay": ngay.strftime("%d/%m/%Y"), "nd": nd}
-        )
-
     with col1:
         if st.button("📤 Tạo Word"):
-            st.success("Tạo Word – placeholder")
-            save_lich_su()
+            st.success("✅ Đã tạo Word (demo)")
+            luu_lich_su()
     with col2:
         if st.button("📽️ Tạo PowerPoint"):
-            st.success("Tạo PPT – placeholder")
-            save_lich_su()
+            st.success("✅ Đã tạo PowerPoint (demo)")
+            luu_lich_su()
     with col3:
         if st.button("📜 Lưu lịch sử"):
-            save_lich_su()
-            st.success("✅ Đã lưu")
+            luu_lich_su()
+            st.success("✅ Đã lưu vào file CSV")
 
     st.markdown("---")
     st.subheader("📚 Lịch sử cuộc họp đã lưu")
-    for cuoc_hop in st.session_state["lich_su"]:
-        st.markdown(f"📅 **{cuoc_hop['ngay']}** – `{cuoc_hop['ten']}`  \
-{cuoc_hop['nd']}")
+
+    if os.path.exists("lich_su_cuoc_hop.csv"):
+        df_old = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
+        for _, row in df_old.iterrows():
+            st.markdown(f"📅 **{row['Ngày']} {row['Giờ']}** – `{row['Tên cuộc họp']}`  
+{row['Nội dung']}")
+            if row["Tệp đính kèm"]:
+                for f in row["Tệp đính kèm"].split(", "):
+                    st.markdown(f"📎 {f}")
+    else:
+        st.info("Chưa có lịch sử nào được lưu.")
