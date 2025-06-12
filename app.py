@@ -171,7 +171,7 @@ def create_word_report(row):
     doc.add_paragraph(f"Ngày: {row['Ngày']} {row['Giờ']}")
     doc.add_paragraph(f"Tên cuộc họp: {row['Tên cuộc họp']}")
     doc.add_paragraph("Nội dung:")
-    doc.add_paragraph(row["Nội dung"])
+    doc.add_paragraph(str(row["Nội dung"]) if pd.notna(row["Nội dung"]) else "")
     stream = BytesIO()
     doc.save(stream)
     stream.seek(0)
@@ -232,8 +232,18 @@ if not df.empty:
                         elif file.lower().endswith('.pdf'):
                             st.markdown(f"[📄 Mở PDF]({file_path})")
                 with col3:
-                    with open(file_path, "rb") as f:
-                        st.download_button("⬇️ Tải", f.read(), file_name=file)
+                    
+                    with col3:
+                        with open(file_path, "rb") as f:
+                            st.download_button("⬇️ Tải", f.read(), file_name=file)
+                        if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
+                            os.remove(file_path)
+                            updated_files = [f for f in file_list if f != file]
+                            df.at[idx, "File đính kèm"] = ";".join(updated_files)
+                            df.to_csv(CSV_FILE, index=False)
+                            st.success(f"❌ Đã xóa: {file}")
+                            st.experimental_rerun()
+, file_name=file)
 
             col_a, col_b, col_c = st.columns(3)
             with col_a:
