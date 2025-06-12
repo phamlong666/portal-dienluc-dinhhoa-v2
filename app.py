@@ -130,6 +130,23 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
         noi_dung = st.text_area("Nội dung chính", height=180)
         ket_luan = st.text_area("Kết luận / Giao việc", height=180)
         submit = st.form_submit_button("💾 Lưu và tạo báo cáo")
+    # --- Tải file đính kèm ---
+    uploaded_files = st.file_uploader("📎 Tải lên tài liệu đính kèm (Word, PDF, Excel, ảnh...)", accept_multiple_files=True)
+
+    if uploaded_files:
+        for f in uploaded_files:
+            st.write(f"📄 {f.name}")
+            if f.type.startswith("image/"):
+                st.image(f, width=300)
+            elif f.type == "application/pdf":
+                st.download_button(f"📥 Tải {f.name}", f, file_name=f.name)
+            else:
+                st.download_button(f"📥 Tải {f.name}", f, file_name=f.name)
+
+    # --- Nút xóa cuộc họp (xóa nội dung đang nhập) ---
+    if st.button("🗑️ Xóa nội dung cuộc họp đang nhập"):
+        st.experimental_rerun()
+
 
     if submit:
         import os
@@ -138,7 +155,7 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
 
         doc = Document()
         doc.add_heading(f'BÁO CÁO CUỘC HỌP', 0)
-        doc.add_paragraph(f"📅 Thời gian: {ngay.strftime('%d/%m/%Y')} lúc {gio.strftime('%H:%M')}")
+        doc.add_paragraph(f"📅 Thời gian: {ngay.strftime('%d/%m/%y')} lúc {gio.strftime('%H:%M')}")
         doc.add_paragraph(f"📍 Địa điểm: {dia_diem}")
         doc.add_paragraph(f"👤 Người chủ trì: {nguoi_chu_tri}")
         doc.add_paragraph(f"📝 Người ghi: {nguoi_ghi}")
