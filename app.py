@@ -57,7 +57,7 @@ elif selected == "Phục vụ họp":
         for _, row in df_old.iterrows():
             st.markdown(f"📅 **{row['Ngày']} {row['Giờ']}** – `{row['Tên cuộc họp']}`  
 {row['Nội dung']}")
-            if row["Tệp đính kèm"]:
+            if pd.notna(row["Tệp đính kèm"]):
                 for f in row["Tệp đính kèm"].split(", "):
                     st.markdown(f"📎 {f}")
     else:
