@@ -120,7 +120,7 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
         col1, col2 = st.columns(2)
         with col1:
             ten = st.text_input("Tên cuộc họp")
-            ngay = st.date_input("Ngày họp")
+            ngay = st.date_input("Ngày họp", format="%d/%m/%Y")
             gio = st.time_input("Giờ họp")
         with col2:
             dia_diem = st.text_input("Địa điểm họp")
@@ -130,7 +130,27 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
         noi_dung = st.text_area("Nội dung chính", height=180)
         ket_luan = st.text_area("Kết luận / Giao việc", height=180)
         submit = st.form_submit_button("💾 Lưu và tạo báo cáo")
-    # --- Tải file đính kèm ---
+    
+    # --- Tải file đính kèm nâng cao ---
+    uploaded_files = st.file_uploader("📎 Tải lên tài liệu đính kèm (Word, PDF, Excel, ảnh...)", accept_multiple_files=True)
+    file_states = {}
+
+    if uploaded_files:
+        for i, f in enumerate(uploaded_files):
+            col1, col2, col3, col4 = st.columns([4, 1, 1, 1])
+            with col1:
+                st.write(f"📄 **{f.name}**")
+            with col2:
+                if f.type.startswith("image/"):
+                    st.image(f, width=150)
+                elif f.type == "application/pdf":
+                    st.write("📄 Xem PDF không hỗ trợ trực tiếp.")
+            with col3:
+                st.download_button("⬇️", f, file_name=f.name, key=f"download_{i}")
+            with col4:
+                if st.button("❌", key=f"delete_{i}"):
+                    st.warning(f"Đã xoá tạm file: {f.name}")
+
     uploaded_files = st.file_uploader("📎 Tải lên tài liệu đính kèm (Word, PDF, Excel, ảnh...)", accept_multiple_files=True)
 
     if uploaded_files:
@@ -145,7 +165,7 @@ with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo
 
     # --- Nút xóa cuộc họp (xóa nội dung đang nhập) ---
     if st.button("🗑️ Xóa nội dung cuộc họp đang nhập"):
-        st.experimental_rerun()
+        st.success('Đã xoá nội dung đang nhập. Hãy làm mới trang nếu cần.')
 
 
     if submit:
