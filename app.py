@@ -17,10 +17,10 @@ with col1:
         st.warning("Không tìm thấy logo.")
 st.warning("⚠️ Không tìm thấy logo.")
 with col2:
-st.markdown("""
-<h1 style='color:#003399; font-size:42px; margin-top:18px;'>
-Trung tâm điều hành số - phần mềm Điện lực Định Hóa
-</h1>
+    st.markdown("""
+    <h1 style='color:#003399; font-size:42px; margin-bottom:0;'>Trung tâm điều hành số</h1>
+    <h2 style='color:#0099CC; font-size:20px; margin-top:0;'>Điện lực Định Hóa – EVNNPC</h2>
+    """, unsafe_allow_html=True)
 <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
 """, unsafe_allow_html=True)
 
