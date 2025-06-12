@@ -211,11 +211,7 @@ if not df.empty:
                         st.write(f"📎 {file}")
                     with col2:
                         if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):
-                            if file.lower().endswith(('.png','.jpg','.jpeg')):
-                                st.image(file_path)
-                            elif file.lower().endswith('.pdf'):
-                                st.markdown(f"[📄 Mở PDF]({file_path})")
-                    with col3:
+                                                with col3:
                         with open(file_path, "rb") as f:
                             st.download_button("⬇️ Tải", f.read(), file_name=file)
                         if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
