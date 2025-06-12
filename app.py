@@ -55,8 +55,7 @@ elif selected == "Phục vụ họp":
     if os.path.exists("lich_su_cuoc_hop.csv"):
         df_old = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
         for _, row in df_old.iterrows():
-            st.markdown(f"📅 **{row['Ngày']} {row['Giờ']}** – `{row['Tên cuộc họp']}`  
-{row['Nội dung']}")
+            st.markdown(f"📅 **{row['Ngày']} {row['Giờ']}** – `{row['Tên cuộc họp']}`  <br>{row['Nội dung']}", unsafe_allow_html=True)
             if pd.notna(row["Tệp đính kèm"]):
                 for f in row["Tệp đính kèm"].split(", "):
                     st.markdown(f"📎 {f}")
