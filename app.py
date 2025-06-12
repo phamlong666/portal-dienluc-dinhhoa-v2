@@ -1,8 +1,8 @@
 
 import streamlit as st
 import pandas as pd
-import os
 from PIL import Image
+import os
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
@@ -75,19 +75,14 @@ sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY2
 try:
     df = pd.read_csv(sheet_url)
     df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
-
     grouped = df.groupby('Nhóm chức năng')
-
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
-
     for group_name, group_data in grouped:
         with st.sidebar.expander(f"📂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
-                label = row['Tên ứng dụng']
-                link = row['Liên kết']
                 st.markdown(f"""
-                    <a href="{link}" target="_blank" class="sidebar-button">
-                        🚀 {label}
+                    <a href="{row['Liên kết']}" target="_blank" class="sidebar-button">
+                        🚀 {row['Tên ứng dụng']}
                     </a>
                 """, unsafe_allow_html=True)
 except Exception as e:
@@ -106,7 +101,7 @@ st.info("""
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Thêm nút Phục vụ họp + chức năng phía sau
+# Giao diện chính
 col = st.columns(5)
 with col[0]:
     st.markdown('<a href="?hop=1" class="main-button">🧾 Phục vụ họp</a>', unsafe_allow_html=True)
@@ -154,15 +149,14 @@ if "hop" in query:
     with col3:
         if st.button("📜 Lưu lịch sử"):
             luu()
-            st.success("✅ Đã lưu vào file CSV")
+            st.success("✅ Lịch sử cuộc họp đã được lưu")
 
     st.markdown("---")
-    
-st.subheader("📚 Lịch sử cuộc họp đã lưu")
-if st.button("🗑️ Xoá toàn bộ lịch sử"):
-    os.remove("lich_su_cuoc_hop.csv")
-    st.warning("🗑️ Đã xoá toàn bộ lịch sử cuộc họp")
-    st.stop()
+    st.subheader("📚 Lịch sử cuộc họp đã được lưu")
+    if st.button("🗑️ Xoá toàn bộ lịch sử"):
+        os.remove("lich_su_cuoc_hop.csv")
+        st.warning("🗑️ Đã xoá toàn bộ lịch sử cuộc họp")
+        st.stop()
 
     if os.path.exists("lich_su_cuoc_hop.csv"):
         lich_su = pd.read_csv("lich_su_cuoc_hop.csv", encoding="utf-8-sig")
@@ -170,13 +164,11 @@ if st.button("🗑️ Xoá toàn bộ lịch sử"):
             st.markdown(f"📅 **{row['Ngày']} {row['Giờ']}** – `{row['Tên cuộc họp']}`  <br>{row['Nội dung']}", unsafe_allow_html=True)
             if pd.notna(row["Tệp đính kèm"]):
                 for f in row["Tệp đính kèm"].split(", "):
-                    
-if f.lower().endswith(('.png', '.jpg', '.jpeg')):
-    st.image(f, width=300)
-elif f.lower().endswith('.pdf'):
-    st.markdown(f'<iframe src="{f}" width="100%" height="400px"></iframe>', unsafe_allow_html=True)
-else:
-    st.markdown(f"📎 {f}")
-
+                    if f.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        st.image(f, width=300)
+                    elif f.lower().endswith('.pdf'):
+                        st.markdown(f'<iframe src="{f}" width="100%" height="400px"></iframe>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"📎 {f}")
     else:
         st.info("Chưa có lịch sử nào.")
