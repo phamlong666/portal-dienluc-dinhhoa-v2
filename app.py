@@ -186,7 +186,9 @@ with st.expander("📑 Phục vụ họp", expanded=False):
             })
             st.success("✅ Đã lưu nội dung cuộc họp")
 
-    df = load_data()
+    
+# Outside expander: Hiển thị lịch sử
+df = load_data()
     if not df.empty:
         st.subheader("📚 Lịch sử cuộc họp")
         for idx, row in df.iterrows():
