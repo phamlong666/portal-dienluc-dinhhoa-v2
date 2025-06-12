@@ -126,8 +126,8 @@ if not df.empty:
             st.markdown(row['Nội dung'])
             file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
             for file in file_list:
-                file_path = os.path.join(UPLOAD_FOLDER, file)
-                col1, col2, col3 = st.columns([4,1,1])
+            file_path = os.path.join(UPLOAD_FOLDER, file)
+            col1, col2, col3 = st.columns([4,1,1])
                 with col1:
                     st.write(f"📎 {file}")
                 with col2:
@@ -242,8 +242,8 @@ if not df.empty:
             st.markdown(row['Nội dung'])
             file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []
             for file in file_list:
-                file_path = os.path.join(UPLOAD_FOLDER, file)
-                col1, col2, col3 = st.columns([4,1,1])
+            file_path = os.path.join(UPLOAD_FOLDER, file)
+            col1, col2, col3 = st.columns([4,1,1])
                 with col1:
                     st.write(f"📎 {file}")
                 with col2:
