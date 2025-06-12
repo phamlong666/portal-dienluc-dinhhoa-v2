@@ -21,9 +21,9 @@ with col2:
     <h1 style='color:#003399; font-size:42px; margin-bottom:0;'>Trung tâm điều hành số</h1>
     <h2 style='color:#0099CC; font-size:20px; margin-top:0;'>Điện lực Định Hóa – EVNNPC</h2>
     """, unsafe_allow_html=True)
+    st.markdown("""
     <p style='font-size:13px; color:gray;'>Bản quyền (c) 2025 by Phạm Hồng Long & Brown Eyes</p>
-""", unsafe_allow_html=True)
-
+    """, unsafe_allow_html=True)
 # ====== Sidebar ======
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 try:
