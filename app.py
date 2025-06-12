@@ -5,46 +5,46 @@ import datetime
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 # ================== CUSTOM CSS ==================
 st.markdown("""
-<style>
-section[data-testid="stSidebar"] > div:first-child {
-max-height: 95vh;
-overflow-y: auto;
-}
-.sidebar-button {
-display: block;
-background-color: #42A5F5;
-color: white;
-padding: 10px;
-border-radius: 8px;
-margin: 5px 0;
-font-weight: bold;
-box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-transition: all 0.2s ease-in-out;
-text-decoration: none;
-}
-.sidebar-button:hover {
-background-color: #1E88E5 !important;
-transform: translateY(-2px);
-box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
-}
-.main-button {
-display: inline-block;
-background-color: #FFCC80;
-color: white;
-text-align: center;
-padding: 22px 30px;
-border-radius: 14px;
-font-weight: bold;
-text-decoration: none;
-margin: 14px;
-transition: 0.3s;
-font-size: 24px;
-}
-.main-button:hover {
-transform: scale(1.05);
-box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
-}
-</style>
+    <style>
+        section[data-testid="stSidebar"] > div:first-child {
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .sidebar-button {
+            display: block;
+            background-color: #42A5F5;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-weight: bold;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+        }
+        .sidebar-button:hover {
+            background-color: #1E88E5 !important;
+            transform: translateY(-2px);
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+        }
+        .main-button {
+            display: inline-block;
+            background-color: #FFCC80;
+            color: white;
+            text-align: center;
+            padding: 22px 30px;
+            border-radius: 14px;
+            font-weight: bold;
+            text-decoration: none;
+            margin: 14px;
+            transition: 0.3s;
+            font-size: 24px;
+        }
+        .main-button:hover {
+            transform: scale(1.05);
+            box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
+        }
+    </style>
 """, unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 # ================== HEADER ==================
