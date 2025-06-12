@@ -36,7 +36,7 @@ for group_name, group_data in grouped:
     for _, row in group_data.iterrows():
         st.markdown(f"""
         <a href="{row['Liên kết']}" target="_blank" style="display:block; padding:8px; background-color:#66a3ff; color:white; border-radius:6px; margin:4px 0; text-decoration:none;">
-        🚀 {row['Tên ứng dụng']}
+        [App] {row['Tên ứng dụng']}
         </a>
         """, unsafe_allow_html=True)
         except Exception as e:
