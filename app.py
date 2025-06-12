@@ -111,3 +111,45 @@ st.markdown("""
     <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
+
+
+
+# ================== PHỤC VỤ HỌP ==================
+with st.expander("📝 Phục vụ họp – Ghi nội dung và xuất báo cáo", expanded=False):
+    with st.form("form_phuc_vu_hop"):
+        col1, col2 = st.columns(2)
+        with col1:
+            ten = st.text_input("Tên cuộc họp")
+            ngay = st.date_input("Ngày họp")
+            gio = st.time_input("Giờ họp")
+        with col2:
+            dia_diem = st.text_input("Địa điểm họp")
+            nguoi_chu_tri = st.text_input("Người chủ trì")
+            nguoi_ghi = st.text_input("Người ghi")
+
+        noi_dung = st.text_area("Nội dung chính", height=180)
+        ket_luan = st.text_area("Kết luận / Giao việc", height=180)
+        submit = st.form_submit_button("💾 Lưu và tạo báo cáo")
+
+    if submit:
+        import os
+        from docx import Document
+        from datetime import datetime
+
+        doc = Document()
+        doc.add_heading(f'BÁO CÁO CUỘC HỌP', 0)
+        doc.add_paragraph(f"📅 Thời gian: {ngay.strftime('%d/%m/%Y')} lúc {gio.strftime('%H:%M')}")
+        doc.add_paragraph(f"📍 Địa điểm: {dia_diem}")
+        doc.add_paragraph(f"👤 Người chủ trì: {nguoi_chu_tri}")
+        doc.add_paragraph(f"📝 Người ghi: {nguoi_ghi}")
+        doc.add_paragraph(f"🔖 Tên cuộc họp: {ten}")
+        doc.add_heading("1. Nội dung chính", level=1)
+        doc.add_paragraph(noi_dung)
+        doc.add_heading("2. Kết luận & Giao việc", level=1)
+        doc.add_paragraph(ket_luan)
+
+        file_name = f"bao_cao_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+        doc.save(file_name)
+        with open(file_name, "rb") as f:
+            st.success("📚 Lịch sử cuộc họp đã được lưu")
+            st.download_button("📥 Tải file Word", f, file_name, mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
