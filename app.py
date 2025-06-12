@@ -146,7 +146,7 @@ def create_pdf_report(row):
     Nội dung:
     {row['Nội dung']}"
     """
-        pdf.multi_cell(0, 10, text)
+    pdf.multi_cell(0, 10, text)
     stream = BytesIO()
     pdf_bytes = pdf.output(dest='S').encode('latin-1', 'replace')
     stream.write(pdf_bytes)
