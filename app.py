@@ -100,7 +100,7 @@ for i, row in lich_su.iterrows():
     # Giao diện hiển thị từng dòng lịch sử
     if delete_nd:
     if delete_file:
-    pass
+        row['Tệp đính kèm'] = ''  # Xóa nội dung file đính kèm
 
             st.markdown(f"### 📅 {row['Ngày']} {row['Giờ']} – `{row['Tên cuộc họp']}`")
             st.markdown(f"{row['Nội dung']}")
