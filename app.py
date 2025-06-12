@@ -10,9 +10,11 @@ st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện 
 # ====== Logo và tiêu đề ======
 col1, col2 = st.columns([1, 10])
 with col1:
-try:
-logo = Image.open("assets/logo_hinh_tron_hoan_chinh.png")
-st.image(logo, width=70)
+    try:
+        logo = Image.open("assets/logo_hinh_tron_hoan_thien.png")
+        st.image(logo, width=70)
+    except:
+        pass
 except:
 st.warning("⚠️ Không tìm thấy logo.")
 with col2:
