@@ -62,6 +62,10 @@ for group_name, group_data in grouped:
                 for file in files:
                     file_path = os.path.join(upload_dir, file.name)
                     with open(file_path, "wb") as f:
+    try:
+        lich_su = pd.read_csv('lich_su_cuoc_hop.csv')
+    except:
+        lich_su = pd.DataFrame(columns=['Ngày','Giờ','Tên cuộc họp','Nội dung','Tệp đính kèm'])
                     f.write(file.read())
                     saved_files.append(file_path)
                     df = pd.DataFrame([{
@@ -120,14 +124,12 @@ for group_name, group_data in grouped:
                                                                 st.markdown(f"{row['Nội dung']}")
                                                                 if pd.notna(row["Tệp đính kèm"]):
                                                                     for f in row["Tệp đính kèm"].split(", "):
-                                                                        try:
                                                                         if f.lower().endswith(('.png', '.jpg', '.jpeg')):
                                                                             st.image(f, width=300)
                                                                         elif f.lower().endswith('.pdf'):
                                                                             st.markdown(f'<iframe src="{f}" width="100%" height="400px"></iframe>', unsafe_allow_html=True)
                                                                         else:
                                                                             st.markdown(f"📎 [{os.path.basename(f)}]({f})")
-                                                                            except:
                                                                             st.warning(f"Không thể hiển thị file: {f}")
                                                                             if st.button(f"🗑️ Xoá dòng {i+1}", key=f"xoa_{i}"):
                                                                                 lich_su = lich_su.drop(i)
