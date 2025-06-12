@@ -156,13 +156,13 @@ if submit_nhac:
         df_remind = pd.DataFrame(reminders)
         st.dataframe(df_remind)
 st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} lúc {thoi_gian}")
-    import streamlit as st
-    import pandas as pd
-    import os
-    from datetime import datetime, date, time
-    from io import BytesIO
-    from fpdf import FPDF
-    from docx import Document
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime, date, time
+from io import BytesIO
+from fpdf import FPDF
+from docx import Document
 
     CSV_FILE = "lich_su_cuoc_hop.csv"
     UPLOAD_FOLDER = "uploaded_files"
@@ -248,7 +248,7 @@ st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} 
 
 
     # === Hiển thị danh sách nhắc việc ===
-    import json
+import json
 
     NHAC_VIEC_FILE = "nhac_viec.json"
 
