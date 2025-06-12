@@ -242,16 +242,7 @@ if not df.empty:
                             updated_files = [f for f in file_list if f != file]
                             df.at[idx, "File đính kèm"] = ";".join(updated_files)
                             df.to_csv(CSV_FILE, index=False)
-                            st.success(f"❌ Đã xóa: {file}")
                             st.experimental_rerun()
-                        if st.button("🗑 Xóa tài liệu", key=f"xoa_{idx}_{file}"):
-                            os.remove(file_path)
-                            updated_files = [f for f in file_list if f != file]
-                            df.at[idx, "File đính kèm"] = ";".join(updated_files)
-                            df.to_csv(CSV_FILE, index=False)
-                            st.success(f"❌ Đã xóa: {file}")
-                            st.experimental_rerun()
-, file_name=file)
 
             col_a, col_b, col_c = st.columns(3)
             with col_a:
