@@ -109,14 +109,14 @@ st.markdown("""file_upload = st.file_uploader("📎 Tải file đính kèm", acc
 st.markdown("""submit = st.form_submit_button("💾 Lưu nội dung họp")""", unsafe_allow_html=True)
         if submit:
 st.markdown("st.success('✅ Lịch sử cuộc họp đã được lưu')")
-st.markdown("""st.write(f"📅 {ngay.strftime('%d/%m/%Y')} {gio} – {ten}")""", unsafe_allow_html=True)
+st.markdown(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
             st.write(noi_dung)
             if file_upload:
                 for f in file_upload:
                     if f.name.lower().endswith(('.png', '.jpg', '.jpeg')):
                         st.image(f, width=250)
                     else:
-st.markdown("""st.write(f"📎 Tệp: {f.name}")""", unsafe_allow_html=True)
+st.markdown(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
 with col2:
 st.markdown("viec = st.text_input('Công việc cần nhắc')")
 st.markdown("thoi_gian = st.time_input('Giờ cần nhắc')")
@@ -194,7 +194,7 @@ st.markdown("file_list = row['File đính kèm'].split(';') if row['File đính 
                 file_path = os.path.join(UPLOAD_FOLDER, file)
                 col1, col2, col3 = st.columns([4,1,1])
                 with col1:
-st.markdown("""st.write(f"📎 {file}")""", unsafe_allow_html=True)
+st.markdown(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
                 with col2:
 st.markdown("""if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):""", unsafe_allow_html=True)
                         if file.lower().endswith(('.png','.jpg','.jpeg')):
@@ -260,7 +260,7 @@ st.markdown("""st.markdown("#### 📁 File đã chọn:")""", unsafe_allow_html=
         for f in st.session_state["temp_files"]:
             col1, col2 = st.columns([6, 1])
             with col1:
-st.markdown("""st.write(f"📎 {f.name}")""", unsafe_allow_html=True)
+st.markdown(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
             with col2:
 st.markdown("if not st.checkbox(f'Xoá', key=f'remove_{f.name}'):")
                     updated_files.append(f)
@@ -308,7 +308,7 @@ st.markdown("file_list = str(row.get('Tệp', '')).split(';') if pd.notna(row.ge
             for file in file_list:
                 file_path = os.path.join(UPLOAD_FOLDER, file)
                 if os.path.exists(file_path):
-st.markdown("""st.write(f"📎 {file}")""", unsafe_allow_html=True)
+st.markdown(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
                     if file.lower().endswith((".jpg", ".jpeg", ".png")):
                         st.image(Image.open(file_path), caption=file, use_column_width=True)
                     with open(file_path, "rb") as f:
@@ -372,7 +372,7 @@ st.markdown("""st.markdown("#### 📋 Việc cần nhắc")""", unsafe_allow_htm
     for idx, row in df.iterrows():
         col1, col2 = st.columns([6,1])
         with col1:
-st.markdown("""st.write(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")""", unsafe_allow_html=True)
+st.markdown(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
         with col2:
 st.markdown("if st.button('❌', key=f'xoa_{idx}'):")
                 df.drop(index=idx, inplace=True)
