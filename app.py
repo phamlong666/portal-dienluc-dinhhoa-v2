@@ -60,7 +60,7 @@ st.markdown("""
 <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
         Trung tâm điều hành số - phần mềm Điện lực Định Hóa
         </h1>
-        <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
+        <p style='font-size:13px; color:gray;'>Bản quyền &copy; 2025 by Phạm Hồng Long & Brown Eyes</p>
 """
 """
 # ================== MENU TỪ GOOGLE SHEET ==================
