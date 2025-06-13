@@ -255,7 +255,7 @@ st.markdown("""uploaded_files = st.file_uploader("📎 Đính kèm file", accept
                 if f.name not in [f.name for f in st.session_state["temp_files"]]:
                     st.session_state["temp_files"].append(f)
 
-st.markdown("""st.markdown("#### 📁 File đã chọn:")""", unsafe_allow_html=True)
+st.markdown("#### 📁 File đã chọn:")
         updated_files = []
         for f in st.session_state["temp_files"]:
             col1, col2 = st.columns([6, 1])
@@ -294,7 +294,7 @@ st.markdown("'Tệp': ';'.join(file_names)")
 st.markdown("st.success('✅ Đã lưu cuộc họp!')")
 
 if os.path.exists(DATA_FILE):
-st.markdown("""st.markdown("#### 📚 Danh sách cuộc họp đã lưu")""", unsafe_allow_html=True)
+st.markdown("#### 📚 Danh sách cuộc họp đã lưu")
     df = pd.read_csv(DATA_FILE)
 
 st.markdown("# Đảm bảo chỉ số tuần tự không bị lỗi sau khi xóa")
@@ -302,7 +302,7 @@ st.markdown("# Đảm bảo chỉ số tuần tự không bị lỗi sau khi xó
 
     for idx, row in df.iterrows():
 st.markdown("""with st.expander(f"📌 {row.get('Tên cuộc họp', '')} – {row.get('Ngày', '')} {row.get('Giờ', '')}", expanded=False):""", unsafe_allow_html=True)
-st.markdown("""st.write("📝", row.get("Nội dung", "Không có nội dung"))""", unsafe_allow_html=True)
+st.markdown("📝", row.get("Nội dung", "Không có nội dung"))
 
 st.markdown("file_list = str(row.get('Tệp', '')).split(';') if pd.notna(row.get('Tệp', '')) else []")
             for file in file_list:
@@ -367,7 +367,7 @@ st.markdown("st.success('✅ Đã tạo nhắc việc!')")
 
 st.markdown("# Hiển thị danh sách nhắc việc")
 if os.path.exists(REMINDERS_FILE):
-st.markdown("""st.markdown("#### 📋 Việc cần nhắc")""", unsafe_allow_html=True)
+st.markdown("#### 📋 Việc cần nhắc")
     df = pd.read_csv(REMINDERS_FILE)
     for idx, row in df.iterrows():
         col1, col2 = st.columns([6,1])
