@@ -5,3 +5,5 @@ matplotlib
 python-docx
 python-pptx
 fpdf
+supabase
+python-dotenv
