@@ -131,10 +131,11 @@ def save_data(row):
 def create_word_report(row):
     doc = Document()
     doc.add_heading("Biên bản cuộc họp", 0)
-    doc.add_paragraph(f"Ngày: {row['Ngày']} {row['Giờ']}")
-    doc.add_paragraph(f"Tên cuộc họp: {row['Tên cuộc họp']}")
+    doc.add_paragraph(f"Ngày: {row.get('Ngày', '')} {row.get('Giờ', '')}")
+    doc.add_paragraph(f"Tên cuộc họp: {row.get('Tên cuộc họp', '')}")
     doc.add_paragraph("Nội dung:")
-    doc.add_paragraph(row["Nội dung"])
+    noidung = str(row.get("Nội dung", "") or "")
+    doc.add_paragraph(noidung)
     stream = BytesIO()
     doc.save(stream)
     stream.seek(0)
@@ -150,71 +151,71 @@ def create_pdf_report(row):
     stream.seek(0)
     return stream
 
-st.title("📑 Phục vụ họp – Ghi nội dung và xuất báo cáo")
-
-with st.form("form_hop"):
-    ten = st.text_input("📌 Tên cuộc họp")
-    ngay = st.date_input("📅 Ngày họp", format="DD/MM/YYYY")
-    gio = st.time_input("⏰ Giờ họp", time(8, 0))
-    noidung = st.text_area("📝 Nội dung cuộc họp")
-    files = st.file_uploader("📎 Tải file đính kèm", accept_multiple_files=True)
-    submit = st.form_submit_button("💾 Lưu nội dung họp")
-
-if submit:
-    filenames = []
-    for f in files:
-        save_path = os.path.join(UPLOAD_FOLDER, f.name)
-        with open(save_path, "wb") as out_file:
-            out_file.write(f.read())
-        filenames.append(f.name)
-    save_data({
-        "Ngày": ngay.strftime("%d/%m/%Y"),
-        "Giờ": gio.strftime("%H:%M"),
-        "Tên cuộc họp": ten,
-        "Nội dung": noidung,
-        "File đính kèm": ";".join(filenames)
-    })
-    st.success("✅ Đã lưu nội dung cuộc họp")
-
-df = load_data()
-if not df.empty:
-    st.subheader("📚 Lịch sử cuộc họp đã được lưu")
-    for idx, row in df.iterrows():
-        file_list = row["File đính kèm"].split(";") if row["File đính kèm"] else []
-        for file in file_list:
-            file_path = os.path.join(UPLOAD_FOLDER, file)
-            col1, col2, col3 = st.columns([4,1,1])
-            with col1:
-                st.write(f"📎 {file}")
-            with col2:
-                if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):
-                    if file.lower().endswith(('.png','.jpg','.jpeg')):
-                        st.image(file_path)
-                    elif file.lower().endswith('.pdf'):
-                        with open(file_path, "rb") as f:
-                            st.download_button("⬇️ Tải", f.read(), file_name=file)
-            with col3:
-                with open(file_path, "rb") as f:
-                    st.download_button("⬇️ Tải", f.read(), file_name=file)
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            file = create_word_report(row)
-            st.download_button("📤 Xuất Word", file, file_name=f"{row['Tên cuộc họp']}.docx")
-        with col_b:
-            file = create_pdf_report(row)
-            st.download_button("📤 Xuất PDF", file, file_name=f"{row['Tên cuộc họp']}.pdf")
-        with col_c:
-            if st.button("🗑️ Xóa cuộc họp", key=f"delete_{idx}"):
-                df.drop(index=idx, inplace=True)
-                df.to_csv(CSV_FILE, index=False)
-                st.experimental_rerun()
-
-# --- Nhắc việc ---
-st.subheader("⏰ Nhắc việc")
-with st.form("form_nhac"):
-    viec = st.text_input("🔔 Việc cần nhắc")
-    ngay_nhac = st.date_input("📅 Ngày nhắc", date.today())
-    gio_nhac = st.time_input("⏰ Giờ nhắc", time(7,30))
-    submit_nhac = st.form_submit_button("📌 Tạo nhắc việc")
-    if submit_nhac:
+with st.expander("📑 Phục vụ họp – Ghi nội dung và xuất báo cáo", expanded=False):
+    
+    with st.form("form_hop"):
+        ten = st.text_input("📌 Tên cuộc họp")
+        ngay = st.date_input("📅 Ngày họp", format="DD/MM/YYYY")
+        gio = st.time_input("⏰ Giờ họp", time(8, 0))
+        noidung = st.text_area("📝 Nội dung cuộc họp")
+        files = st.file_uploader("📎 Tải file đính kèm", accept_multiple_files=True)
+        submit = st.form_submit_button("💾 Lưu nội dung họp")
+    
+    if submit:
+        filenames = []
+        for f in files:
+            save_path = os.path.join(UPLOAD_FOLDER, f.name)
+            with open(save_path, "wb") as out_file:
+                out_file.write(f.read())
+            filenames.append(f.name)
+        save_data({
+            "Ngày": ngay.strftime("%d/%m/%Y"),
+            "Giờ": gio.strftime("%H:%M"),
+            "Tên cuộc họp": ten,
+            "Nội dung": noidung,
+            "File đính kèm": ";".join(filenames)
+        })
+        st.success("✅ Đã lưu nội dung cuộc họp")
+    
+    df = load_data()
+    if not df.empty:
+        st.subheader("📚 Lịch sử cuộc họp đã được lưu")
+        for idx, row in df.iterrows():
+            file_list = row["File đính kèm"].split(";") if row["File đính kèm"] else []
+            for file in file_list:
+                file_path = os.path.join(UPLOAD_FOLDER, file)
+                col1, col2, col3 = st.columns([4,1,1])
+                with col1:
+                    st.write(f"📎 {file}")
+                with col2:
+                    if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):
+                        if file.lower().endswith(('.png','.jpg','.jpeg')):
+                            st.image(file_path)
+                        elif file.lower().endswith('.pdf'):
+                            with open(file_path, "rb") as f:
+                                st.download_button("⬇️ Tải", f.read(), file_name=file)
+                with col3:
+                    with open(file_path, "rb") as f:
+                        st.download_button("⬇️ Tải", f.read(), file_name=file)
+            col_a, col_b, col_c = st.columns(3)
+            with col_a:
+                file = create_word_report(row)
+                st.download_button("📤 Xuất Word", file, file_name=f"{row['Tên cuộc họp']}.docx")
+            with col_b:
+                file = create_pdf_report(row)
+                st.download_button("📤 Xuất PDF", file, file_name=f"{row['Tên cuộc họp']}.pdf")
+            with col_c:
+                if st.button("🗑️ Xóa cuộc họp", key=f"delete_{idx}"):
+                    df.drop(index=idx, inplace=True)
+                    df.to_csv(CSV_FILE, index=False)
+                    st.experimental_rerun()
+    
+    # --- Nhắc việc ---
+with st.expander("⏰ Nhắc việc", expanded=False):
+    with st.form("form_nhac"):
+        viec = st.text_input("🔔 Việc cần nhắc")
+        ngay_nhac = st.date_input("📅 Ngày nhắc", date.today())
+        gio_nhac = st.time_input("⏰ Giờ nhắc", time(7,30))
+        submit_nhac = st.form_submit_button("📌 Tạo nhắc việc")
+        if submit_nhac:
         st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {gio_nhac.strftime('%H:%M')} ngày {ngay_nhac.strftime('%d/%m/%Y')}")
