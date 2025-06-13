@@ -212,7 +212,13 @@ with st.expander("📑 Phục vụ họp – Ghi nội dung và xuất báo cáo
     
     # --- Nhắc việc ---
 with st.expander("⏰ Nhắc việc", expanded=False):
-    with st.form("form_nhac"):
+        with st.form("form_nhac"):
+        viec = st.text_input("🔔 Việc cần nhắc")
+        ngay_nhac = st.date_input("📅 Ngày nhắc", date.today())
+        gio_nhac = st.time_input("⏰ Giờ nhắc", time(7,30))
+        submit_nhac = st.form_submit_button("📌 Tạo nhắc việc")
+        if submit_nhac:
+            st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {gio_nhac.strftime('%H:%M')} ngày {ngay_nhac.strftime('%d/%m/%Y')}")
         viec = st.text_input("🔔 Việc cần nhắc")
         ngay_nhac = st.date_input("📅 Ngày nhắc", date.today())
         gio_nhac = st.time_input("⏰ Giờ nhắc", time(7,30))
