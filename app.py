@@ -253,12 +253,8 @@ if os.path.exists(DATA_FILE):
                         st.download_button("⬇️ Tải xuống", f.read(), file_name=file, key=f"dl_{idx}_{file}")
 
             # Form xác nhận xoá cuộc họp
-                        with st.form(f"form_xoa_{idx}"):
-                ten_raw = row.get("Tên cuộc họp", "").replace(" ", "_")
-                ngay_raw = row.get("Ngày", "")
-                gio_raw = row.get("Giờ", "")
-                unique_key = f"xoa_{idx}_{ten_raw}_{ngay_raw}_{gio_raw}"
-                confirm_delete = st.checkbox("🗑️ Chọn xoá cuộc họp này", key=unique_key)
+            with st.form(f"form_xoa_{idx}"):
+                confirm_delete = st.checkbox("🗑️ Chọn xoá cuộc họp này", key=f"xoa_{idx}")
                 submit_delete = st.form_submit_button("❗ Xác nhận xoá")
                 if confirm_delete and submit_delete:
                     df.drop(index=idx, inplace=True)
