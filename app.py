@@ -46,7 +46,6 @@ st.markdown("""
         }
     </style>
 """
-    unsafe_allow_html=True)
 # ================== HEADER ==================
 col1, col2 = st.columns([1, 10])
 with col1:
@@ -62,9 +61,7 @@ with col2:
         </h1>
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
 """
-    unsafe_allow_html=True)
 """
-    unsafe_allow_html=True)
 # ================== MENU TỪ GOOGLE SHEET ==================
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 try:
@@ -81,7 +78,6 @@ try:
                         🚀 {label}
                     </a>
 """
-    unsafe_allow_html=True)
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
 # ================== GIỚI THIỆU ==================
@@ -101,7 +97,6 @@ st.info("""
     <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """
-    unsafe_allow_html=True)
 # ================== FORM PHỤC VỤ HỌP & NHẮC VIỆC ==================
 col1, col2 = st.columns(2)
 with col1:
