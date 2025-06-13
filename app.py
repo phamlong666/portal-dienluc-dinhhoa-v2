@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from PIL import Image
 import datetime
-st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+st.markdown("""st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")""", unsafe_allow_html=True)
 # ================== CUSTOM CSS ==================
 st.markdown("""
     <style>
@@ -53,7 +53,7 @@ with col1:
         logo = Image.open("assets/logo_hinh_tron_hoan_chinh.png")
         st.image(logo, width=70)
     except:
-        st.warning("⚠️ Không tìm thấy logo.")
+st.markdown("""st.warning("⚠️ Không tìm thấy logo.")""", unsafe_allow_html=True)
 with col2:
         st.markdown("""
 st.markdown("""
@@ -63,12 +63,12 @@ st.markdown("""
         <p style='font-size:13px; color:gray;'>Bản quyền &copy; 2025 by Phạm Hồng Long & Brown Eyes</p>
 """
 """
-# ================== MENU TỪ GOOGLE SHEET ==================
+st.markdown("""# ================== MENU TỪ GOOGLE SHEET ==================""", unsafe_allow_html=True)
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 try:
     df = pd.read_csv(sheet_url)
-    df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
-    grouped = df.groupby('Nhóm chức năng')
+st.markdown("""df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()""", unsafe_allow_html=True)
+st.markdown("""grouped = df.groupby('Nhóm chức năng')""", unsafe_allow_html=True)
 st.markdown("""st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)""", unsafe_allow_html=True)
     for group_name, group_data in grouped:
 st.markdown("""with st.sidebar.expander(f"📂 {group_name}", expanded=False):""", unsafe_allow_html=True)
@@ -90,7 +90,7 @@ st.markdown("""📌 **Các tính năng nổi bật:**""", unsafe_allow_html=True
 - Truy cập hệ thống nhanh chóng qua Sidebar
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
 """)
-# ================== NÚT CHỨC NĂNG CHÍNH ==================
+st.markdown("""# ================== NÚT CHỨC NĂNG CHÍNH ==================""", unsafe_allow_html=True)
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
 st.markdown("""<a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>""", unsafe_allow_html=True)
 st.markdown("""<a href="https://chat.openai.com/c/2d132e26-7b53-46b3-bbd3-8a5229e77973" target="_blank" class="main-button">🤖 AI. PHẠM HỒNG LONG</a>""", unsafe_allow_html=True)
@@ -98,13 +98,13 @@ st.markdown("""<a href="https://www.youtube.com" target="_blank" class="main-but
 st.markdown("""<a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>""", unsafe_allow_html=True)
 </div>
 """
-# ================== FORM PHỤC VỤ HỌP & NHẮC VIỆC ==================
+st.markdown("""# ================== FORM PHỤC VỤ HỌP & NHẮC VIỆC ==================""", unsafe_allow_html=True)
 col1, col2 = st.columns(2)
 with col1:
-        ten = st.text_input("Tên cuộc họp")
-        ngay = st.date_input("Ngày họp", format="DD/MM/YYYY")
-        gio = st.time_input("Giờ họp")
-        noi_dung = st.text_area("Nội dung cuộc họp")
+st.markdown("""ten = st.text_input("Tên cuộc họp")""", unsafe_allow_html=True)
+st.markdown("""ngay = st.date_input("Ngày họp", format="DD/MM/YYYY")""", unsafe_allow_html=True)
+st.markdown("""gio = st.time_input("Giờ họp")""", unsafe_allow_html=True)
+st.markdown("""noi_dung = st.text_area("Nội dung cuộc họp")""", unsafe_allow_html=True)
 st.markdown("""file_upload = st.file_uploader("📎 Tải file đính kèm", accept_multiple_files=True)""", unsafe_allow_html=True)
 st.markdown("""submit = st.form_submit_button("💾 Lưu nội dung họp")""", unsafe_allow_html=True)
         if submit:
