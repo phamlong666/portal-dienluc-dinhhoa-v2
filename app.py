@@ -254,7 +254,8 @@ if os.path.exists(DATA_FILE):
 
             # Form xác nhận xoá cuộc họp
             with st.form(f"form_xoa_{idx}"):
-                confirm_delete = st.checkbox("🗑️ Chọn xoá cuộc họp này", key=f"xoa_{idx}")
+                unique_key = f"xoa_{idx}_{row.get('Tên cuộc họp', '').replace(' ', '_')}_{row.get('Ngày', '')}_{row.get('Giờ', '')}"
+        confirm_delete = st.checkbox("🗑️ Chọn xoá cuộc họp này", key=unique_key)
                 submit_delete = st.form_submit_button("❗ Xác nhận xoá")
                 if confirm_delete and submit_delete:
                     df.drop(index=idx, inplace=True)
