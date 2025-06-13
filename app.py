@@ -58,9 +58,9 @@ with col2:
         st.markdown("""
 st.markdown("""
 <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
-        Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+st.markdown("Trung tâm điều hành số - phần mềm Điện lực Định Hóa")
         </h1>
-        <p style='font-size:13px; color:gray;'>Bản quyền &copy; 2025 by Phạm Hồng Long & Brown Eyes</p>
+st.markdown("<p style='font-size:13px; color:gray;'>Bản quyền &copy; 2025 by Phạm Hồng Long & Brown Eyes</p>")
 """
 """
 st.markdown("""# ================== MENU TỪ GOOGLE SHEET ==================""", unsafe_allow_html=True)
@@ -73,22 +73,22 @@ st.markdown("""st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục h�
     for group_name, group_data in grouped:
 st.markdown("""with st.sidebar.expander(f"📂 {group_name}", expanded=False):""", unsafe_allow_html=True)
             for _, row in group_data.iterrows():
-                label = row['Tên ứng dụng']
-                link = row['Liên kết']
+st.markdown("label = row['Tên ứng dụng']")
+st.markdown("link = row['Liên kết']")
                     <a href="{link}" target="_blank" class="sidebar-button">
 st.markdown("""🚀 {label}""", unsafe_allow_html=True)
                     </a>
 """
 except Exception as e:
 st.markdown("""st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")""", unsafe_allow_html=True)
-# ================== GIỚI THIỆU ==================
+st.markdown("# ================== GIỚI THIỆU ==================")
 st.info("""
 st.markdown("""👋 Chào mừng anh Long đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa""", unsafe_allow_html=True)
 st.markdown("""📌 **Các tính năng nổi bật:**""", unsafe_allow_html=True)
-- Phân tích thất bại, báo cáo kỹ thuật
-- Lưu trữ và truy xuất lịch sử GPT
-- Truy cập hệ thống nhanh chóng qua Sidebar
-✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
+st.markdown("- Phân tích thất bại, báo cáo kỹ thuật")
+st.markdown("- Lưu trữ và truy xuất lịch sử GPT")
+st.markdown("- Truy cập hệ thống nhanh chóng qua Sidebar")
+st.markdown("✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!")
 """)
 st.markdown("""# ================== NÚT CHỨC NĂNG CHÍNH ==================""", unsafe_allow_html=True)
 <div style="display: flex; justify-content: center; flex-wrap: wrap;">
@@ -108,7 +108,7 @@ st.markdown("""noi_dung = st.text_area("Nội dung cuộc họp")""", unsafe_all
 st.markdown("""file_upload = st.file_uploader("📎 Tải file đính kèm", accept_multiple_files=True)""", unsafe_allow_html=True)
 st.markdown("""submit = st.form_submit_button("💾 Lưu nội dung họp")""", unsafe_allow_html=True)
         if submit:
-            st.success("✅ Lịch sử cuộc họp đã được lưu")
+st.markdown("st.success('✅ Lịch sử cuộc họp đã được lưu')")
 st.markdown("""st.write(f"📅 {ngay.strftime('%d/%m/%Y')} {gio} – {ten}")""", unsafe_allow_html=True)
             st.write(noi_dung)
             if file_upload:
@@ -118,12 +118,12 @@ st.markdown("""st.write(f"📅 {ngay.strftime('%d/%m/%Y')} {gio} – {ten}")""",
                     else:
 st.markdown("""st.write(f"📎 Tệp: {f.name}")""", unsafe_allow_html=True)
 with col2:
-        viec = st.text_input("Công việc cần nhắc")
-        thoi_gian = st.time_input("Giờ cần nhắc")
-        ngay_nhac = st.date_input("Ngày nhắc", datetime.date.today(), format="DD/MM/YYYY")
+st.markdown("viec = st.text_input('Công việc cần nhắc')")
+st.markdown("thoi_gian = st.time_input('Giờ cần nhắc')")
+st.markdown("ngay_nhac = st.date_input('Ngày nhắc', datetime.date.today(), format='DD/MM/YYYY')")
 st.markdown("""submit_nhac = st.form_submit_button("🔔 Tạo nhắc việc")""", unsafe_allow_html=True)
         if submit_nhac:
-            st.success(f"✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} lúc {thoi_gian}")
+st.markdown("st.success(f'✅ Đã tạo nhắc việc vào {ngay_nhac.strftime('%d/%m/%Y')} lúc {thoi_gian}')")
 import streamlit as st
 import pandas as pd
 import os
@@ -131,25 +131,25 @@ from datetime import datetime, date, time
 from io import BytesIO
 from fpdf import FPDF
 from docx import Document
-st.set_page_config(page_title="Trung tâm điều hành số - Phục vụ họp", layout="wide")
+st.markdown("st.set_page_config(page_title='Trung tâm điều hành số - Phục vụ họp', layout='wide')")
 CSV_FILE = "lich_su_cuoc_hop.csv"
 UPLOAD_FOLDER = "uploaded_files"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 def load_data():
     if os.path.exists(CSV_FILE):
         return pd.read_csv(CSV_FILE)
-    return pd.DataFrame(columns=["Ngày", "Giờ", "Tên cuộc họp", "Nội dung", "File đính kèm"])
+st.markdown("return pd.DataFrame(columns=['Ngày', 'Giờ', 'Tên cuộc họp', 'Nội dung', 'File đính kèm'])")
 def save_data(row):
     df = load_data()
     df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
     df.to_csv(CSV_FILE, index=False)
 def create_word_report(row):
     doc = Document()
-    doc.add_heading("Biên bản cuộc họp", 0)
-    doc.add_paragraph(f"Ngày: {row['Ngày']} {row['Giờ']}")
-    doc.add_paragraph(f"Tên cuộc họp: {row['Tên cuộc họp']}")
-    doc.add_paragraph("Nội dung:")
-    doc.add_paragraph(row["Nội dung"])
+st.markdown("doc.add_heading('Biên bản cuộc họp', 0)")
+st.markdown("doc.add_paragraph(f'Ngày: {row['Ngày']} {row['Giờ']}')")
+st.markdown("doc.add_paragraph(f'Tên cuộc họp: {row['Tên cuộc họp']}')")
+st.markdown("doc.add_paragraph('Nội dung:')")
+st.markdown("doc.add_paragraph(row['Nội dung'])")
     stream = BytesIO()
     doc.save(stream)
     stream.seek(0)
@@ -158,7 +158,7 @@ def create_pdf_report(row):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, f"Biên bản cuộc họp\n\nNgày: {row['Ngày']} {row['Giờ']}\nTên cuộc họp: {row['Tên cuộc họp']}\n\nNội dung:\n{row['Nội dung']}")
+st.markdown("pdf.multi_cell(0, 10, f'Biên bản cuộc họp\n\nNgày: {row['Ngày']} {row['Giờ']}\nTên cuộc họp: {row['Tên cuộc họp']}\n\nNội dung:\n{row['Nội dung']}')")
     stream = BytesIO()
     pdf.output(stream)
     stream.seek(0)
@@ -166,7 +166,7 @@ def create_pdf_report(row):
 with st.form("form_hop"):
 st.markdown("""ten = st.text_input("📌 Tên cuộc họp")""", unsafe_allow_html=True)
 st.markdown("""ngay = st.date_input("📅 Ngày họp", format="DD/MM/YYYY")""", unsafe_allow_html=True)
-    gio = st.time_input("⏰ Giờ họp", time(8, 0))
+st.markdown("gio = st.time_input('⏰ Giờ họp', time(8, 0))")
 st.markdown("""noidung = st.text_area("📝 Nội dung cuộc họp")""", unsafe_allow_html=True)
 st.markdown("""files = st.file_uploader("📎 Tải file đính kèm", accept_multiple_files=True)""", unsafe_allow_html=True)
 st.markdown("""submit = st.form_submit_button("💾 Lưu nội dung họp")""", unsafe_allow_html=True)
@@ -178,18 +178,18 @@ if submit:
             out_file.write(f.read())
         filenames.append(f.name)
     save_data({
-        "Ngày": ngay.strftime("%d/%m/%Y"),
-        "Giờ": gio.strftime("%H:%M"),
-        "Tên cuộc họp": ten,
-        "Nội dung": noidung,
-        "File đính kèm": ";".join(filenames)
+st.markdown("'Ngày': ngay.strftime('%d/%m/%Y'),")
+st.markdown("'Giờ': gio.strftime('%H:%M'),")
+st.markdown("'Tên cuộc họp': ten,")
+st.markdown("'Nội dung': noidung,")
+st.markdown("'File đính kèm': ';'.join(filenames)")
     })
-    st.success("✅ Đã lưu nội dung cuộc họp")
+st.markdown("st.success('✅ Đã lưu nội dung cuộc họp')")
 df = load_data()
 if not df.empty:
 st.markdown("""st.subheader("📚 Lịch sử cuộc họp đã được lưu")""", unsafe_allow_html=True)
     for idx, row in df.iterrows():
-            file_list = row["File đính kèm"].split(";") if row["File đính kèm"] else []
+st.markdown("file_list = row['File đính kèm'].split(';') if row['File đính kèm'] else []")
             for file in file_list:
                 file_path = os.path.join(UPLOAD_FOLDER, file)
                 col1, col2, col3 = st.columns([4,1,1])
@@ -202,7 +202,7 @@ st.markdown("""if st.button("👁️ Xem", key=f"xem_{idx}_{file}"):""", unsafe_
                         elif file.lower().endswith('.pdf'):
                 with col3:
                     with open(file_path, "rb") as f:
-                        st.download_button("⬇️ Tải", f.read(), file_name=file)
+st.markdown("st.download_button('⬇️ Tải', f.read(), file_name=file)")
             col_a, col_b, col_c = st.columns(3)
             with col_a:
                 file = create_word_report(row)
@@ -214,14 +214,14 @@ st.markdown("""st.download_button("📤 Xuất PDF", file, file_name=f"{row['Tê
 st.markdown("""if st.button("🗑️ Xóa cuộc họp", key=f"delete_{idx}"):""", unsafe_allow_html=True)
                     df.to_csv(CSV_FILE, index=False)
                     st.experimental_rerun()
-# --- Nhắc việc ---
+st.markdown("# --- Nhắc việc ---")
 with st.form("form_nhac"):
 st.markdown("""viec = st.text_input("🔔 Việc cần nhắc")""", unsafe_allow_html=True)
 st.markdown("""ngay_nhac = st.date_input("📅 Ngày nhắc", date.today())""", unsafe_allow_html=True)
-    gio_nhac = st.time_input("⏰ Giờ nhắc", time(7,30))
+st.markdown("gio_nhac = st.time_input('⏰ Giờ nhắc', time(7,30))")
 st.markdown("""submit_nhac = st.form_submit_button("📌 Tạo nhắc việc")""", unsafe_allow_html=True)
     if submit_nhac:
-        st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {gio_nhac.strftime('%H:%M')} ngày {ngay_nhac.strftime('%d/%m/%Y')}")
+st.markdown("st.success(f'✅ Đã tạo nhắc việc: {viec} lúc {gio_nhac.strftime('%H:%M')} ngày {ngay_nhac.strftime('%d/%m/%Y')}')")
 """, unsafe_allow_html=True)
 
 
@@ -242,11 +242,11 @@ st.markdown("""st.title("📑 Phục vụ họp")""", unsafe_allow_html=True)
 if "temp_files" not in st.session_state:
     st.session_state["temp_files"] = []
 
-with st.expander("➕ Thêm cuộc họp mới / Xem lại", expanded=False):
+st.markdown("with st.expander('➕ Thêm cuộc họp mới / Xem lại', expanded=False):")
     with st.form("form_hop"):
 st.markdown("""ten = st.text_input("📌 Tên cuộc họp")""", unsafe_allow_html=True)
 st.markdown("""ngay = st.date_input("📅 Ngày họp")""", unsafe_allow_html=True)
-        gio = st.time_input("⏰ Giờ họp", time(8, 0))
+st.markdown("gio = st.time_input('⏰ Giờ họp', time(8, 0))")
 st.markdown("""noidung = st.text_area("📝 Nội dung")""", unsafe_allow_html=True)
 st.markdown("""uploaded_files = st.file_uploader("📎 Đính kèm file", accept_multiple_files=True)""", unsafe_allow_html=True)
 
@@ -262,7 +262,7 @@ st.markdown("""st.markdown("#### 📁 File đã chọn:")""", unsafe_allow_html=
             with col1:
 st.markdown("""st.write(f"📎 {f.name}")""", unsafe_allow_html=True)
             with col2:
-                if not st.checkbox(f"Xoá", key=f"remove_{f.name}"):
+st.markdown("if not st.checkbox(f'Xoá', key=f'remove_{f.name}'):")
                     updated_files.append(f)
         st.session_state["temp_files"] = updated_files
 
@@ -277,11 +277,11 @@ st.markdown("""submit = st.form_submit_button("💾 Lưu cuộc họp")""", unsa
             file_names.append(f.name)
 
         new_row = {
-            "Ngày": ngay.strftime("%d/%m/%y"),
-            "Giờ": gio.strftime("%H:%M"),
-            "Tên cuộc họp": ten,
-            "Nội dung": noidung,
-            "Tệp": ";".join(file_names)
+st.markdown("'Ngày': ngay.strftime('%d/%m/%y'),")
+st.markdown("'Giờ': gio.strftime('%H:%M'),")
+st.markdown("'Tên cuộc họp': ten,")
+st.markdown("'Nội dung': noidung,")
+st.markdown("'Tệp': ';'.join(file_names)")
         }
 
         if os.path.exists(DATA_FILE):
@@ -291,20 +291,20 @@ st.markdown("""submit = st.form_submit_button("💾 Lưu cuộc họp")""", unsa
             df = pd.DataFrame([new_row])
         df.to_csv(DATA_FILE, index=False)
         st.session_state["temp_files"] = []
-        st.success("✅ Đã lưu cuộc họp!")
+st.markdown("st.success('✅ Đã lưu cuộc họp!')")
 
 if os.path.exists(DATA_FILE):
 st.markdown("""st.markdown("#### 📚 Danh sách cuộc họp đã lưu")""", unsafe_allow_html=True)
     df = pd.read_csv(DATA_FILE)
 
-    # Đảm bảo chỉ số tuần tự không bị lỗi sau khi xóa
+st.markdown("# Đảm bảo chỉ số tuần tự không bị lỗi sau khi xóa")
     df.reset_index(drop=True, inplace=True)
 
     for idx, row in df.iterrows():
 st.markdown("""with st.expander(f"📌 {row.get('Tên cuộc họp', '')} – {row.get('Ngày', '')} {row.get('Giờ', '')}", expanded=False):""", unsafe_allow_html=True)
 st.markdown("""st.write("📝", row.get("Nội dung", "Không có nội dung"))""", unsafe_allow_html=True)
 
-            file_list = str(row.get("Tệp", "")).split(";") if pd.notna(row.get("Tệp", "")) else []
+st.markdown("file_list = str(row.get('Tệp', '')).split(';') if pd.notna(row.get('Tệp', '')) else []")
             for file in file_list:
                 file_path = os.path.join(UPLOAD_FOLDER, file)
                 if os.path.exists(file_path):
@@ -312,12 +312,12 @@ st.markdown("""st.write(f"📎 {file}")""", unsafe_allow_html=True)
                     if file.lower().endswith((".jpg", ".jpeg", ".png")):
                         st.image(Image.open(file_path), caption=file, use_column_width=True)
                     with open(file_path, "rb") as f:
-                        st.download_button("⬇️ Tải xuống", f.read(), file_name=file, key=f"dl_{idx}_{file}")
+st.markdown("st.download_button('⬇️ Tải xuống', f.read(), file_name=file, key=f'dl_{idx}_{file}')")
 
-            # Form xác nhận xoá cuộc họp
+st.markdown("# Form xác nhận xoá cuộc họp")
             with st.form(f"form_xoa_{idx}"):
 st.markdown("""confirm_delete = st.checkbox("🗑️ Chọn xoá cuộc họp này", key=f"xoa_{idx}")""", unsafe_allow_html=True)
-                submit_delete = st.form_submit_button("❗ Xác nhận xoá")
+st.markdown("submit_delete = st.form_submit_button('❗ Xác nhận xoá')")
                 if confirm_delete and submit_delete:
                     df.drop(index=idx, inplace=True)
                     df.reset_index(drop=True, inplace=True)
@@ -334,27 +334,27 @@ from datetime import date, time
 REMINDERS_FILE = "nhac_viec.csv"
 EMAIL_MACC_DINH = "phamlong666@gmail.com"
 
-st.title("⏰ Nhắc việc")
+st.markdown("st.title('⏰ Nhắc việc')")
 
-# Tạo mới danh sách nhắc việc
-if st.button("🆕 Tạo mới danh sách nhắc việc"):
-    df = pd.DataFrame(columns=["Việc", "Ngày", "Giờ", "Email"])
+st.markdown("# Tạo mới danh sách nhắc việc")
+st.markdown("if st.button('🆕 Tạo mới danh sách nhắc việc'):")
+st.markdown("df = pd.DataFrame(columns=['Việc', 'Ngày', 'Giờ', 'Email'])")
     df.to_csv(REMINDERS_FILE, index=False)
-    st.success("✅ Đã khởi tạo mới danh sách nhắc việc.")
+st.markdown("st.success('✅ Đã khởi tạo mới danh sách nhắc việc.')")
 
-with st.expander("➕ Thêm việc cần nhắc", expanded=False):
+st.markdown("with st.expander('➕ Thêm việc cần nhắc', expanded=False):")
     with st.form("form_nhac"):
 st.markdown("""viec = st.text_input("🔔 Việc cần nhắc")""", unsafe_allow_html=True)
 st.markdown("""ngay = st.date_input("📅 Ngày nhắc", date.today())""", unsafe_allow_html=True)
-        gio = st.time_input("⏰ Giờ nhắc", time(7, 30))
+st.markdown("gio = st.time_input('⏰ Giờ nhắc', time(7, 30))")
 st.markdown("""email = st.text_input("📧 Gửi tới", value=EMAIL_MACC_DINH)""", unsafe_allow_html=True)
 st.markdown("""submit = st.form_submit_button("📌 Tạo nhắc việc")""", unsafe_allow_html=True)
 
     if submit:
         new_row = {
-            "Việc": viec,
-            "Ngày": ngay.strftime("%d/%m/%y"),
-            "Giờ": gio.strftime("%H:%M"),
+st.markdown("'Việc': viec,")
+st.markdown("'Ngày': ngay.strftime('%d/%m/%y'),")
+st.markdown("'Giờ': gio.strftime('%H:%M'),")
             "Email": email
         }
         if os.path.exists(REMINDERS_FILE):
@@ -363,9 +363,9 @@ st.markdown("""submit = st.form_submit_button("📌 Tạo nhắc việc")""", un
         else:
             df = pd.DataFrame([new_row])
         df.to_csv(REMINDERS_FILE, index=False)
-        st.success("✅ Đã tạo nhắc việc!")
+st.markdown("st.success('✅ Đã tạo nhắc việc!')")
 
-# Hiển thị danh sách nhắc việc
+st.markdown("# Hiển thị danh sách nhắc việc")
 if os.path.exists(REMINDERS_FILE):
 st.markdown("""st.markdown("#### 📋 Việc cần nhắc")""", unsafe_allow_html=True)
     df = pd.read_csv(REMINDERS_FILE)
@@ -374,7 +374,7 @@ st.markdown("""st.markdown("#### 📋 Việc cần nhắc")""", unsafe_allow_htm
         with col1:
 st.markdown("""st.write(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")""", unsafe_allow_html=True)
         with col2:
-            if st.button("❌", key=f"xoa_{idx}"):
+st.markdown("if st.button('❌', key=f'xoa_{idx}'):")
                 df.drop(index=idx, inplace=True)
                 df.to_csv(REMINDERS_FILE, index=False)
                 st.experimental_rerun()
