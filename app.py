@@ -56,6 +56,7 @@ with col1:
         st.warning("⚠️ Không tìm thấy logo.")
 with col2:
         st.markdown("""
+st.markdown("""
 <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
         Trung tâm điều hành số - phần mềm Điện lực Định Hóa
         </h1>
@@ -221,6 +222,8 @@ with st.form("form_nhac"):
     submit_nhac = st.form_submit_button("📌 Tạo nhắc việc")
     if submit_nhac:
         st.success(f"✅ Đã tạo nhắc việc: {viec} lúc {gio_nhac.strftime('%H:%M')} ngày {ngay_nhac.strftime('%d/%m/%Y')}")
+""", unsafe_allow_html=True)
+
 
 
 import streamlit as st
