@@ -12,7 +12,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 st.title("📑 Phục vụ họp")
 
-# Dùng session state để giữ danh sách file đính kèm tạm thời
 if "temp_files" not in st.session_state:
     st.session_state["temp_files"] = []
 
@@ -24,17 +23,15 @@ with st.expander("➕ Thêm cuộc họp mới / Xem lại", expanded=False):
         noidung = st.text_area("📝 Nội dung")
         uploaded_files = st.file_uploader("📎 Đính kèm file", accept_multiple_files=True)
 
-        # Gộp vào session_state nếu có file mới
         if uploaded_files:
             for f in uploaded_files:
                 if f.name not in [f.name for f in st.session_state["temp_files"]]:
                     st.session_state["temp_files"].append(f)
 
-        # Hiển thị file đã tải và có nút xoá
         st.markdown("#### 📁 File đã chọn:")
         updated_files = []
         for f in st.session_state["temp_files"]:
-            col1, col2 = st.columns([6,1])
+            col1, col2 = st.columns([6, 1])
             with col1:
                 st.write(f"📎 {f.name}")
             with col2:
@@ -69,14 +66,18 @@ with st.expander("➕ Thêm cuộc họp mới / Xem lại", expanded=False):
         st.session_state["temp_files"] = []
         st.success("✅ Đã lưu cuộc họp!")
 
-# Hiển thị danh sách cuộc họp
 if os.path.exists(DATA_FILE):
     st.markdown("#### 📚 Danh sách cuộc họp đã lưu")
     df = pd.read_csv(DATA_FILE)
+
+    # Đảm bảo chỉ số tuần tự không bị lỗi sau khi xóa
+    df.reset_index(drop=True, inplace=True)
+
     for idx, row in df.iterrows():
-        with st.expander(f"📌 {row['Tên cuộc họp']} – {row['Ngày']} {row['Giờ']}", expanded=False):
-            st.write("📝", row["Nội dung"])
-            file_list = row["Tệp"].split(";") if row["Tệp"] else []
+        with st.expander(f"📌 {row.get('Tên cuộc họp', '')} – {row.get('Ngày', '')} {row.get('Giờ', '')}", expanded=False):
+            st.write("📝", row.get("Nội dung", "Không có nội dung"))
+
+            file_list = str(row.get("Tệp", "")).split(";") if pd.notna(row.get("Tệp", "")) else []
             for file in file_list:
                 file_path = os.path.join(UPLOAD_FOLDER, file)
                 if os.path.exists(file_path):
@@ -85,9 +86,14 @@ if os.path.exists(DATA_FILE):
                         st.image(Image.open(file_path), caption=file, use_column_width=True)
                     with open(file_path, "rb") as f:
                         st.download_button("⬇️ Tải xuống", f.read(), file_name=file, key=f"dl_{idx}_{file}")
-            with st.form(f"delete_form_{idx}"):
-                delete = st.form_submit_button("🗑️ Xoá cuộc họp này")
-                if delete:
+
+            # Form xác nhận xoá cuộc họp
+            with st.form(f"form_xoa_{idx}"):
+                confirm_delete = st.checkbox("🗑️ Chọn xoá cuộc họp này", key=f"xoa_{idx}")
+                submit_delete = st.form_submit_button("❗ Xác nhận xoá")
+                if confirm_delete and submit_delete:
                     df.drop(index=idx, inplace=True)
+                    df.reset_index(drop=True, inplace=True)
                     df.to_csv(DATA_FILE, index=False)
+                    st.success("🗑️ Đã xoá cuộc họp.")
                     st.experimental_rerun()
