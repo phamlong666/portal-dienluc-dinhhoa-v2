@@ -46,6 +46,7 @@ st.markdown("""
         }
 </style>
 """, unsafe_allow_html=True)
+st.markdown(markdown_content[-1], unsafe_allow_html=True)
 """, unsafe_allow_html=True)
 # ================== HEADER ==================
 col1, col2 = st.columns([1, 10])
