@@ -7,3 +7,7 @@ python-pptx
 fpdf
 supabase
 python-dotenv
+folium
+streamlit-folium
+openpyxl
+numpy
