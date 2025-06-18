@@ -55,9 +55,9 @@ if kmz_file is not None:
         json.dump(marker_locations, f)
 
 # ==============================
-# 2. BẢNG NHẬP THỦ CÔNG CÁC VỤ SỰ CỐ GẦN ĐÂY
+# 2. BẢNG NHẬP THỦ CÔNG CÁC VỤ SỰ CỐ LỊCH SỬ
 # ==============================
-st.subheader("📝 Nhập thủ công các vụ sự cố gần nhất")
+st.subheader("📚 Nhập các vụ sự cố lịch sử")
 
 if "suco_data" not in st.session_state:
     st.session_state.suco_data = []
@@ -85,18 +85,15 @@ with st.form("suco_form"):
         })
         st.success("✔️ Đã lưu vụ sự cố!")
 
-# Hiển thị bảng đã lưu và cho phép sửa/xóa
 if st.session_state.suco_data:
     st.write("### 📋 Danh sách sự cố đã nhập")
     df_suco = pd.DataFrame(st.session_state.suco_data)
     edited_df = st.data_editor(df_suco, num_rows="dynamic", use_container_width=True)
 
-    # Cập nhật lại dữ liệu nếu sửa
     if st.button("Cập nhật dữ liệu đã sửa"):
         st.session_state.suco_data = edited_df.to_dict(orient="records")
         st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
 
-    # Cho phép xuất Excel
     def convert_df(df):
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -111,38 +108,40 @@ if st.session_state.suco_data:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-    # Tự động lưu file tạm để nhập lại khi cập nhật
     df_suco.to_excel("du_lieu_su_co.xlsx", index=False)
 
 # ==============================
-# 3. PHÂN TÍCH DÒNG SỰ CỐ VÀ DỰ BÁO VỊ TRÍ GẦN NHẤT
+# 3. NHẬP DÒNG SỰ CỐ MỚI ĐỂ DỰ BÁO VỊ TRÍ
 # ==============================
-st.subheader("🔍 Dự báo vị trí sự cố gần nhất theo dòng")
+st.subheader("🔍 Nhập dòng sự cố mới để dự báo vị trí")
 
-if marker_locations and st.session_state.suco_data:
-    last_event = st.session_state.suco_data[-1]  # dùng sự cố mới nhất
-    try:
-        dong_raw = last_event["Dòng sự cố"]
-        values = [float(s.strip()) for s in dong_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('A','').replace(',',' ').split() if s.strip().replace('.', '', 1).isdigit()]
+if marker_locations:
+    dong_input = st.text_input("🔌 Nhập dòng sự cố (ví dụ: Ia=1032; Ib=928; Ic=112; Io=400):")
 
-        if len(values) >= 3:
-            tong_dong = sum(values[:3])
-            min_dist = float('inf')
-            predicted_marker = None
-            for name, (lat, lon) in marker_locations.items():
-                approx_score = abs(hash(name) % 1000 - tong_dong)
-                if approx_score < min_dist:
-                    min_dist = approx_score
-                    predicted_marker = (name, lat, lon)
+    if dong_input:
+        try:
+            dong_raw = dong_input.replace(';', ' ').replace(',', ' ')
+            dong_raw = dong_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('In=', '').replace('3Uo=', '')
+            values = [float(s.strip()) for s in dong_raw.split() if s.strip().replace('.', '', 1).isdigit()]
 
-            if predicted_marker:
-                st.success(f"📌 Vị trí dự báo gần nhất là: {predicted_marker[0]} (Lat: {predicted_marker[1]}, Lon: {predicted_marker[2]})")
-                m = folium.Map(location=[predicted_marker[1], predicted_marker[2]], zoom_start=15)
-                folium.Marker(location=[predicted_marker[1], predicted_marker[2]], popup=predicted_marker[0], icon=folium.Icon(color='red')).add_to(m)
-                st_folium(m, width=900, height=500)
-        else:
-            st.warning("⚠️ Dữ liệu dòng sự cố không đủ để dự báo")
-    except Exception as e:
-        st.error(f"❌ Lỗi xử lý dòng sự cố: {e}")
+            if len(values) >= 3:
+                tong_dong = sum(values[:3])
+                min_dist = float('inf')
+                predicted_marker = None
+                for name, (lat, lon) in marker_locations.items():
+                    approx_score = abs(hash(name) % 1000 - tong_dong)
+                    if approx_score < min_dist:
+                        min_dist = approx_score
+                        predicted_marker = (name, lat, lon)
+
+                if predicted_marker:
+                    st.success(f"📌 Vị trí dự báo gần nhất là: {predicted_marker[0]} (Lat: {predicted_marker[1]}, Lon: {predicted_marker[2]})")
+                    m = folium.Map(location=[predicted_marker[1], predicted_marker[2]], zoom_start=15)
+                    folium.Marker(location=[predicted_marker[1], predicted_marker[2]], popup=predicted_marker[0], icon=folium.Icon(color='red')).add_to(m)
+                    st_folium(m, width=900, height=500)
+            else:
+                st.warning("⚠️ Dữ liệu dòng sự cố không đủ để dự báo")
+        except Exception as e:
+            st.error(f"❌ Lỗi xử lý dòng sự cố: {e}")
 else:
-    st.info("ℹ️ Cần tải file KMZ và nhập ít nhất 1 vụ sự cố để dự báo.")
+    st.info("ℹ️ Cần tải file KMZ để dự báo được vị trí.")
