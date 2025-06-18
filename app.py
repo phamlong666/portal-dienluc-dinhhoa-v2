@@ -12,7 +12,7 @@ import os
 import io
 
 st.set_page_config(layout="wide")
-st.title("📍 Sự báo điểm sự cố")
+st.title("📍 Dự báo điểm sự cố")
 
 # ==============================
 # 1. TẢI FILE KMZ VÀ CHUYỂN THÀNH marker_locations.json
