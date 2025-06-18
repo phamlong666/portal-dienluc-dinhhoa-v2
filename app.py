@@ -12,7 +12,7 @@ import os
 import io
 
 st.set_page_config(layout="wide")
-st.markdown("<style>html, body, [class*='css']  {font-size: 1.8em !important;}</style>", unsafe_allow_html=True)
+st.markdown("<style>html, body, [class*='css']  {font-size: 1.3em !important;}</style>", unsafe_allow_html=True)
 st.title("📍 Dự báo điểm sự cố")
 
 # ==============================
@@ -38,7 +38,12 @@ uploaded_qlkt = st.file_uploader("📎 Tải file chứa sheet QLKT (Excel)", ty
 
 if st.button("📊 Phân tích tổng trở") and uploaded_qlkt and ten_duongday and dong_suco_pt3:
     try:
-        df_qlkt = pd.read_excel(uploaded_qlkt, sheet_name="QLKT")
+        sheet_names = pd.ExcelFile(uploaded_qlkt).sheet_names
+        target_sheet = next((s for s in sheet_names if s.strip().lower() == "qlkt"), None)
+        if not target_sheet:
+            st.error("❌ Sheet 'QLKT' không tồn tại trong file.")
+            raise ValueError("Missing QLKT sheet")
+        df_qlkt = pd.read_excel(uploaded_qlkt, sheet_name=target_sheet)
         row = df_qlkt[df_qlkt["Tên đường dây"].astype(str).str.contains(ten_duongday, case=False)]
         if not row.empty:
             chieu_dai_km = float(row.iloc[0]["File/số liệu đã gửi"].split("chiều dài ")[1].split("km")[0].strip())
