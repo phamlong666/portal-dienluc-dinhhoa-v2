@@ -136,6 +136,7 @@ st.subheader("🔍 Dự báo điểm sự cố từ dòng điện")
 ten_mc_input = st.text_input("Tên máy cắt muốn dự báo")
 dong_input = st.text_input("Dòng sự cố (ví dụ: Ia=500, Ib=600, Ic=50, Io=400)")
 cap_dien_ap = st.selectbox("Cấp điện áp đường dây", ["22kV", "35kV", "110kV"])
+z_default = 4.0  # suất trở hỗn hợp đã cập nhật theo yêu cầu
 loai_suco_input = st.selectbox("Loại sự cố", [
     "1 pha chạm đất (Io)",
     "2 pha chạm đất (Ia+Ib)",
@@ -151,7 +152,6 @@ loai_suco_input = st.selectbox("Loại sự cố", [
 
 if st.button("Phân tích"):
     U0_map = {"22kV": 22000 / math.sqrt(3), "35kV": 35000 / math.sqrt(3), "110kV": 110000 / math.sqrt(3)}
-    z_default = 0.3  # suất trở mặc định
     I = extract_current(dong_input, loai_suco_input)
     if I:
         d = tinh_khoang_cach(I, U0_map[cap_dien_ap], z_default)
