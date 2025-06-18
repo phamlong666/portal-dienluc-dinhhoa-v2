@@ -262,3 +262,30 @@ if os.path.exists(DATA_FILE):
                     df.to_csv(DATA_FILE, index=False)
                     st.success("🗑️ Đã xoá cuộc họp.")
                     st.experimental_rerun()
+
+
+# === GHÉP PHÂN TÍCH SỰ CỐ ===
+
+# === Nút Phân tích sự cố ===
+st.title("📍 Phân tích sự cố")
+
+with st.expander("🔧 Nhập dữ liệu dòng sự cố để dự báo"):
+    mc_name = st.text_input("Tên máy cắt")
+    ia = st.number_input("Dòng Ia (A)", min_value=0, step=1)
+    ib = st.number_input("Dòng Ib (A)", min_value=0, step=1)
+    ic = st.number_input("Dòng Ic (A)", min_value=0, step=1)
+    io = st.number_input("Dòng Io (A)", min_value=0, step=1)
+    z_total = st.number_input("Tổng trở hỗn hợp (Ω/km)", value=4.0, step=0.1)
+    voltage = st.selectbox("Cấp điện áp", ["22kV", "35kV", "110kV"])
+    
+    if st.button("🔍 Phân tích"):
+        u0 = 22000 / 3 if voltage == "22kV" else 35000 / 3 if voltage == "35kV" else 110000 / 3
+        d = round((u0 / io) * z_total, 2) if io else 0
+        st.success(f"📌 Dự báo khoảng cách đến điểm sự cố: {d} km")
+
+with st.expander("📜 Nhập các vụ sự cố lịch sử"):
+    history_data = st.experimental_data_editor(
+        pd.DataFrame(columns=["Tên MC", "Ngày", "Dòng sự cố", "Vị trí", "Nguyên nhân", "Thời tiết"]),
+        num_rows="dynamic"
+    )
+    st.download_button("📥 Xuất Excel", history_data.to_csv(index=False), "su_co_lich_su.csv")
