@@ -9,9 +9,10 @@ import zipfile
 import xml.etree.ElementTree as ET
 import json
 import os
+import io
 
 st.set_page_config(layout="wide")
-st.title("📍 Dự báo điểm sự cố theo dòng ngắn mạch")
+st.title("📍 Sự báo điểm sự cố")
 
 # ==============================
 # 1. TẢI FILE KMZ VÀ CHUYỂN THÀNH marker_locations.json
@@ -72,10 +73,29 @@ with st.form("suco_form"):
         })
         st.success("✔️ Đã lưu vụ sự cố!")
 
-# Hiển thị bảng đã lưu
+# Hiển thị bảng đã lưu và cho phép sửa/xóa
 if st.session_state.suco_data:
     st.write("### 📋 Danh sách sự cố đã nhập")
     df_suco = pd.DataFrame(st.session_state.suco_data)
-    st.dataframe(df_suco, use_container_width=True)
+    edited_df = st.data_editor(df_suco, num_rows="dynamic", use_container_width=True)
 
-# (Phần phân tích sự cố sẽ được ghép sau)
+    # Cập nhật lại dữ liệu nếu sửa
+    if st.button("Cập nhật dữ liệu đã sửa"):
+        st.session_state.suco_data = edited_df.to_dict(orient="records")
+        st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
+
+    # Cho phép xuất Excel
+    def convert_df(df):
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='SuCo', index=False)
+        return output.getvalue()
+
+    st.download_button(
+        label="📤 Xuất báo cáo Excel",
+        data=convert_df(df_suco),
+        file_name="bao_cao_su_co.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+# (Phần phân tích sự cố và hiển thị marker sẽ được ghép ở giai đoạn tiếp theo)
