@@ -213,7 +213,7 @@ if mod_option == "Nhắc việc":
             except Exception as e:
                 st.error(f"❌ Lỗi khi nhập file Excel: {e}")
     
-if mod_option == "Phục vụ họp":
+elif mod_option == "Phục vụ họp":
     
     st.header("📑 Phục vụ họp")
     
@@ -408,7 +408,7 @@ if mod_option == "Phục vụ họp":
     
         df_suco.to_excel("du_lieu_su_co.xlsx", index=False)
     
-if mod_option == "Dự báo điểm sự cố":
+elif mod_option == "Dự báo điểm sự cố":
     
     st.header("📑 Phục vụ họp")
     
