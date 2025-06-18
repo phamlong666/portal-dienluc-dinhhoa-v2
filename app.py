@@ -131,31 +131,54 @@ if marker_locations:
     with col2:
         dong_input = st.text_input("🔌 Nhập dòng sự cố (ví dụ: Ia=1032; Ib=928; Ic=112; Io=400):")
 
-    if dong_input and ten_mc_new:
-        try:
-            dong_raw = dong_input.replace(';', ' ').replace(',', ' ')
-            dong_raw = dong_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('In=', '').replace('3Uo=', '')
-            values = [float(s.strip()) for s in dong_raw.split() if s.strip().replace('.', '', 1).isdigit()]
+    if st.button("🔎 Phân tích"):
+        if dong_input and ten_mc_new:
+            try:
+                dong_raw = dong_input.replace(';', ' ').replace(',', ' ')
+                dong_raw = dong_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('In=', '').replace('3Uo=', '')
+                values = [float(s.strip()) for s in dong_raw.split() if s.strip().replace('.', '', 1).isdigit()]
 
-            if len(values) >= 3:
-                tong_dong = sum(values[:3])
-                min_dist = float('inf')
-                predicted_marker = None
-                for name, (lat, lon) in marker_locations.items():
-                    if ten_mc_new in name:  # chỉ xét marker đúng tuyến
-                        approx_score = abs(hash(name) % 1000 - tong_dong)
-                        if approx_score < min_dist:
-                            min_dist = approx_score
-                            predicted_marker = (name, lat, lon)
+                if len(values) >= 3:
+                    tong_dong = sum(values[:3])
 
-                if predicted_marker:
-                    st.success(f"📌 Vị trí dự báo gần nhất là: {predicted_marker[0]} (Lat: {predicted_marker[1]}, Lon: {predicted_marker[2]})")
-                    m = folium.Map(location=[predicted_marker[1], predicted_marker[2]], zoom_start=15)
-                    folium.Marker(location=[predicted_marker[1], predicted_marker[2]], popup=predicted_marker[0], icon=folium.Icon(color='red')).add_to(m)
-                    st_folium(m, width=900, height=500)
-            else:
-                st.warning("⚠️ Dữ liệu dòng sự cố không đủ để dự báo")
-        except Exception as e:
-            st.error(f"❌ Lỗi xử lý dòng sự cố: {e}")
+                    # Phân tích 1: Dự báo theo marker gần đúng
+                    min_dist = float('inf')
+                    predicted_marker = None
+                    for name, (lat, lon) in marker_locations.items():
+                        if ten_mc_new in name:
+                            approx_score = abs(hash(name) % 1000 - tong_dong)
+                            if approx_score < min_dist:
+                                min_dist = approx_score
+                                predicted_marker = (name, lat, lon)
+
+                    if predicted_marker:
+                        st.success(f"📌 [PT1] Dự báo theo đường dây: {predicted_marker[0]} (Lat: {predicted_marker[1]}, Lon: {predicted_marker[2]})")
+                        m = folium.Map(location=[predicted_marker[1], predicted_marker[2]], zoom_start=15)
+                        folium.Marker(location=[predicted_marker[1], predicted_marker[2]], popup=predicted_marker[0], icon=folium.Icon(color='blue')).add_to(m)
+                        st_folium(m, width=900, height=500)
+
+                    # Phân tích 2: Dự báo theo vụ sự cố lịch sử gần nhất
+                    if st.session_state.suco_data:
+                        min_diff = float('inf')
+                        matched = None
+                        for row in st.session_state.suco_data:
+                            if ten_mc_new.lower() in row['Tên máy cắt'].lower():
+                                dong_hist = row['Dòng sự cố']
+                                dong_hist_raw = dong_hist.replace(';', ' ').replace(',', ' ')
+                                dong_hist_raw = dong_hist_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('In=', '').replace('3Uo=', '')
+                                values_hist = [float(s.strip()) for s in dong_hist_raw.split() if s.strip().replace('.', '', 1).isdigit()]
+                                if len(values_hist) >= 3:
+                                    diff = sum(abs(a - b) for a, b in zip(values[:3], values_hist[:3]))
+                                    if diff < min_diff:
+                                        min_diff = diff
+                                        matched = row
+
+                        if matched:
+                            st.info(f"📌 [PT2] Dự báo theo lịch sử: {matched['Vị trí']} (từ vụ: {matched['Ngày']})")
+
+                else:
+                    st.warning("⚠️ Dữ liệu dòng sự cố không đủ để dự báo")
+            except Exception as e:
+                st.error(f"❌ Lỗi xử lý dòng sự cố: {e}")
 else:
     st.info("ℹ️ Cần tải file KMZ để dự báo được vị trí.")
