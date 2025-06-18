@@ -10,6 +10,7 @@ import xml.etree.ElementTree as ET
 import json
 import os
 import io
+import re
 
 st.set_page_config(layout="wide")
 st.markdown("<style>html, body, [class*='css']  {font-size: 1.3em !important;}</style>", unsafe_allow_html=True)
@@ -113,7 +114,6 @@ if st.session_state.suco_data:
 # TÍNH TOÁN KHOẢNG CÁCH SỰ CỐ
 # ============================
 def extract_current(dong_suco_str, loai_suco):
-    import re
     try:
         values = re.findall(r'\d+', dong_suco_str)
         values = [int(v) for v in values]
@@ -128,7 +128,7 @@ def extract_current(dong_suco_str, loai_suco):
 
 def tinh_khoang_cach(I_suco, U0_kV, z_ohm_per_km):
     try:
-        U0 = U0_kV * 1000  # chuyển về V
+        U0 = U0_kV * 1000  # Đã là điện áp pha
         return round((U0 / (I_suco * z_ohm_per_km)), 2)
     except:
         return None
@@ -163,34 +163,34 @@ if st.button("Phân tích"):
     else:
         st.warning("⚠️ Không nhận diện được dòng sự cố hợp lệ.")
 
-# ============================================
-# 🔍 DỰ BÁO GẦN ĐÚNG NHẤT TỪ LỊCH SỬ SỰ CỐ
-# ============================================
-if st.session_state.suco_data:
-    st.subheader("📚 Dự báo điểm sự cố từ dữ liệu lịch sử")
-    dong_moi = st.text_input("🔢 Nhập dòng sự cố mới (Ia, Ib, Ic, Io)")
-    if dong_moi:
-        try:
-            input_values = [int(x.strip()) for x in dong_moi.split(',') if x.strip().isdigit()]
-            def euclidean(a, b):
-                return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
+# BỔ SUNG: Dự báo từ dữ liệu lịch sử
+st.subheader("📚 Dự báo điểm sự cố từ dữ liệu lịch sử")
+ten_mc_ls = st.text_input("🔎 Nhập tên máy cắt để lọc dữ liệu")
+dong_moi = st.text_input("Nhập dòng sự cố mới (Ia, Ib, Ic, Io)")
+if dong_moi:
+    try:
+        input_values = [int(x.strip()) for x in re.findall(r'\d+', dong_moi)]
+        def euclidean(a, b):
+            return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
 
-            min_dist = float('inf')
-            nearest_case = None
-            for case in st.session_state.suco_data:
-                try:
-                    case_values = [int(x.strip()) for x in case["Dòng sự cố"].split(',') if x.strip().isdigit()]
-                    if len(case_values) == len(input_values):
-                        dist = euclidean(input_values, case_values)
-                        if dist < min_dist:
-                            min_dist = dist
-                            nearest_case = case
-                except:
+        min_dist = float('inf')
+        nearest_case = None
+        for case in st.session_state.suco_data:
+            try:
+                if ten_mc_ls and ten_mc_ls not in case.get("Tên máy cắt", ""):
                     continue
+                case_values = [int(x.strip()) for x in re.findall(r'\d+', case["Dòng sự cố"])]
+                if len(case_values) == len(input_values):
+                    dist = euclidean(input_values, case_values)
+                    if dist < min_dist:
+                        min_dist = dist
+                        nearest_case = case
+            except:
+                continue
 
-            if nearest_case:
-                st.success(f"✅ Dự báo gần nhất theo lịch sử: {nearest_case['Vị trí']} – Nguyên nhân: {nearest_case['Nguyên nhân']}")
-            else:
-                st.warning("⚠️ Không tìm thấy dòng sự cố tương đồng trong dữ liệu lịch sử.")
-        except:
-            st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
+        if nearest_case:
+            st.success(f"✅ Dự báo gần nhất theo lịch sử: {nearest_case['Vị trí']} – Nguyên nhân: {nearest_case['Nguyên nhân']}")
+        else:
+            st.warning("⚠️ Không tìm thấy dòng sự cố tương đồng trong dữ liệu lịch sử.")
+    except:
+        st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
