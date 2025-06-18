@@ -284,7 +284,7 @@ with st.expander("🔧 Nhập dữ liệu dòng sự cố để dự báo"):
         st.success(f"📌 Dự báo khoảng cách đến điểm sự cố: {d} km")
 
 with st.expander("📜 Nhập các vụ sự cố lịch sử"):
-    history_data = st.experimental_data_editor(
+    history_data = st.data_editor(
         pd.DataFrame(columns=["Tên MC", "Ngày", "Dòng sự cố", "Vị trí", "Nguyên nhân", "Thời tiết"]),
         num_rows="dynamic"
     )
