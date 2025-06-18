@@ -26,6 +26,15 @@ if os.path.exists("du_lieu_su_co.xlsx"):
     except Exception as e:
         st.warning(f"⚠️ Không thể đọc file dữ liệu cũ: {e}")
 
+uploaded_recovery_file = st.file_uploader("🔁 Nhập lại dữ liệu từ file Excel đã lưu trước đó:", type="xlsx")
+if uploaded_recovery_file:
+    try:
+        df_recovery = pd.read_excel(uploaded_recovery_file)
+        st.session_state.suco_data = df_recovery.to_dict(orient="records")
+        st.success("✅ Đã khôi phục dữ liệu từ file thành công!")
+    except Exception as e:
+        st.error(f"❌ Lỗi đọc file: {e}")
+
 # ==============================
 # 1. TẢI FILE KMZ VÀ CHUYỂN THÀNH marker_locations.json
 # ==============================
@@ -55,7 +64,7 @@ if kmz_file is not None:
         json.dump(marker_locations, f)
 
 # ==============================
-# 2. BẢNG NHẬP THỦ CÔNG CÁC VỤ SỰ CỐ LỊCH SỬ
+# 2. NHẬP CÁC VỤ SỰ CỐ LỊCH SỬ
 # ==============================
 st.subheader("📚 Nhập các vụ sự cố lịch sử")
 
@@ -116,9 +125,13 @@ if st.session_state.suco_data:
 st.subheader("🔍 Nhập dòng sự cố mới để dự báo vị trí")
 
 if marker_locations:
-    dong_input = st.text_input("🔌 Nhập dòng sự cố (ví dụ: Ia=1032; Ib=928; Ic=112; Io=400):")
+    col1, col2 = st.columns(2)
+    with col1:
+        ten_mc_new = st.text_input("🔧 Nhập tên máy cắt để lọc tuyến (ví dụ: MC471, MC472)")
+    with col2:
+        dong_input = st.text_input("🔌 Nhập dòng sự cố (ví dụ: Ia=1032; Ib=928; Ic=112; Io=400):")
 
-    if dong_input:
+    if dong_input and ten_mc_new:
         try:
             dong_raw = dong_input.replace(';', ' ').replace(',', ' ')
             dong_raw = dong_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('In=', '').replace('3Uo=', '')
@@ -129,10 +142,11 @@ if marker_locations:
                 min_dist = float('inf')
                 predicted_marker = None
                 for name, (lat, lon) in marker_locations.items():
-                    approx_score = abs(hash(name) % 1000 - tong_dong)
-                    if approx_score < min_dist:
-                        min_dist = approx_score
-                        predicted_marker = (name, lat, lon)
+                    if ten_mc_new in name:  # chỉ xét marker đúng tuyến
+                        approx_score = abs(hash(name) % 1000 - tong_dong)
+                        if approx_score < min_dist:
+                            min_dist = approx_score
+                            predicted_marker = (name, lat, lon)
 
                 if predicted_marker:
                     st.success(f"📌 Vị trí dự báo gần nhất là: {predicted_marker[0]} (Lat: {predicted_marker[1]}, Lon: {predicted_marker[2]})")
