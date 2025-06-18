@@ -48,16 +48,19 @@ with st.expander("➕ Thêm việc cần nhắc"):
 # Hiển thị & xóa
 if os.path.exists(REMINDERS_FILE):
     st.subheader("📋 Danh sách nhắc việc")
-    df = pd.read_csv(REMINDERS_FILE)
-    for idx, row in df.iterrows():
-        col1, col2 = st.columns([6,1])
-        with col1:
-            st.write(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
-        with col2:
-            if st.button("❌", key=f"xoa_{idx}"):
-                df.drop(index=idx, inplace=True)
-                df.to_csv(REMINDERS_FILE, index=False)
-                st.experimental_rerun()
+    try:
+        df = pd.read_csv(REMINDERS_FILE, dtype=str)
+        for idx, row in df.iterrows():
+            col1, col2 = st.columns([6,1])
+            with col1:
+                st.write(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
+            with col2:
+                if st.button("❌", key=f"xoa_{idx}"):
+                    df.drop(index=idx, inplace=True)
+                    df.to_csv(REMINDERS_FILE, index=False)
+                    st.rerun()
+    except Exception as e:
+        st.error(f"❌ Lỗi khi hiển thị nhắc việc: {e}")
 
 # Xuất / Nhập Excel
 st.markdown("### 📤 Xuất / Nhập Excel (Nhắc việc)")
@@ -74,10 +77,16 @@ with col1:
 with col2:
     file = st.file_uploader("📂 Nhập từ Excel", type=["xlsx"], key="upload_nhacviec")
     if file:
-        df = pd.read_excel(file, dtype=str)
-        df.to_csv(REMINDERS_FILE, index=False)
-        st.success("✅ Đã nhập lại danh sách.")
-        st.experimental_rerun()
+        try:
+            df = pd.read_excel(file, dtype=str)
+            # Chuẩn hoá ngày giờ nếu có thể
+            df["Ngày"] = pd.to_datetime(df["Ngày"], errors="coerce").dt.strftime("%d/%m/%y")
+            df["Giờ"] = df["Giờ"].fillna("00:00")
+            df.to_csv(REMINDERS_FILE, index=False)
+            st.success("✅ Đã nhập lại danh sách.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Lỗi khi nhập file Excel: {e}")
 
 # ===== NÚT PHỤC VỤ HỌP =====
 st.header("📑 Phục vụ họp")
@@ -91,47 +100,53 @@ with st.expander("➕ Thêm cuộc họp mới"):
         files = st.file_uploader("📎 Đính kèm", accept_multiple_files=True)
         submit = st.form_submit_button("💾 Lưu cuộc họp")
     if submit:
-        file_names = []
-        for f in files:
-            file_path = os.path.join(UPLOAD_FOLDER, f.name)
-            with open(file_path, "wb") as out:
-                out.write(f.read())
-            file_names.append(f.name)
-        new_row = {
-            "Ngày": ngay.strftime("%d/%m/%y"),
-            "Giờ": gio.strftime("%H:%M"),
-            "Tên cuộc họp": ten,
-            "Nội dung": noidung,
-            "Tệp": ";".join(file_names)
-        }
-        df = pd.read_csv(MEETINGS_FILE) if os.path.exists(MEETINGS_FILE) else pd.DataFrame()
-        df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-        df.to_csv(MEETINGS_FILE, index=False)
-        st.success("✅ Đã lưu cuộc họp.")
-        st.experimental_rerun()
+        try:
+            file_names = []
+            for f in files:
+                file_path = os.path.join(UPLOAD_FOLDER, f.name)
+                with open(file_path, "wb") as out:
+                    out.write(f.read())
+                file_names.append(f.name)
+            new_row = {
+                "Ngày": ngay.strftime("%d/%m/%y"),
+                "Giờ": gio.strftime("%H:%M"),
+                "Tên cuộc họp": ten,
+                "Nội dung": noidung,
+                "Tệp": ";".join(file_names)
+            }
+            df = pd.read_csv(MEETINGS_FILE) if os.path.exists(MEETINGS_FILE) else pd.DataFrame()
+            df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+            df.to_csv(MEETINGS_FILE, index=False)
+            st.success("✅ Đã lưu cuộc họp.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Lỗi khi lưu cuộc họp: {e}")
 
 # Hiển thị & Xoá họp
 if os.path.exists(MEETINGS_FILE):
     st.subheader("📚 Danh sách cuộc họp")
-    df = pd.read_csv(MEETINGS_FILE)
-    for idx, row in df.iterrows():
-        with st.expander(f"📌 {row['Tên cuộc họp']} – {row['Ngày']} {row['Giờ']}"):
-            st.write("📝", row["Nội dung"])
-            file_list = str(row.get("Tệp", "")).split(";")
-            for file in file_list:
-                file_path = os.path.join(UPLOAD_FOLDER, file)
-                if os.path.exists(file_path):
-                    st.write(f"📎 {file}")
-                    with open(file_path, "rb") as f:
-                        st.download_button("⬇️ Tải", f.read(), file_name=file, key=f"{file}_{idx}")
-            with st.form(f"form_xoa_{idx}"):
-                confirm = st.checkbox("🗑️ Xóa", key=f"xoa_ck_{idx}")
-                do_delete = st.form_submit_button("❗ Xác nhận")
-                if confirm and do_delete:
-                    df.drop(index=idx, inplace=True)
-                    df.to_csv(MEETINGS_FILE, index=False)
-                    st.success("🗑️ Đã xoá.")
-                    st.experimental_rerun()
+    try:
+        df = pd.read_csv(MEETINGS_FILE)
+        for idx, row in df.iterrows():
+            with st.expander(f"📌 {row['Tên cuộc họp']} – {row['Ngày']} {row['Giờ']}"):
+                st.write("📝", row["Nội dung"])
+                file_list = str(row.get("Tệp", "")).split(";")
+                for file in file_list:
+                    file_path = os.path.join(UPLOAD_FOLDER, file)
+                    if os.path.exists(file_path):
+                        st.write(f"📎 {file}")
+                        with open(file_path, "rb") as f:
+                            st.download_button("⬇️ Tải", f.read(), file_name=file, key=f"{file}_{idx}")
+                with st.form(f"form_xoa_{idx}"):
+                    confirm = st.checkbox("🗑️ Xóa", key=f"xoa_ck_{idx}")
+                    do_delete = st.form_submit_button("❗ Xác nhận")
+                    if confirm and do_delete:
+                        df.drop(index=idx, inplace=True)
+                        df.to_csv(MEETINGS_FILE, index=False)
+                        st.success("🗑️ Đã xoá.")
+                        st.rerun()
+    except Exception as e:
+        st.error(f"❌ Lỗi khi hiển thị cuộc họp: {e}")
 
 # Xuất / Nhập Excel
 st.markdown("### 📤 Xuất / Nhập Excel (Phục vụ họp)")
@@ -148,7 +163,10 @@ with col3:
 with col4:
     file = st.file_uploader("📂 Nhập từ Excel", type=["xlsx"], key="upload_hop")
     if file:
-        df = pd.read_excel(file, dtype=str)
-        df.to_csv(MEETINGS_FILE, index=False)
-        st.success("✅ Đã nhập lại danh sách.")
-        st.experimental_rerun()
+        try:
+            df = pd.read_excel(file, dtype=str)
+            df.to_csv(MEETINGS_FILE, index=False)
+            st.success("✅ Đã nhập lại danh sách.")
+            st.rerun()
+        except Exception as e:
+            st.error(f"❌ Lỗi khi nhập file Excel: {e}")
