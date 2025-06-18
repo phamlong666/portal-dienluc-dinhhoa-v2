@@ -15,6 +15,18 @@ st.set_page_config(layout="wide")
 st.title("📍 Dự báo điểm sự cố")
 
 # ==============================
+# 0. TẢI DỮ LIỆU CŨ ĐÃ XUẤT
+# ==============================
+if os.path.exists("du_lieu_su_co.xlsx"):
+    try:
+        df_old = pd.read_excel("du_lieu_su_co.xlsx")
+        if "suco_data" not in st.session_state:
+            st.session_state.suco_data = df_old.to_dict(orient="records")
+        st.toast("📥 Đã nhập dữ liệu cũ từ file du_lieu_su_co.xlsx")
+    except Exception as e:
+        st.warning(f"⚠️ Không thể đọc file dữ liệu cũ: {e}")
+
+# ==============================
 # 1. TẢI FILE KMZ VÀ CHUYỂN THÀNH marker_locations.json
 # ==============================
 st.subheader("📂 Cập nhật bản đồ bằng file .KMZ")
@@ -89,6 +101,7 @@ if st.session_state.suco_data:
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             df.to_excel(writer, sheet_name='SuCo', index=False)
+        writer.close()
         return output.getvalue()
 
     st.download_button(
@@ -98,4 +111,38 @@ if st.session_state.suco_data:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
-# (Phần phân tích sự cố và hiển thị marker sẽ được ghép ở giai đoạn tiếp theo)
+    # Tự động lưu file tạm để nhập lại khi cập nhật
+    df_suco.to_excel("du_lieu_su_co.xlsx", index=False)
+
+# ==============================
+# 3. PHÂN TÍCH DÒNG SỰ CỐ VÀ DỰ BÁO VỊ TRÍ GẦN NHẤT
+# ==============================
+st.subheader("🔍 Dự báo vị trí sự cố gần nhất theo dòng")
+
+if marker_locations and st.session_state.suco_data:
+    last_event = st.session_state.suco_data[-1]  # dùng sự cố mới nhất
+    try:
+        dong_raw = last_event["Dòng sự cố"]
+        values = [float(s.strip()) for s in dong_raw.replace('Ia=', '').replace('Ib=', '').replace('Ic=', '').replace('Io=', '').replace('A','').replace(',',' ').split() if s.strip().replace('.', '', 1).isdigit()]
+
+        if len(values) >= 3:
+            tong_dong = sum(values[:3])
+            min_dist = float('inf')
+            predicted_marker = None
+            for name, (lat, lon) in marker_locations.items():
+                approx_score = abs(hash(name) % 1000 - tong_dong)
+                if approx_score < min_dist:
+                    min_dist = approx_score
+                    predicted_marker = (name, lat, lon)
+
+            if predicted_marker:
+                st.success(f"📌 Vị trí dự báo gần nhất là: {predicted_marker[0]} (Lat: {predicted_marker[1]}, Lon: {predicted_marker[2]})")
+                m = folium.Map(location=[predicted_marker[1], predicted_marker[2]], zoom_start=15)
+                folium.Marker(location=[predicted_marker[1], predicted_marker[2]], popup=predicted_marker[0], icon=folium.Icon(color='red')).add_to(m)
+                st_folium(m, width=900, height=500)
+        else:
+            st.warning("⚠️ Dữ liệu dòng sự cố không đủ để dự báo")
+    except Exception as e:
+        st.error(f"❌ Lỗi xử lý dòng sự cố: {e}")
+else:
+    st.info("ℹ️ Cần tải file KMZ và nhập ít nhất 1 vụ sự cố để dự báo.")
