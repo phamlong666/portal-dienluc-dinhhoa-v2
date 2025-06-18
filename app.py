@@ -42,7 +42,7 @@ st.markdown("""
             text-decoration: none;
             margin: 14px;
             transition: 0.3s;
-            font-size: 24px;
+            font-size: 26px;
         }
         .main-button:hover {
             transform: scale(1.05);
@@ -171,6 +171,14 @@ if os.path.exists(REMINDERS_FILE):
 # === 📤 Xuất / Nhập danh sách nhắc việc ===
 import io
 st.markdown("### 📤 Xuất / Nhập danh sách nhắc việc")
+
+# Nhập lại từ Excel cho nhắc việc (bổ sung nếu chưa có)
+uploaded_excel = st.file_uploader("📂 Nhập lại từ Excel", type=["xlsx"], key="upload_nhacviec_b")
+if uploaded_excel:
+    df_import = pd.read_excel(uploaded_excel)
+    df_import.to_csv(REMINDERS_FILE, index=False)
+    st.success("✅ Đã nhập dữ liệu nhắc việc từ Excel (bổ sung).")
+    st.experimental_rerun()
 col1, col2 = st.columns(2)
 
 with col1:
