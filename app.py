@@ -113,12 +113,14 @@ if st.session_state.suco_data:
 # TÍNH TOÁN KHOẢNG CÁCH SỰ CỐ
 # ============================
 def extract_current(dong_suco_str, loai_suco):
+    import re
     try:
-        values = [int(s.strip()) for s in dong_suco_str.split(',') if s.strip().isdigit()]
+        values = re.findall(r'\d+', dong_suco_str)
+        values = [int(v) for v in values]
         if not values:
             return None
         if "Io" in loai_suco:
-            return values[-1]  # giả định Io là cuối cùng
+            return values[-1]  # mặc định Io là cuối
         else:
             return sum(values)
     except:
