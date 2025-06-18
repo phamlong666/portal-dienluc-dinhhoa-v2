@@ -160,3 +160,35 @@ if st.button("Phân tích"):
             st.warning("⚠️ Không tính được khoảng cách.")
     else:
         st.warning("⚠️ Không nhận diện được dòng sự cố hợp lệ.")
+
+# ============================================
+# 🔍 DỰ BÁO GẦN ĐÚNG NHẤT TỪ LỊCH SỬ SỰ CỐ
+# ============================================
+if st.session_state.suco_data:
+    st.subheader("📚 Dự báo điểm sự cố từ dữ liệu lịch sử")
+    dong_moi = st.text_input("🔢 Nhập dòng sự cố mới (Ia, Ib, Ic, Io)")
+    if dong_moi:
+        try:
+            input_values = [int(x.strip()) for x in dong_moi.split(',') if x.strip().isdigit()]
+            def euclidean(a, b):
+                return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
+
+            min_dist = float('inf')
+            nearest_case = None
+            for case in st.session_state.suco_data:
+                try:
+                    case_values = [int(x.strip()) for x in case["Dòng sự cố"].split(',') if x.strip().isdigit()]
+                    if len(case_values) == len(input_values):
+                        dist = euclidean(input_values, case_values)
+                        if dist < min_dist:
+                            min_dist = dist
+                            nearest_case = case
+                except:
+                    continue
+
+            if nearest_case:
+                st.success(f"✅ Dự báo gần nhất theo lịch sử: {nearest_case['Vị trí']} – Nguyên nhân: {nearest_case['Nguyên nhân']}")
+            else:
+                st.warning("⚠️ Không tìm thấy dòng sự cố tương đồng trong dữ liệu lịch sử.")
+        except:
+            st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
