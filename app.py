@@ -126,10 +126,9 @@ def extract_current(dong_suco_str, loai_suco):
     except:
         return None
 
-def tinh_khoang_cach(I_suco, U0_kV, z_ohm_per_km):
+def tinh_khoang_cach(I_suco, U0_V, z_ohm_per_km):
     try:
-        U0 = U0_kV * 1000  # Đã là điện áp pha
-        return round((U0 / (I_suco * z_ohm_per_km)), 2)
+        return round((U0_V / (I_suco * z_ohm_per_km)), 2)
     except:
         return None
 
