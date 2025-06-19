@@ -122,7 +122,6 @@ with col2:
 # ================== MENU TỪ GOOGLE SHEET ==================
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 
-icon_map = {
     "An toàn": "🧯",
     "An toàn, điều độ": "🛡️",
     "Báo cáo": "📊",
@@ -138,7 +137,6 @@ try:
     df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
     grouped = df.groupby('Nhóm chức năng')
 
-icon_map = {
     "An toàn": "🧯",
     "An toàn, điều độ": "🛡️",
     "Báo cáo": "📊",
@@ -554,3 +552,14 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
     
     
+icon_map = {
+    "An toàn": "🧯",
+    "An toàn, điều độ": "🛡️",
+    "Báo cáo": "📊",
+    "Công nghệ thông tin": "🧠",
+    "Kinh doanh": "💼",
+    "Kỹ thuật": "🔧",
+    "Quản trị nội bộ": "👥",
+    "Thiên tai - cứu nạn": "🆘",
+    "Điều độ": "🧭"
+}
