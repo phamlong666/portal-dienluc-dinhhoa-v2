@@ -148,6 +148,18 @@ try:
     df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
     grouped = df.groupby('Nhóm chức năng')
 
+icon_map = {
+    "An toàn": "🧯",
+    "An toàn, điều độ": "🛡️",
+    "Báo cáo": "📊",
+    "Công nghệ thông tin": "🧠",
+    "Kinh doanh": "💼",
+    "Kỹ thuật": "🔧",
+    "Quản trị nội bộ": "👥",
+    "Thiên tai - cứu nạn": "🆘",
+    "Điều độ": "🧭"
+}
+
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
     
 icon_map = {
