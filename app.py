@@ -105,6 +105,18 @@ st.markdown("""
 col1, col2 = st.columns([1, 10])
 with col1:
     try:
+
+icon_map = {
+    "An toàn": "🧯",
+    "An toàn, điều độ": "🛡️",
+    "Báo cáo": "📊",
+    "Công nghệ thông tin": "🧠",
+    "Kinh doanh": "💼",
+    "Kỹ thuật": "🔧",
+    "Quản trị nội bộ": "👥",
+    "Thiên tai - cứu nạn": "🆘",
+    "Điều độ": "🧭"
+}
         logo = Image.open("assets/logo_hinh_tron_hoan_chinh.png")
         st.image(logo, width=70)
     except:
