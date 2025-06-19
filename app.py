@@ -28,6 +28,20 @@ import math
 import re
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+st.markdown('''
+<style>
+    .sidebar-button {
+        font-size: 1.2em !important;
+    }
+    section[data-testid="stSidebar"] h3 {
+        font-size: 1.4em !important;
+        font-weight: bold !important;
+    }
+    .block-container {
+        font-size: 1.15em !important;
+    }
+</style>
+''', unsafe_allow_html=True)
 
 
 # ================== CUSTOM CSS ==================
@@ -100,7 +114,7 @@ try:
 
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
     for group_name, group_data in grouped:
-        with st.sidebar.expander(f"📂 {group_name}", expanded=False):
+        with st.sidebar.expander(f"🗂 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
                 label = row['Tên ứng dụng']
                 link = row['Liên kết']
@@ -212,7 +226,7 @@ if chon_modul == '⏰ Nhắc việc':
             st.download_button("📥 Tải Excel", data=towrite.getvalue(), file_name="nhac_viec.xlsx")
     
     with col2:
-        file = st.file_uploader("📂 Nhập từ Excel", type=["xlsx"], key="upload_nhacviec")
+        file = st.file_uploader("🗂 Nhập từ Excel", type=["xlsx"], key="upload_nhacviec")
         if file:
             try:
                 df = pd.read_excel(file, dtype=str)
@@ -300,7 +314,7 @@ elif chon_modul == '📑 Phục vụ họp':
             st.download_button("📥 Tải Excel", data=towrite2.getvalue(), file_name="phuc_vu_hop.xlsx")
     
     with col4:
-        file = st.file_uploader("📂 Nhập từ Excel", type=["xlsx"], key="upload_hop")
+        file = st.file_uploader("🗂 Nhập từ Excel", type=["xlsx"], key="upload_hop")
         if file:
             try:
                 df = pd.read_excel(file, dtype=str)
@@ -317,7 +331,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     st.title("📍 Dự báo điểm sự cố")
     
     marker_locations = {}
-    kmz_file = st.file_uploader("📂 Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
+    kmz_file = st.file_uploader("🗂 Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
     if kmz_file is not None:
         with zipfile.ZipFile(kmz_file, 'r') as z:
             for filename in z.namelist():
