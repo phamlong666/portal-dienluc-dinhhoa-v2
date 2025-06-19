@@ -39,7 +39,11 @@ st.markdown('''
     button, label, select, input, textarea {
         font-size: 1.6em !important;
     }
-    .sidebar-button {
+    a.sidebar-button {
+    font-size: 0.9em !important;
+}
+
+.sidebar-button {
         font-size: 1.5em !important;
     }
     section[data-testid="stSidebar"] {
@@ -56,7 +60,11 @@ st.markdown("""
             max-height: 95vh;
             overflow-y: auto;
         }
-        .sidebar-button {
+        a.sidebar-button {
+    font-size: 0.9em !important;
+}
+
+.sidebar-button {
             display: block;
             background-color: #42A5F5;
             color: white;
@@ -118,8 +126,24 @@ try:
     grouped = df.groupby('Nhóm chức năng')
 
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    
+icon_map = {
+    "An toàn": "🧯",
+    "An toàn, điều độ": "🛡️",
+    "Báo cáo": "📊",
+    "Công nghệ thông tin": "🧠",
+    "Kinh doanh": "💼",
+    "Kỹ thuật": "🔧",
+    "Quản trị nội bộ": "👥",
+    "Thiên tai - cứu nạn": "🆘",
+    "Điều độ": "🧭"
+}
+
     for group_name, group_data in grouped:
-        with st.sidebar.expander(f"📂 {group_name}", expanded=False):
+        icon = icon_map.get(group_name, "📂")
+        with st.sidebar.expander(f"{icon} {group_name}", expanded=False):
+        icon = icon_map.get(group_name, "📂")
+        
             for _, row in group_data.iterrows():
                 label = row['Tên ứng dụng']
                 link = row['Liên kết']
