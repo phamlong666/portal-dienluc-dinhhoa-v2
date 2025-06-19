@@ -377,7 +377,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         except Exception as e:
             st.warning(f"⚠️ Không thể đọc file: {e}")
     
-    if "suco_data" not in st.session_state:
+if "suco_data" not in st.session_state:
     try:
         if os.path.exists("du_lieu_su_co.xlsx"):
             df_uploaded = pd.read_excel("du_lieu_su_co.xlsx")
@@ -385,6 +385,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         else:
             st.session_state.suco_data = []
     except:
+        st.session_state.suco_data = []
         st.session_state.suco_data = []
     
     with st.form("suco_form"):
