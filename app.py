@@ -379,12 +379,13 @@ if uploaded_excel:
         st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công.")
     except Exception as e:
         st.warning(f"⚠️ Không thể xử lý file: {e}")
-elif os.path.exists(STORAGE_FILE_SUCO):
-    try:
-        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
-        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
-    except:
-        st.session_state.suco_data = []
+else:
+    if os.path.exists(STORAGE_FILE_SUCO):
+        try:
+            df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
+            st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+        except:
+            st.session_state.suco_data = []
     if uploaded_excel is not None:
         try:
             df_uploaded = pd.read_excel(uploaded_excel)
