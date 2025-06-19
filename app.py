@@ -104,6 +104,17 @@ st.markdown("""
 # ================== HEADER ==================
 col1, col2 = st.columns([1, 10])
 with col1:
+icon_map = {
+    "An toàn": "🧯",
+    "An toàn, điều độ": "🛡️",
+    "Báo cáo": "📊",
+    "Công nghệ thông tin": "🧠",
+    "Kinh doanh": "💼",
+    "Kỹ thuật": "🔧",
+    "Quản trị nội bộ": "👥",
+    "Thiên tai - cứu nạn": "🆘",
+    "Điều độ": "🧭"
+}
     try:
 
 icon_map = {
