@@ -376,22 +376,9 @@ STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
 # ===== GHI ĐÈ FILE SỰ CỐ VÀ ĐỌC LẠI KHI LOAD =====
 STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
 
-uploaded_excel = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx")
-if uploaded_excel:
-    try:
-        with open(STORAGE_FILE_SUCO, "wb") as f:
-            f.write(uploaded_excel.read())
-        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
-        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
-        st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công.")
-    except Exception as e:
-        st.warning(f"⚠️ Không thể xử lý file: {e}")
-elif os.path.exists(STORAGE_FILE_SUCO):
-    try:
-        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
-        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
-    except:
-        st.session_state.suco_data = []
+
+# ===== GHI ĐÈ FILE SỰ CỐ VÀ ĐỌC LẠI KHI LOAD =====
+STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
 
 uploaded_excel = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx")
 if uploaded_excel:
@@ -410,7 +397,38 @@ elif os.path.exists(STORAGE_FILE_SUCO):
     except:
         st.session_state.suco_data = []
 
-uploaded_excel = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx")
+if uploaded_excel:
+    try:
+        with open(STORAGE_FILE_SUCO, "wb") as f:
+            f.write(uploaded_excel.read())
+        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
+        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+        st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công.")
+    except Exception as e:
+        st.warning(f"⚠️ Không thể xử lý file: {e}")
+elif os.path.exists(STORAGE_FILE_SUCO):
+    try:
+        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
+        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+    except:
+        st.session_state.suco_data = []
+
+if uploaded_excel:
+    try:
+        with open(STORAGE_FILE_SUCO, "wb") as f:
+            f.write(uploaded_excel.read())
+        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
+        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+        st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công.")
+    except Exception as e:
+        st.warning(f"⚠️ Không thể xử lý file: {e}")
+elif os.path.exists(STORAGE_FILE_SUCO):
+    try:
+        df_uploaded = pd.read_excel(STORAGE_FILE_SUCO)
+        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+    except:
+        st.session_state.suco_data = []
+
     if uploaded_excel is not None:
         try:
             df_uploaded = pd.read_excel(uploaded_excel)
