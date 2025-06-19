@@ -28,6 +28,25 @@ import math
 import re
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+st.markdown('''
+<style>
+    html, body {
+        font-size: 20px !important;
+    }
+    h1, h2, h3, h4 {
+        font-size: 2em !important;
+    }
+    button, label, select, input, textarea {
+        font-size: 1.6em !important;
+    }
+    .sidebar-button {
+        font-size: 1.5em !important;
+    }
+    section[data-testid="stSidebar"] {
+        font-size: 1.4em !important;
+    }
+</style>
+''', unsafe_allow_html=True)
 
 
 # ================== CUSTOM CSS ==================
@@ -311,7 +330,7 @@ elif chon_modul == '📑 Phục vụ họp':
                 st.error(f"❌ Lỗi khi nhập file Excel: {e}")
     
     st.set_page_config(layout="wide")
-    st.markdown("<style>html, body, [class*='css']  {font-size: 1.3em !important;}</style>", unsafe_allow_html=True)
+    st.markdown("<style>html, body, [class*='css']  {font-size: 2em !important;}</style>", unsafe_allow_html=True)
 
 elif chon_modul == '📍 Dự báo điểm sự cố':
     st.title("📍 Dự báo điểm sự cố")
