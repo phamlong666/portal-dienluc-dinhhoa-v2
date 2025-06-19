@@ -368,9 +368,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         st.success(f"✅ Đã trích xuất {len(marker_locations)} điểm từ file KMZ.")
     
     st.subheader("📝 Nhập các vụ sự cố lịch sử")
-    
-# ===== GHI ĐÈ FILE SỰ CỐ VÀ ĐỌC LẠI KHI LOAD =====
-STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
+    STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
 uploaded_excel = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx")
 if uploaded_excel:
     try:
@@ -387,8 +385,15 @@ elif os.path.exists(STORAGE_FILE_SUCO):
         st.session_state.suco_data = df_uploaded.to_dict(orient="records")
     except:
         st.session_state.suco_data = []
-
-if "suco_data" not in st.session_state:
+    if uploaded_excel is not None:
+        try:
+            df_uploaded = pd.read_excel(uploaded_excel)
+            st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+            st.success("✅ Đã nạp dữ liệu lịch sử từ file thành công.")
+        except Exception as e:
+            st.warning(f"⚠️ Không thể đọc file: {e}")
+    
+    if "suco_data" not in st.session_state:
         st.session_state.suco_data = []
     
     with st.form("suco_form"):
