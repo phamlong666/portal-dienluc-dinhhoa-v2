@@ -1,11 +1,34 @@
 from pathlib import Path
 import streamlit as st
-st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
-
 import streamlit as st
 import pandas as pd
 from PIL import Image
 import datetime
+import streamlit as st
+import pandas as pd
+import os
+import io
+from datetime import date, time, datetime
+from PIL import Image
+    import streamlit as st
+    import pandas as pd
+    import math
+    import folium
+    from folium.plugins import MarkerCluster
+    from streamlit_folium import st_folium
+    from datetime import datetime
+    import zipfile
+    import xml.etree.ElementTree as ET
+    import json
+    import os
+    import io
+    import re
+import zipfile
+import math
+import re
+
+st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+
 
 # ================== CUSTOM CSS ==================
 st.markdown("""
@@ -114,12 +137,6 @@ st.markdown("""
 
 
 
-import streamlit as st
-import pandas as pd
-import os
-import io
-from datetime import date, time, datetime
-from PIL import Image
 
 st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
@@ -292,19 +309,6 @@ elif chon_modul == '📑 Phục vụ họp':
                 st.rerun()
             except Exception as e:
                 st.error(f"❌ Lỗi khi nhập file Excel: {e}")
-    import streamlit as st
-    import pandas as pd
-    import math
-    import folium
-    from folium.plugins import MarkerCluster
-    from streamlit_folium import st_folium
-    from datetime import datetime
-    import zipfile
-    import xml.etree.ElementTree as ET
-    import json
-    import os
-    import io
-    import re
     
     st.set_page_config(layout="wide")
     st.markdown("<style>html, body, [class*='css']  {font-size: 1.3em !important;}</style>", unsafe_allow_html=True)
