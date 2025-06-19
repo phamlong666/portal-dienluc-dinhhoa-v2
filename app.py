@@ -121,6 +121,18 @@ with col2:
 
 # ================== MENU TỪ GOOGLE SHEET ==================
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
+
+icon_map = {
+    "An toàn": "🧯",
+    "An toàn, điều độ": "🛡️",
+    "Báo cáo": "📊",
+    "Công nghệ thông tin": "🧠",
+    "Kinh doanh": "💼",
+    "Kỹ thuật": "🔧",
+    "Quản trị nội bộ": "👥",
+    "Thiên tai - cứu nạn": "🆘",
+    "Điều độ": "🧭"
+}
 try:
     df = pd.read_csv(sheet_url)
     df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
