@@ -10,19 +10,19 @@ import os
 import io
 from datetime import date, time, datetime
 from PIL import Image
-    import streamlit as st
-    import pandas as pd
-    import math
-    import folium
-    from folium.plugins import MarkerCluster
-    from streamlit_folium import st_folium
-    from datetime import datetime
-    import zipfile
-    import xml.etree.ElementTree as ET
-    import json
-    import os
-    import io
-    import re
+import streamlit as st
+import pandas as pd
+import math
+import folium
+from folium.plugins import MarkerCluster
+from streamlit_folium import st_folium
+from datetime import datetime
+import zipfile
+import xml.etree.ElementTree as ET
+import json
+import os
+import io
+import re
 import zipfile
 import math
 import re
