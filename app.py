@@ -104,30 +104,8 @@ st.markdown("""
 # ================== HEADER ==================
 col1, col2 = st.columns([1, 10])
 with col1:
-icon_map = {
-    "An toàn": "🧯",
-    "An toàn, điều độ": "🛡️",
-    "Báo cáo": "📊",
-    "Công nghệ thông tin": "🧠",
-    "Kinh doanh": "💼",
-    "Kỹ thuật": "🔧",
-    "Quản trị nội bộ": "👥",
-    "Thiên tai - cứu nạn": "🆘",
-    "Điều độ": "🧭"
-}
     try:
 
-icon_map = {
-    "An toàn": "🧯",
-    "An toàn, điều độ": "🛡️",
-    "Báo cáo": "📊",
-    "Công nghệ thông tin": "🧠",
-    "Kinh doanh": "💼",
-    "Kỹ thuật": "🔧",
-    "Quản trị nội bộ": "👥",
-    "Thiên tai - cứu nạn": "🆘",
-    "Điều độ": "🧭"
-}
         logo = Image.open("assets/logo_hinh_tron_hoan_chinh.png")
         st.image(logo, width=70)
     except:
@@ -160,22 +138,13 @@ icon_map = {
     "Điều độ": "🧭"
 }
 
+
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
     
-icon_map = {
-    "An toàn": "🧯",
-    "An toàn, điều độ": "🛡️",
-    "Báo cáo": "📊",
-    "Công nghệ thông tin": "🧠",
-    "Kinh doanh": "💼",
-    "Kỹ thuật": "🔧",
-    "Quản trị nội bộ": "👥",
-    "Thiên tai - cứu nạn": "🆘",
-    "Điều độ": "🧭"
-}
 
     for group_name, group_data in grouped:
         icon = icon_map.get(group_name, "📂")
+        icon = icon_map.get(group_name, '📂')
         with st.sidebar.expander(f"{icon} {group_name}", expanded=False):
         icon = icon_map.get(group_name, "📂")
         
