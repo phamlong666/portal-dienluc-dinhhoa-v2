@@ -99,7 +99,6 @@ st.markdown("""
             box-shadow: 3px 3px 12px rgba(0,0,0,0.3);
         }
     </style>
-""", unsafe_allow_html=True)
 
 # ================== HEADER ==================
 col1, col2 = st.columns([1, 10])
@@ -117,35 +116,16 @@ with col2:
         Trung tâm điều hành số - phần mềm Điện lực Định Hóa
         </h1>
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
-    """, unsafe_allow_html=True)
 
 # ================== MENU TỪ GOOGLE SHEET ==================
 sheet_url = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
 
-    "An toàn": "🧯",
-    "An toàn, điều độ": "🛡️",
-    "Báo cáo": "📊",
-    "Công nghệ thông tin": "🧠",
-    "Kinh doanh": "💼",
-    "Kỹ thuật": "🔧",
-    "Quản trị nội bộ": "👥",
-    "Thiên tai - cứu nạn": "🆘",
-    "Điều độ": "🧭"
 }
 try:
     df = pd.read_csv(sheet_url)
     df = df[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
     grouped = df.groupby('Nhóm chức năng')
 
-    "An toàn": "🧯",
-    "An toàn, điều độ": "🛡️",
-    "Báo cáo": "📊",
-    "Công nghệ thông tin": "🧠",
-    "Kinh doanh": "💼",
-    "Kỹ thuật": "🔧",
-    "Quản trị nội bộ": "👥",
-    "Thiên tai - cứu nạn": "🆘",
-    "Điều độ": "🧭"
 }
 
 
@@ -153,10 +133,7 @@ try:
     
 
     for group_name, group_data in grouped:
-        icon = icon_map.get(group_name, "📂")
-        icon = icon_map.get(group_name, '📂')
         with st.sidebar.expander(f"{icon} {group_name}", expanded=False):
-        icon = icon_map.get(group_name, "📂")
         
             for _, row in group_data.iterrows():
                 label = row['Tên ứng dụng']
@@ -165,7 +142,6 @@ try:
                     <a href="{link}" target="_blank" class="sidebar-button">
                         🚀 {label}
                     </a>
-                """, unsafe_allow_html=True)
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}")
 
@@ -179,7 +155,6 @@ st.info("""
 - Truy cập hệ thống nhanh chóng qua Sidebar
 
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
-""")
 
 # ================== NÚT CHỨC NĂNG CHÍNH ==================
 st.markdown("<br>", unsafe_allow_html=True)
@@ -190,7 +165,6 @@ st.markdown("""
     <a href="https://www.youtube.com" target="_blank" class="main-button">🎬 video tuyên truyền</a>
     <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
-""", unsafe_allow_html=True)
 
 
 
@@ -229,10 +203,6 @@ if chon_modul == '⏰ Nhắc việc':
             submit = st.form_submit_button("📌 Tạo nhắc việc")
         if submit:
             new_row = {
-                "Việc": viec,
-                "Ngày": ngay.strftime("%d/%m/%y"),
-                "Giờ": gio.strftime("%H:%M"),
-                "Email": email
             }
             df = pd.read_csv(REMINDERS_FILE) if os.path.exists(REMINDERS_FILE) else pd.DataFrame()
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
@@ -304,11 +274,6 @@ elif chon_modul == '📑 Phục vụ họp':
                         out.write(f.read())
                     file_names.append(f.name)
                 new_row = {
-                    "Ngày": ngay.strftime("%d/%m/%y"),
-                    "Giờ": gio.strftime("%H:%M"),
-                    "Tên cuộc họp": ten,
-                    "Nội dung": noidung,
-                    "Tệp": ";".join(file_names)
                 }
                 df = pd.read_csv(MEETINGS_FILE) if os.path.exists(MEETINGS_FILE) else pd.DataFrame()
                 df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
@@ -401,6 +366,19 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.session_state.suco_data = df_uploaded.to_dict(orient="records")
             st.success("✅ Đã nạp dữ liệu lịch sử từ file thành công.")
         except Exception as e:
+
+icon_map = {
+"An toàn": "🧯",
+"An toàn, điều độ": "🛡️",
+"Báo cáo": "📊",
+"Công nghệ thông tin": "🧠",
+"Kinh doanh": "💼",
+"Kỹ thuật": "🔧",
+"Quản trị nội bộ": "👥",
+"Thiên tai - cứu nạn": "🆘",
+"Điều độ": "🧭"
+}
+
             st.warning(f"⚠️ Không thể đọc file: {e}")
     
     if "suco_data" not in st.session_state:
@@ -413,16 +391,6 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             ngay = st.date_input("Ngày xảy ra sự cố", format="DD/MM/YYYY")
             dong_suco = st.text_input("Dòng sự cố (Ia, Ib, Ic, Io, 3Uo...)")
             loai_suco = st.selectbox("Loại sự cố", [
-                "1 pha chạm đất (Io)",
-                "2 pha chạm đất (Ia+Ib)",
-                "3 pha chạm đất (Ia+Ib+Ic)",
-                "Ngắn mạch 2 pha (Ia+Ib)",
-                "Ngắn mạch 3 pha (Ia+Ib+Ic)",
-                "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
-                "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
-                "Ngắn mạch 1 pha có Io (Ia+Io)",
-                "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
-                "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
             ])
         with col2:
             vi_tri = st.text_input("Vị trí sự cố")
@@ -432,13 +400,6 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         submitted = st.form_submit_button("Lưu vụ sự cố")
         if submitted:
             st.session_state.suco_data.append({
-                "Tên máy cắt": ten_mc,
-                "Ngày": ngay.strftime("%d/%m/%Y"),
-                "Dòng sự cố": dong_suco,
-                "Loại sự cố": loai_suco,
-                "Vị trí": vi_tri,
-                "Nguyên nhân": nguyen_nhan,
-                "Thời tiết": thoi_tiet
             })
             st.success("✔️ Đã lưu vụ sự cố!")
     
@@ -495,16 +456,6 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     cap_dien_ap = st.selectbox("Cấp điện áp đường dây", ["22kV", "35kV", "110kV"])
     z_default = 4.0  # suất trở hỗn hợp đã cập nhật theo yêu cầu
     loai_suco_input = st.selectbox("Loại sự cố", [
-        "1 pha chạm đất (Io)",
-        "2 pha chạm đất (Ia+Ib)",
-        "3 pha chạm đất (Ia+Ib+Ic)",
-        "Ngắn mạch 2 pha (Ia+Ib)",
-        "Ngắn mạch 3 pha (Ia+Ib+Ic)",
-        "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
-        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
-        "Ngắn mạch 1 pha có Io (Ia+Io)",
-        "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
-        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
     ])
     
     if st.button("Phân tích"):
@@ -552,14 +503,4 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
     
     
-icon_map = {
-    "An toàn": "🧯",
-    "An toàn, điều độ": "🛡️",
-    "Báo cáo": "📊",
-    "Công nghệ thông tin": "🧠",
-    "Kinh doanh": "💼",
-    "Kỹ thuật": "🔧",
-    "Quản trị nội bộ": "👥",
-    "Thiên tai - cứu nạn": "🆘",
-    "Điều độ": "🧭"
 }
