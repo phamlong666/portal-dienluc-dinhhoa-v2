@@ -345,6 +345,7 @@ elif chon_modul == '📑 Phục vụ họp':
     st.markdown("<style>html, body, [class*='css']  {font-size: 1.3em !important;}</style>", unsafe_allow_html=True)
 
 elif chon_modul == '📍 Dự báo điểm sự cố':
+    st.title("📍 Dự báo điểm sự cố")
 
 # ===== GHI ĐÈ FILE SỰ CỐ VÀ ĐỌC LẠI KHI LOAD =====
 STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
@@ -366,7 +367,6 @@ elif os.path.exists(STORAGE_FILE_SUCO):
     except:
         st.session_state.suco_data = []
 
-    st.title("📍 Dự báo điểm sự cố")
     
     marker_locations = {}
     kmz_file = st.file_uploader("📁 Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
