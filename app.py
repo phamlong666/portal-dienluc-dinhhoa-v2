@@ -39,8 +39,6 @@ st.markdown('''
         margin-top: 1em;
     }
     .sidebar-button {
-        color: white !important;
-        text-shadow: 0px 0px 3px rgba(0,0,0,0.5);
         font-size: 1.2em !important;
         padding: 12px;
         margin-bottom: 8px;
@@ -71,8 +69,6 @@ st.markdown("""
             overflow-y: auto;
         }
         .sidebar-button {
-        color: white !important;
-        text-shadow: 0px 0px 3px rgba(0,0,0,0.5);
             display: block;
             background-color: #42A5F5;
             color: white;
@@ -381,14 +377,15 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         except Exception as e:
             st.warning(f"⚠️ Không thể đọc file: {e}")
     
-    
-if "suco_data" not in st.session_state:
+    if "suco_data" not in st.session_state:
     if os.path.exists("du_lieu_su_co.xlsx"):
-        df_uploaded = pd.read_excel("du_lieu_su_co.xlsx")
-        st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+        try:
+            df_uploaded = pd.read_excel("du_lieu_su_co.xlsx")
+            st.session_state.suco_data = df_uploaded.to_dict(orient="records")
+        except:
+            st.session_state.suco_data = []
     else:
         st.session_state.suco_data = []
-
     
     with st.form("suco_form"):
         col1, col2 = st.columns(2)
