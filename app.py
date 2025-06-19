@@ -388,15 +388,7 @@ elif os.path.exists(STORAGE_FILE_SUCO):
     except:
         st.session_state.suco_data = []
 
-    if uploaded_excel is not None:
-        try:
-            df_uploaded = pd.read_excel(uploaded_excel)
-            st.session_state.suco_data = df_uploaded.to_dict(orient="records")
-            st.success("✅ Đã nạp dữ liệu lịch sử từ file thành công.")
-        except Exception as e:
-            st.warning(f"⚠️ Không thể đọc file: {e}")
-    
-    if "suco_data" not in st.session_state:
+if "suco_data" not in st.session_state:
         st.session_state.suco_data = []
     
     with st.form("suco_form"):
