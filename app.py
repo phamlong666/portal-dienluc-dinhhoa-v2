@@ -7,7 +7,7 @@ import pandas as pd
 import yagmail
 
 EMAIL_TAI_KHOAN = "phamlong666@gmail.com"
-EMAIL_MAT_KHAU = "Pctn@12345"  # Mật khẩu ứng dụng Gmail
+EMAIL_MAT_KHAU = "zaacuxxvznflqavt"  # Mật khẩu ứng dụng Gmail
 
 def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
     try:
@@ -194,9 +194,8 @@ st.info("""
 👋 Chào mừng anh Long đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
 📌 **Các tính năng nổi bật:**
-- Phân tích, dự báo điểm sự cố
-- Nhắc việc qua email
-- Kết nối đến Dropbox, Terabox
+- Phân tích thất bại, báo cáo kỹ thuật
+- Lưu trữ và truy xuất lịch sử GPT
 - Truy cập hệ thống nhanh chóng qua Sidebar
 
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
