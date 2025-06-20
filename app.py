@@ -565,10 +565,16 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         except:
             st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
     
+
 # ============================
 # 📈 TIỆN ÍCH: DỰ BÁO THEO ĐIỀU KIỆN CHỌN
 # ============================
 st.subheader("📈 Dự báo điểm sự cố theo điều kiện chọn")
+
+import pandas as pd
+
+# Đường dẫn file dữ liệu đầy đủ (phải tồn tại cùng thư mục với app hoặc được tải lên thủ công)
+DATA_FILE_PATH = "du_bao_su_co_day_du_voi_3uo.xlsx"
 
 # Tải file dữ liệu đã tạo trước
 uploaded_file = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file")
@@ -584,27 +590,28 @@ else:
     st.markdown("📥 Hoặc tải file mẫu: [Tải về mẫu Excel](sandbox:/mnt/data/mau_upload_tra_cuu_su_co.xlsx)", unsafe_allow_html=True)
 
     with st.expander("🔍 Tra cứu nhanh theo điều kiện chọn"):
-        tra_cuu_df = df_with_3uo.copy()
-        col1, col2 = st.columns(2)
-        with col1:
-            selected_line = st.selectbox("Chọn đường dây", sorted(tra_cuu_df["Đường dây"].unique()))
-            selected_fault = st.selectbox("Chọn loại sự cố", sorted(tra_cuu_df["Loại sự cố"].unique()))
-        with col2:
-            input_dong = st.text_input("Nhập dòng cơ sở (cách nhau bởi dấu phẩy)", value="150,300,450")
+        try:
+            tra_cuu_df = pd.read_excel(DATA_FILE_PATH)
+            col1, col2 = st.columns(2)
+            with col1:
+                selected_line = st.selectbox("Chọn đường dây", sorted(tra_cuu_df["Đường dây"].unique()))
+                selected_fault = st.selectbox("Chọn loại sự cố", sorted(tra_cuu_df["Loại sự cố"].unique()))
+            with col2:
+                input_dong = st.text_input("Nhập dòng cơ sở (cách nhau bởi dấu phẩy)", value="150,300,450")
 
-        if st.button("🔍 Tra cứu"):
-            try:
-                dong_values = [int(x.strip()) for x in input_dong.split(",") if x.strip().isdigit()]
-                ket_qua = tra_cuu_df[
-                    (tra_cuu_df["Đường dây"] == selected_line) &
-                    (tra_cuu_df["Loại sự cố"] == selected_fault) &
-                    (tra_cuu_df["Dòng cơ sở (A)"].isin(dong_values))
-                ]
-                if not ket_qua.empty:
-                    st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
-                else:
-                    st.warning("⚠️ Không tìm thấy kết quả phù hợp.")
-            except:
-                st.error("❌ Dữ liệu dòng sự cố không hợp lệ. Vui lòng nhập dạng: 150, 300,...")
-
-    
+            if st.button("🔍 Tra cứu"):
+                try:
+                    dong_values = [int(x.strip()) for x in input_dong.split(",") if x.strip().isdigit()]
+                    ket_qua = tra_cuu_df[
+                        (tra_cuu_df["Đường dây"] == selected_line) &
+                        (tra_cuu_df["Loại sự cố"] == selected_fault) &
+                        (tra_cuu_df["Dòng cơ sở (A)"].isin(dong_values))
+                    ]
+                    if not ket_qua.empty:
+                        st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
+                    else:
+                        st.warning("⚠️ Không tìm thấy kết quả phù hợp.")
+                except:
+                    st.error("❌ Dữ liệu dòng sự cố không hợp lệ. Vui lòng nhập dạng: 150, 300,...")
+        except FileNotFoundError:
+            st.error("❌ Không tìm thấy tệp dữ liệu gốc. Vui lòng tải tệp du_bao_su_co_day_du_voi_3uo.xlsx lên cùng thư mục.")
