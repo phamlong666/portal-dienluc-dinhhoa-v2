@@ -194,8 +194,9 @@ st.info("""
 👋 Chào mừng anh Long đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
 📌 **Các tính năng nổi bật:**
-- Phân tích thất bại, báo cáo kỹ thuật
-- Lưu trữ và truy xuất lịch sử GPT
+- Phân tích,dự báo điểm sự cố
+- Nhắc việc qua email
+- Kết nối tới Dropbox, Terabox
 - Truy cập hệ thống nhanh chóng qua Sidebar
 
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
