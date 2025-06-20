@@ -2,33 +2,6 @@ from pathlib import Path
 import streamlit as st
 import streamlit as st
 import pandas as pd
-
-# ================== GỬI EMAIL SAU KHI TẠO NHẮC VIỆC ==================
-import yagmail
-
-EMAIL_TAI_KHOAN = "phamlong666@gmail.com"
-EMAIL_MAT_KHAU = "zaacuxxvznflqavt"  # Mật khẩu ứng dụng Gmail
-
-def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
-    try:
-        yag = yagmail.SMTP(EMAIL_TAI_KHOAN, EMAIL_MAT_KHAU)
-        subject = "⏰ Nhắc việc từ Trung tâm điều hành số"
-        body = f"""
-        Xin chào,
-
-        Đây là nhắc việc tự động từ hệ thống:
-
-        📌 Việc: {viec}
-        📅 Ngày: {ngay}
-        ⏰ Giờ: {gio}
-
-        Hệ thống điều hành số - Điện lực Định Hóa.
-        """
-        yag.send(to=nguoinhan, subject=subject, contents=body)
-        st.success("📧 Đã gửi email nhắc việc thành công.")
-    except Exception as e:
-        st.warning(f"⚠️ Không gửi được email: {e}")
-
 from PIL import Image
 import datetime
 import streamlit as st
@@ -258,13 +231,6 @@ if chon_modul == '⏰ Nhắc việc':
             df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
             df.to_csv(REMINDERS_FILE, index=False)
             st.success("✅ Đã tạo nhắc việc.")
-            gui_email_nhac_viec(
-                viec,
-                ngay.strftime("%d/%m/%y"),
-                gio.strftime("%H:%M"),
-                email
-            )
-
     
     # Hiển thị & xóa
     if os.path.exists(REMINDERS_FILE):
