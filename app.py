@@ -491,7 +491,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.success("✔️ Đã lưu vụ sự cố!")
     
     if st.session_state.suco_data:
-        st.write("### 📋 Danh sách sự cố đã nhập")
+        with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
         df_suco = pd.DataFrame(st.session_state.suco_data)
         edited_df = st.data_editor(df_suco, num_rows="dynamic", use_container_width=True)
     
@@ -598,78 +598,5 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 st.warning("⚠️ Không tìm thấy dòng sự cố tương đồng trong dữ liệu lịch sử.")
         except:
             st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
-    # ============================
-# 📈 TIỆN ÍCH: DỰ BÁO THEO ĐIỀU KIỆN CHỌN (CÓ GHI NHỚ FILE SAU F5)
-# ============================
-if chon_modul == '📍 Dự báo điểm sự cố':
-    st.markdown("---")
-    st.subheader("📈 Dự báo điểm sự cố theo điều kiện chọn")
-
-    import pandas as pd
-    import os
-
-    DATA_FILE_PATH = "du_bao_su_co_day_du_voi_3uo.xlsx"
-    TEMP_UPLOAD_PATH = "uploaded_tra_cuu.xlsx"
-    df_tra_cuu = None
-
-    uploaded_file = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file")
-
-    # Nếu có upload mới thì lưu lại
-    if uploaded_file:
-        try:
-            with open(TEMP_UPLOAD_PATH, "wb") as f:
-                f.write(uploaded_file.read())
-            df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH)
-            with st.expander("📊 Xem bảng dữ liệu (thu gọn / mở rộng)", expanded=True):
-                st.dataframe(df_tra_cuu, use_container_width=True)
-        except Exception as e:
-            st.error(f"❌ Lỗi đọc file: {e}")
-    # Nếu không upload lại nhưng đã có file tạm, thì dùng lại
-    elif os.path.exists(TEMP_UPLOAD_PATH):
-        try:
-            df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH)
-            with st.expander("📊 Xem bảng dữ liệu (thu gọn / mở rộng)", expanded=True):
-                st.dataframe(df_tra_cuu, use_container_width=True)
-        except:
-            st.error("⚠️ Không đọc được dữ liệu từ file đã lưu.")
-    else:
-        st.markdown("📥 Hoặc tải file mẫu: [Tải về mẫu Excel](sandbox:/mnt/data/mau_upload_tra_cuu_su_co.xlsx)", unsafe_allow_html=True)
-        try:
-            df_tra_cuu = pd.read_excel(DATA_FILE_PATH)
-        except FileNotFoundError:
-            st.error("❌ Không tìm thấy tệp dữ liệu gốc. Vui lòng tải tệp Excel lên.")
-
-    # Nếu có dữ liệu thì hiển thị phần nhập điều kiện tra cứu
-    if df_tra_cuu is not None:
-        with st.expander("🔍 Tra cứu theo điều kiện chọn"):
-            col1, col2 = st.columns(2)
-            with col1:
-                selected_line = st.selectbox("🔌 Chọn đường dây", sorted(df_tra_cuu["Đường dây"].unique()))
-                selected_fault = st.selectbox("⚡ Chọn loại sự cố", sorted(df_tra_cuu["Loại sự cố"].unique()))
-            with col2:
-                st.markdown("### 🔢 Nhập dòng sự cố từng pha")
-                Ia = st.number_input("Ia (A)", min_value=0, step=1)
-                Ib = st.number_input("Ib (A)", min_value=0, step=1)
-                Ic = st.number_input("Ic (A)", min_value=0, step=1)
-                Io = st.number_input("Io (A)", min_value=0, step=1)
-                Uo3 = st.number_input("3Uo (A)", min_value=0, step=1)
-
-            if st.button("🔍 Tra cứu"):
-                input_sum = sum([x for x in [Ia, Ib, Ic, Io, Uo3] if x > 0])
-                if input_sum == 0:
-                    st.warning("⚠️ Vui lòng nhập ít nhất một dòng sự cố.")
-                else:
-                    # Tìm dòng tổng gần nhất
-                    closest_base = df_tra_cuu["Dòng tổng (A)"].sub(input_sum).abs().idxmin()
-                    dong_co_so = df_tra_cuu.loc[closest_base, "Dòng cơ sở (A)"]
-                    ket_qua = df_tra_cuu[
-                        (df_tra_cuu["Đường dây"] == selected_line) &
-                        (df_tra_cuu["Loại sự cố"] == selected_fault) &
-                        (df_tra_cuu["Dòng cơ sở (A)"] == dong_co_so)
-                    ]
-                    if not ket_qua.empty:
-                        st.success(f"✅ Khoảng dòng gần nhất: {int(input_sum)} A → Dòng cơ sở tra cứu: {int(dong_co_so)} A")
-                        st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
-                    else:
-                        st.warning("⚠️ Không tìm thấy kết quả phù hợp.")
+    
     
