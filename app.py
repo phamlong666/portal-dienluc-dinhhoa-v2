@@ -491,7 +491,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.success("✔️ Đã lưu vụ sự cố!")
     
     if st.session_state.suco_data:
-with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
+        with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
             df_suco = pd.DataFrame(st.session_state.suco_data)
             edited_df = st.data_editor(df_suco, num_rows="dynamic", use_container_width=True)
     
