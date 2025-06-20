@@ -167,8 +167,8 @@ st.info("""
 👋 Chào mừng anh Long đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
 📌 **Các tính năng nổi bật:**
-- Phân tích thất bại, báo cáo kỹ thuật
-- Lưu trữ và truy xuất lịch sử GPT
+- Phân tích, dự báo điểm sự cố
+- Kết nối Dropbox, Terabox
 - Truy cập hệ thống nhanh chóng qua Sidebar
 
 ✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
@@ -565,4 +565,46 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         except:
             st.warning("⚠️ Định dạng dòng sự cố không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400")
     
+# ============================
+# 📈 TIỆN ÍCH: DỰ BÁO THEO ĐIỀU KIỆN CHỌN
+# ============================
+st.subheader("📈 Dự báo điểm sự cố theo điều kiện chọn")
+
+# Tải file dữ liệu đã tạo trước
+uploaded_file = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file")
+
+if uploaded_file:
+    try:
+        df_tra_cuu = pd.read_excel(uploaded_file)
+        st.success("✅ Đã nạp dữ liệu thành công.")
+        st.dataframe(df_tra_cuu, use_container_width=True)
+    except Exception as e:
+        st.error(f"❌ Lỗi đọc file: {e}")
+else:
+    st.markdown("📥 Hoặc tải file mẫu: [Tải về mẫu Excel](sandbox:/mnt/data/mau_upload_tra_cuu_su_co.xlsx)", unsafe_allow_html=True)
+
+    with st.expander("🔍 Tra cứu nhanh theo điều kiện chọn"):
+        tra_cuu_df = df_with_3uo.copy()
+        col1, col2 = st.columns(2)
+        with col1:
+            selected_line = st.selectbox("Chọn đường dây", sorted(tra_cuu_df["Đường dây"].unique()))
+            selected_fault = st.selectbox("Chọn loại sự cố", sorted(tra_cuu_df["Loại sự cố"].unique()))
+        with col2:
+            input_dong = st.text_input("Nhập dòng cơ sở (cách nhau bởi dấu phẩy)", value="150,300,450")
+
+        if st.button("🔍 Tra cứu"):
+            try:
+                dong_values = [int(x.strip()) for x in input_dong.split(",") if x.strip().isdigit()]
+                ket_qua = tra_cuu_df[
+                    (tra_cuu_df["Đường dây"] == selected_line) &
+                    (tra_cuu_df["Loại sự cố"] == selected_fault) &
+                    (tra_cuu_df["Dòng cơ sở (A)"].isin(dong_values))
+                ]
+                if not ket_qua.empty:
+                    st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
+                else:
+                    st.warning("⚠️ Không tìm thấy kết quả phù hợp.")
+            except:
+                st.error("❌ Dữ liệu dòng sự cố không hợp lệ. Vui lòng nhập dạng: 150, 300,...")
+
     
