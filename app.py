@@ -22,7 +22,7 @@ def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
         📅 Ngày: {ngay}
         ⏰ Giờ: {gio}
 
-        Hệ thống điều hành số - Điện lực Định Hóa.
+        Hệ thống điều hành số - Đội quản lý Điện lực khu vực Định Hóa.
         """
         yag.send(to=nguoinhan, subject=subject, contents=body)
         st.success("📧 Đã gửi email nhắc việc thành công.")
@@ -54,7 +54,7 @@ import zipfile
 import math
 import re
 
-st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+st.set_page_config(page_title="Cổng điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa", layout="wide")
 st.markdown('''
 <style>
     html, body, [class*="css"] {
@@ -163,7 +163,7 @@ with col1:
 with col2:
     st.markdown("""
         <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
-        Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+        Trung tâm điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa
         </h1>
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
@@ -191,10 +191,10 @@ except Exception as e:
 
 # ================== GIỚI THIỆU ==================
 st.info("""
-👋 Chào mừng anh Long đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
+👋 Chào mừng đến với Trung tâm điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa
 
 📌 **Các tính năng nổi bật:**
-- Phân tích,dự báo điểm sự cố
+- Phân tích, dự báo điểm sự cố
 - Nhắc việc qua email
 - Kết nối tới Dropbox, Terabox
 - Truy cập hệ thống nhanh chóng qua Sidebar
@@ -216,7 +216,7 @@ st.markdown("""
 
 
 
-st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
+st.set_page_config(page_title="Cổng điều hành số - Đội quản lý Điện lực khu vực Định Hóa", layout="wide")
 
 # ===== FILE LƯU DỮ LIỆU =====
 REMINDERS_FILE = "nhac_viec.csv"
