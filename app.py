@@ -61,7 +61,7 @@ if uploaded_data:
             plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
 
             st.markdown(f"#### 📉 Biểu đồ tổn thất - {key}")
-            fig, ax = plt.subplots(figsize=(2.5, 1.8))  # giảm 70%
+            fig, ax = plt.subplots(figsize=(1.5, 0.8))  # giảm 70%
             x = np.arange(2)
             ax.bar(x, [actual, plan], width=0.4, tick_label=["Thực tế", "Kế hoạch"], color=["#3498DB", "#F4D03F"])
             for i, v in enumerate([actual, plan]):
@@ -102,7 +102,7 @@ if uploaded_data:
                 plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
                 data_total.append((key, actual, plan))
 
-            fig2, ax2 = plt.subplots(figsize=(5, 3))
+            fig2, ax2 = plt.subplots(figsize=(3, 1))
             x = np.arange(3)
             actuals = [d[1] for d in data_total]
             plans = [d[2] for d in data_total]
