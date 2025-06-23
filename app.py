@@ -26,19 +26,27 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
 
 if upload_tba_thang:
     df_test = pd.read_excel(upload_tba_thang, skiprows=6)
-    bo_qua = ["Xuat tuyen PA04DAF1223701", "Xuat tuyen PA04DAF1224701", "Xuat tuyen PA04DAF1224702", "Xuat tuyen PA04DAF1224703", "Tổng cộng"]
-    df_test = df_test[df_test.iloc[:, 2].notna()]  # Bỏ NaN
-    df_test = df_test[~df_test.iloc[:, 2].astype(str).str.strip().isin(bo_qua)]
+    bo_qua = [
+        "Xuat tuyen PA04DAF1223701",
+        "Xuat tuyen PA04DAF1224701",
+        "Xuat tuyen PA04DAF1224702",
+        "Xuat tuyen PA04DAF1224703",
+        "Tổng cộng"
+    ]
+
+    df_test = df_test[df_test.iloc[:, 2].notna()]
+    df_test["Tên"] = df_test.iloc[:, 2].astype(str).str.strip()
+    df_test = df_test[~df_test["Tên"].str.contains("Xuat tuyen|Tổng cộng", case=False, na=False)]
 
     df_result = pd.DataFrame()
-    df_result["Tên TBA"] = df_test.iloc[:, 2].astype(str).str.strip()
+    df_result["Tên TBA"] = df_test["Tên"]
     df_result["Công suất"] = df_test.iloc[:, 3]
     df_result["Điện nhận"] = df_test.iloc[:, 6]
     df_result["Thương phẩm"] = df_test.iloc[:, 6] - df_test.iloc[:, 7]
     df_result["Điện tổn thất"] = df_test.iloc[:, 13].round(0).astype("Int64")
-    df_result["Tỷ lệ tổn thất"] = df_test.iloc[:, 14].astype(float) / 100  # Loại bỏ ký hiệu % nếu có
-    df_result["Kế hoạch"] = df_test.iloc[:, 15].astype(float) / 100
-    df_result["So sánh"] = df_test.iloc[:, 16].astype(float) / 100
+    df_result["Tỷ lệ tổn thất"] = pd.to_numeric(df_test.iloc[:, 14], errors='coerce') / 100
+    df_result["Kế hoạch"] = pd.to_numeric(df_test.iloc[:, 15], errors='coerce') / 100
+    df_result["So sánh"] = pd.to_numeric(df_test.iloc[:, 16], errors='coerce') / 100
     df_result.reset_index(drop=True, inplace=True)
     df_result.insert(0, "STT", range(1, len(df_result) + 1))
 
@@ -46,23 +54,24 @@ if upload_tba_thang:
         st.dataframe(df_result.style.format({"Tỷ lệ tổn thất": "{:.2%}", "Kế hoạch": "{:.2%}", "So sánh": "{:.2%}"}))
 
     st.markdown("### 📉 Biểu đồ tổn thất theo TBA")
-    fig, ax = plt.subplots(figsize=(14, 3))
+    fig, ax = plt.subplots(figsize=(14, 2))
     try:
         tba_names = df_result["Tên TBA"].astype(str)
-        ton_that = df_result["Điện tổn thất"].astype(float) / 10  # Giảm 10 lần kích thước
+        ton_that = df_result["Điện tổn thất"].astype(float) / 1000
         ax.bar(tba_names, ton_that)
-        ax.set_xlabel("Tên TBA", fontsize=14)
-        ax.set_ylabel("Tổn thất (đơn vị rút gọn)", fontsize=14)
-        ax.set_title("Biểu đồ tổn thất các TBA công cộng", fontsize=16)
+        ax.set_xlabel("Tên TBA", fontsize=12)
+        ax.set_ylabel("Tổn thất (x1000 kWh)", fontsize=12)
+        ax.set_title("Biểu đồ tổn thất các TBA công cộng", fontsize=14)
         ax.tick_params(axis='x', labelrotation=90)
         for i, v in enumerate(ton_that):
-            ax.text(i, v, str(int(v*10)), ha='center', va='bottom', fontsize=10)
+            ax.text(i, v, str(int(v*1000)), ha='center', va='bottom', fontsize=8)
         st.pyplot(fig)
     except Exception as e:
         st.error(f"Lỗi khi vẽ biểu đồ: {e}")
 
     st.markdown("### 📈 Biểu đồ tổn thất theo ngưỡng")
     def classify_threshold(val):
+        if pd.isna(val): return "Không xác định"
         if val < 0.02:
             return "<2%"
         elif val < 0.03:
@@ -97,3 +106,12 @@ if upload_tba_thang:
     )
     ax3.set_title("Tỷ trọng TBA theo ngưỡng tổn thất")
     st.pyplot(fig3)
+
+    st.markdown("### 📤 Xuất báo cáo")
+    csv = df_result.to_csv(index=False).encode('utf-8-sig')
+    st.download_button(
+        label="📥 Tải bảng tổn thất dưới dạng CSV",
+        data=csv,
+        file_name='BaoCao_TonThat_TBA.csv',
+        mime='text/csv'
+    )
