@@ -10,96 +10,103 @@ from docx.shared import Inches
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📊 Báo cáo tổn thất các TBA công cộng")
 
-# ==== Hàm xử lý dữ liệu ====
+# ====== Session State Duy Trì Dữ Liệu ======
+if "uploaded_data" not in st.session_state:
+    st.session_state.uploaded_data = {
+        "Theo Tháng": None,
+        "Lũy kế": None,
+        "Cùng kỳ": None
+    }
+
+# ====== Hàm đọc và xử lý file ánh xạ ======
 def read_mapping_sheet(uploaded_file):
     try:
         xls = pd.ExcelFile(uploaded_file)
         sheet_name = [s for s in xls.sheet_names if "ánh xạ" in s.lower()][0]
         df = pd.read_excel(xls, sheet_name=sheet_name)
 
-        for col in df.columns:
-            if df[col].dtype in [np.float64, np.int64]:
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-
-        percent_cols = [col for col in df.columns if "%" in col]
+        percent_cols = [col for col in df.columns if "%" in col or "tỷ lệ" in col.lower()]
         for col in percent_cols:
             df[col] = pd.to_numeric(
                 df[col].astype(str)
                 .str.replace("%", "", regex=False)
                 .str.replace(",", ".", regex=False)
-                .replace("", np.nan),
-                errors="coerce",
+                .replace("", np.nan), errors="coerce"
             )
+
+        float_cols = df.select_dtypes(include=[np.number]).columns
+        df[float_cols] = df[float_cols].apply(lambda x: np.round(x, 2))
         return df
     except Exception as e:
-        st.warning(f"Lỗi khi đọc file {uploaded_file.name}: {e}")
+        st.warning(f"Lỗi đọc file {uploaded_file.name}: {e}")
         return None
 
+# ====== Giao diện tải file ======
+col1, col2, col3 = st.columns(3)
+with col1:
+    file_thang = st.file_uploader("📅 Tải File Theo Tháng", type="xlsx")
+    if file_thang: st.session_state.uploaded_data["Theo Tháng"] = file_thang
+with col2:
+    file_luyke = st.file_uploader("📊 Tải File Lũy Kế", type="xlsx")
+    if file_luyke: st.session_state.uploaded_data["Lũy kế"] = file_luyke
+with col3:
+    file_cungky = st.file_uploader("📈 Tải File Cùng Kỳ", type="xlsx")
+    if file_cungky: st.session_state.uploaded_data["Cùng kỳ"] = file_cungky
 
+# ====== Nút làm mới dữ liệu ======
+if st.button("🔄 Làm mới (Xóa dữ liệu đã tải)"):
+    st.session_state.uploaded_data = {"Theo Tháng": None, "Lũy kế": None, "Cùng kỳ": None}
+    st.experimental_rerun()
+
+# ====== Xử lý và hiển thị từng bảng ======
 def calc_overall_rate(df):
-    try:
-        total_input = df["Điện nhận (kWh)"].sum()
-        total_loss = df["Điện tổn thất (kWh)"].sum()
-        actual_rate = (total_loss / total_input * 100) if total_input else 0.0
-        plan_col = [col for col in df.columns if "kế hoạch" in col.lower()][0]
-        plan_series = df[plan_col]
-        plan_rate = (
-            ((plan_series / 100) * df["Điện nhận (kWh)"]).sum() / total_input * 100
-            if total_input
-            else 0.0
-        )
-        return round(actual_rate, 2), round(plan_rate, 2)
-    except:
-        return 0.0, 0.0
+    total_input = df["Điện nhận đầu nguồn"].sum()
+    total_loss = df["Tổn thất (KWh)"].sum()
+    actual = (total_loss / total_input * 100) if total_input else 0.0
+    plan_col = [col for col in df.columns if "kế hoạch" in col.lower()]
+    if plan_col:
+        plan = df[plan_col[0]].mean()
+    else:
+        plan = 0.0
+    return round(actual, 2), round(plan, 2)
 
-# ==== Giao diện tải file ====
-col_uploads = st.columns(3)
-with col_uploads[0]:
-    file_thang = st.file_uploader("📅 File Theo Tháng", type=["xlsx"], key="tba_thang")
-with col_uploads[1]:
-    file_luyke = st.file_uploader("📊 File Lũy kế", type=["xlsx"], key="tba_luyke")
-with col_uploads[2]:
-    file_cungky = st.file_uploader("📈 File Cùng kỳ", type=["xlsx"], key="tba_ck")
-
-uploaded_files = {
-    "Theo Tháng": file_thang,
-    "Lũy kế": file_luyke,
-    "Cùng kỳ": file_cungky,
-}
-
-# ==== Ghép phân tích nhiều file vào bảng chung ====
-combined_df = []
-result_summary = []
-
-for label, file in uploaded_files.items():
+for label, file in st.session_state.uploaded_data.items():
     if file:
         df = read_mapping_sheet(file)
+        st.markdown(f"<h3 style='font-size:22px; color:blue;'>📂 Dữ liệu tổn thất - {label}</h3>", unsafe_allow_html=True)
+        with st.expander(f"🧾 Mở rộng/Thu gọn bảng {label}"):
+            st.dataframe(df, use_container_width=True, height=350)
+
+        actual, plan = calc_overall_rate(df)
+
+        # Vẽ biểu đồ
+        st.markdown(f"<h4 style='font-size:18px;'>📉 Biểu đồ tổn thất - {label}</h4>", unsafe_allow_html=True)
+        fig, ax = plt.subplots(figsize=(4,2))
+        bars = ax.bar(["Thực hiện", "Kế hoạch"], [actual, plan], color=["#1976D2", "#FFC107"])
+        ax.set_ylim(0, max(actual, plan) * 1.5 + 1)
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}%", ha='center', fontsize=8)
+        st.pyplot(fig)
+
+# ====== Gộp và so sánh (khi có nhiều file) ======
+if all(st.session_state.uploaded_data.values()):
+    st.markdown("<h3 style='font-size:22px;'>📊 So sánh tổn thất giữa các loại dữ liệu</h3>", unsafe_allow_html=True)
+    combined_df = pd.DataFrame()
+    for label, file in st.session_state.uploaded_data.items():
+        df = read_mapping_sheet(file)
         if df is not None:
-            df["Nguồn dữ liệu"] = label
-            combined_df.append(df)
-            act, plan = calc_overall_rate(df)
-            result_summary.append({"Loại dữ liệu": label, "Tổn thất thực tế (%)": act, "Tổn thất kế hoạch (%)": plan})
+            df["Loại"] = label
+            combined_df = pd.concat([combined_df, df], ignore_index=True)
 
-if combined_df:
-    st.markdown("<h3 style='font-size:20px;'>📄 Bảng dữ liệu tổng hợp</h3>", unsafe_allow_html=True)
-    final_df = pd.concat(combined_df, ignore_index=True)
-    st.markdown("<style>div[data-testid='stDataFrame'] table {font-size: 16px;}</style>", unsafe_allow_html=True)
-    st.dataframe(final_df, use_container_width=True)
+    with st.expander("📋 Xem bảng tổng hợp so sánh"):
+        st.dataframe(combined_df, use_container_width=True, height=400)
 
-    df_chart = pd.DataFrame(result_summary)
-    st.markdown("#### 📉 So sánh tổn thất giữa các loại dữ liệu")
-    fig, ax = plt.subplots(figsize=(5, 2.5))
-    x = np.arange(len(df_chart))
-    width = 0.35
-    ax.bar(x - width/2, df_chart["Tổn thất thực tế (%)"], width, label="Thực tế")
-    ax.bar(x + width/2, df_chart["Tổn thất kế hoạch (%)"], width, label="Kế hoạch")
-    ax.set_xticks(x)
-    ax.set_xticklabels(df_chart["Loại dữ liệu"])
-    ax.legend()
-    for i in range(len(df_chart)):
-        ax.text(x[i] - width/2, df_chart["Tổn thất thực tế (%)"][i] + 0.2, f"{df_chart["Tổn thất thực tế (%)"][i]:.2f}%", ha="center", fontsize=7)
-        ax.text(x[i] + width/2, df_chart["Tổn thất kế hoạch (%)"][i] + 0.2, f"{df_chart["Tổn thất kế hoạch (%)"][i]:.2f}%", ha="center", fontsize=7)
-    ax.set_ylim(0, max(df_chart[["Tổn thất thực tế (%)", "Tổn thất kế hoạch (%)"]].max()) * 1.4)
-    st.pyplot(fig)
-else:
-    st.info("Vui lòng tải lên ít nhất một file dữ liệu để phân tích.")
+    # Xuất báo cáo Word/PDF/PowerPoint (chờ bước 2)
+    # ... (sẽ bổ sung nếu anh Long yêu cầu cụ thể từng định dạng sau)
+
+# ====== Gợi ý tiếp theo ======
+st.markdown("""
+---
+📌 **Gợi ý:** Anh có thể yêu cầu xuất báo cáo giống hình ảnh mẫu, tạo file PDF/PPT, hoặc chia nhỏ các tổn thất theo ngưỡng.
+""")
