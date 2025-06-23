@@ -60,9 +60,11 @@ if uploaded_data:
             st.markdown(f"#### 📉 Biểu đồ tổn thất - {key}")
             fig, ax = plt.subplots(figsize=(1.2, 0.6))  # khung nhỏ hơn nửa bảng
             x = np.arange(2)
-            ax.bar(x, [actual, plan], width=0.3, tick_label=["Thực tế", "Kế hoạch"], color=["#3498DB", "#F4D03F"])
+            ax.bar(x, [actual, plan], width=0.2, tick_label=["Thực tế", "Kế hoạch"], color=["#3498DB", "#F4D03F"])
+            ax.set_xticklabels(["Thực tế", "Kế hoạch"], fontsize=6)  # nhỏ chữ trục
             for i, v in enumerate([actual, plan]):
-                ax.text(i, v + 0.1, f"{v:.2f}%", ha="center", fontsize=7)
+                ax.text(i, v + 0.1, f"{v:.2f}%", ha="center", fontsize=6)  # nhỏ chữ số liệu
+            ax.legend(["Tỷ lệ"], fontsize=6)
             ax.set_ylim(0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5)
             st.pyplot(fig)
 
@@ -100,12 +102,12 @@ if uploaded_data:
             x = np.arange(3)
             actuals = [d[1] for d in data_total]
             plans = [d[2] for d in data_total]
-            ax2.bar(x - 0.2, actuals, width=0.4, label="Thực tế", color="#3498DB")
-            ax2.bar(x + 0.2, plans, width=0.4, label="Kế hoạch", color="#F1C40F")
+            ax2.bar(x - 0.2, actuals, width=0.3, label="Thực tế", color="#3498DB")
+            ax2.bar(x + 0.2, plans, width=0.3, label="Kế hoạch", color="#F1C40F")
             ax2.set_xticks(x)
-            ax2.set_xticklabels(file_keys)
-            ax2.legend()
+            ax2.set_xticklabels(file_keys, fontsize=6)
+            ax2.legend(fontsize=6)
             for i, (a, p) in enumerate(zip(actuals, plans)):
-                ax2.text(i - 0.2, a + 0.1, f"{a:.2f}%", ha="center", fontsize=8)
-                ax2.text(i + 0.2, p + 0.1, f"{p:.2f}%", ha="center", fontsize=8)
+                ax2.text(i - 0.2, a + 0.1, f"{a:.2f}%", ha="center", fontsize=6)
+                ax2.text(i + 0.2, p + 0.1, f"{p:.2f}%", ha="center", fontsize=6)
             st.pyplot(fig2)
