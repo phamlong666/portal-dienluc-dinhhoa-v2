@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import io
+import random
 from docx import Document
 from docx.shared import Inches
 from pptx import Presentation
@@ -12,19 +13,26 @@ st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📊 Báo cáo tổn thất các TBA công cộng")
 
 file_keys = ["Theo Tháng", "Lũy kế", "Cùng kỳ"]
-uploaded_data = {}
+if "uploaded_data" not in st.session_state:
+    st.session_state.uploaded_data = {}
+uploaded_data = st.session_state.uploaded_data
 
 col_uploads = st.columns(3)
 for i, key in enumerate(file_keys):
     with col_uploads[i]:
         file = st.file_uploader(f"📁 File {key}", type=["xlsx"], key=f"upload_{key}")
         if file:
+            if key not in st.session_state.uploaded_data:
+                st.session_state.uploaded_data[key] = pd.read_excel(file, sheet_name=[s for s in pd.ExcelFile(file).sheet_names if "ánh xạ" in s.lower()][0])
+            df = st.session_state.uploaded_data[key]
             xls = pd.ExcelFile(file)
             sheet_name = [s for s in xls.sheet_names if "ánh xạ" in s.lower()][0]
             df = pd.read_excel(xls, sheet_name=sheet_name)
             uploaded_data[key] = df
 
 if uploaded_data:
+    st.button("🔄 Làm mới", on_click=lambda: st.session_state.clear())
+
     if st.button("📌 Tạo báo cáo"):
 
         def export_powerpoint(title, actual, plan):
@@ -42,7 +50,7 @@ if uploaded_data:
             return prs
 
         for key, df in uploaded_data.items():
-            st.subheader(f"🔍 Dữ liệu: {key}")
+            with st.expander(f"🔍 Dữ liệu: {key}", expanded=True):
             df_copy = df.copy()
             percent_cols = [col for col in df_copy.columns if "%" in col]
             for col in percent_cols:
@@ -63,7 +71,7 @@ if uploaded_data:
                     x=["Thực tế", "Kế hoạch"],
                     y=[actual, plan],
                     marker=dict(
-                        color=["#1f77b4", "#ff7f0e"],
+                        color=random.sample(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'], 2),
                         line=dict(color='black', width=1)
                     ),
                     text=[f"{actual:.2f}%", f"{plan:.2f}%"],
@@ -102,7 +110,7 @@ if uploaded_data:
                 x=x,
                 y=actuals,
                 name='Thực tế',
-                marker_color='#1f77b4',
+                marker_color=random.choice(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']),
                 text=[f"{v:.2f}%" for v in actuals],
                 textposition='auto'
             ))
@@ -110,7 +118,7 @@ if uploaded_data:
                 x=x,
                 y=plans,
                 name='Kế hoạch',
-                marker_color='#ff7f0e',
+                marker_color=random.choice(['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']),
                 text=[f"{v:.2f}%" for v in plans],
                 textposition='auto'
             ))
