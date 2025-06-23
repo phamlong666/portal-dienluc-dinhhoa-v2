@@ -1,4 +1,4 @@
-
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,6 +10,7 @@ from docx.shared import Inches
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📊 Báo cáo tổn thất các TBA công cộng")
 
+# ==== Hàm xử lý dữ liệu ====
 def read_mapping_sheet(uploaded_file):
     try:
         xls = pd.ExcelFile(uploaded_file)
@@ -18,7 +19,7 @@ def read_mapping_sheet(uploaded_file):
 
         for col in df.columns:
             if df[col].dtype in [np.float64, np.int64]:
-                df[col] = df[col].round(0).astype("Int64")
+                df[col] = pd.to_numeric(df[col], errors="coerce")
 
         percent_cols = [col for col in df.columns if "%" in col]
         for col in percent_cols:
@@ -33,6 +34,7 @@ def read_mapping_sheet(uploaded_file):
     except Exception as e:
         st.warning(f"Lỗi khi đọc file {uploaded_file.name}: {e}")
         return None
+
 
 def calc_overall_rate(df):
     try:
@@ -50,6 +52,7 @@ def calc_overall_rate(df):
     except:
         return 0.0, 0.0
 
+# ==== Giao diện tải file ====
 col_uploads = st.columns(3)
 with col_uploads[0]:
     file_thang = st.file_uploader("📅 File Theo Tháng", type=["xlsx"], key="tba_thang")
@@ -64,43 +67,39 @@ uploaded_files = {
     "Cùng kỳ": file_cungky,
 }
 
+# ==== Ghép phân tích nhiều file vào bảng chung ====
+combined_df = []
+result_summary = []
+
 for label, file in uploaded_files.items():
     if file:
         df = read_mapping_sheet(file)
         if df is not None:
-            st.markdown(f"### 📄 Bảng dữ liệu: {label}")
-            with st.expander(f"📌 Xem bảng {label}", expanded=False):
-                percent_cols = [col for col in df.columns if "%" in col]
-                for col in percent_cols:
-                    df[col] = df[col].map(lambda x: f"{x:.2f}".replace(".", ",") + "%" if pd.notna(x) else "")
-                st.dataframe(df, use_container_width=True)
-
+            df["Nguồn dữ liệu"] = label
+            combined_df.append(df)
             act, plan = calc_overall_rate(df)
+            result_summary.append({"Loại dữ liệu": label, "Tổn thất thực tế (%)": act, "Tổn thất kế hoạch (%)": plan})
 
-            st.markdown(f"#### 📉 Biểu đồ tổn thất - {label}")
-            fig, ax = plt.subplots(figsize=(5, 3))
-            x = np.arange(2)
-            ax.bar(x, [act, plan], width=0.4, tick_label=["Thực tế", "Kế hoạch"])
-            for i, v in enumerate([act, plan]):
-                ax.text(i, v + 0.2, f"{v:.2f}".replace(".", ",") + "%", ha="center", fontsize=8)
-            ax.set_ylim(0, max(act, plan) * 1.5 if max(act, plan) > 0 else 5)
-            st.pyplot(fig)
+if combined_df:
+    st.markdown("<h3 style='font-size:20px;'>📄 Bảng dữ liệu tổng hợp</h3>", unsafe_allow_html=True)
+    final_df = pd.concat(combined_df, ignore_index=True)
+    st.markdown("<style>div[data-testid='stDataFrame'] table {font-size: 16px;}</style>", unsafe_allow_html=True)
+    st.dataframe(final_df, use_container_width=True)
 
-            # Tạo báo cáo Word
-            doc = Document()
-            doc.add_heading(f"Báo cáo tổn thất TBA - {label}", 0)
-            doc.add_paragraph(f"Tỷ lệ tổn thất thực tế: {act:.2f}%")
-            doc.add_paragraph(f"Tỷ lệ tổn thất kế hoạch: {plan:.2f}%")
-            chart_stream = io.BytesIO()
-            fig.savefig(chart_stream, format="png")
-            chart_stream.seek(0)
-            doc.add_picture(chart_stream, width=Inches(4))
-
-            word_bytes = io.BytesIO()
-            doc.save(word_bytes)
-            st.download_button(
-                label=f"⬇️ Tải báo cáo Word ({label})",
-                data=word_bytes.getvalue(),
-                file_name=f"BaoCao_{label}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            )
+    df_chart = pd.DataFrame(result_summary)
+    st.markdown("#### 📉 So sánh tổn thất giữa các loại dữ liệu")
+    fig, ax = plt.subplots(figsize=(5, 2.5))
+    x = np.arange(len(df_chart))
+    width = 0.35
+    ax.bar(x - width/2, df_chart["Tổn thất thực tế (%)"], width, label="Thực tế")
+    ax.bar(x + width/2, df_chart["Tổn thất kế hoạch (%)"], width, label="Kế hoạch")
+    ax.set_xticks(x)
+    ax.set_xticklabels(df_chart["Loại dữ liệu"])
+    ax.legend()
+    for i in range(len(df_chart)):
+        ax.text(x[i] - width/2, df_chart["Tổn thất thực tế (%)"][i] + 0.2, f"{df_chart["Tổn thất thực tế (%)"][i]:.2f}%", ha="center", fontsize=7)
+        ax.text(x[i] + width/2, df_chart["Tổn thất kế hoạch (%)"][i] + 0.2, f"{df_chart["Tổn thất kế hoạch (%)"][i]:.2f}%", ha="center", fontsize=7)
+    ax.set_ylim(0, max(df_chart[["Tổn thất thực tế (%)", "Tổn thất kế hoạch (%)"]].max()) * 1.4)
+    st.pyplot(fig)
+else:
+    st.info("Vui lòng tải lên ít nhất một file dữ liệu để phân tích.")
