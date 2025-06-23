@@ -8,14 +8,18 @@ from docx import Document
 from docx.shared import Inches
 from fpdf import FPDF
 from pptx import Presentation
-from pptx.util import Inches as PPTInches, Pt
+from pptx.util import Inches as PPTInches
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📊 Báo cáo tổn thất các TBA công cộng")
 
-# ====== Session State ======
+# ====== Session State Duy Trì Dữ Liệu ======
 if "uploaded_data" not in st.session_state:
-    st.session_state.uploaded_data = {"Theo Tháng": None, "Lũy kế": None, "Cùng kỳ": None}
+    st.session_state.uploaded_data = {
+        "Theo Tháng": None,
+        "Lũy kế": None,
+        "Cùng kỳ": None
+    }
 
 # ====== Hàm đọc và xử lý file ánh xạ ======
 def read_mapping_sheet(uploaded_file):
@@ -26,9 +30,12 @@ def read_mapping_sheet(uploaded_file):
 
         percent_cols = [col for col in df.columns if "%" in col or "tỷ lệ" in col.lower()]
         for col in percent_cols:
-            df[col] = pd.to_numeric(df[col].astype(str).str.replace("%", "", regex=False)
-                                     .str.replace(",", ".", regex=False)
-                                     .replace("", np.nan), errors="coerce")
+            df[col] = pd.to_numeric(
+                df[col].astype(str)
+                .str.replace("%", "", regex=False)
+                .str.replace(",", ".", regex=False)
+                .replace("", np.nan), errors="coerce"
+            )
 
         float_cols = df.select_dtypes(include=[np.number]).columns
         df[float_cols] = df[float_cols].apply(lambda x: np.round(x, 2))
@@ -49,102 +56,98 @@ with col3:
     file_cungky = st.file_uploader("📈 Tải File Cùng Kỳ", type="xlsx")
     if file_cungky: st.session_state.uploaded_data["Cùng kỳ"] = file_cungky
 
-if st.button("🔄 Làm mới"):
+# ====== Nút làm mới dữ liệu ======
+if st.button("🔄 Làm mới (Xóa dữ liệu đã tải)"):
     st.session_state.uploaded_data = {"Theo Tháng": None, "Lũy kế": None, "Cùng kỳ": None}
     st.experimental_rerun()
 
-# ====== Hàm tính toán ======
+# ====== Xử lý và hiển thị từng bảng ======
 def calc_overall_rate(df):
-    input_col = [c for c in df.columns if "điện nhận" in c.lower()]
-    loss_col = [c for c in df.columns if "tổn thất" in c.lower() and "kwh" in c.lower()]
-    plan_col = [c for c in df.columns if "kế hoạch" in c.lower()]
-    if not input_col or not loss_col:
+    total_input = df.get("Điện nhận đầu nguồn")
+    total_loss = df.get("Tổn thất (KWh)")
+    if total_input is None or total_loss is None:
         return 0.0, 0.0
-    total_input = df[input_col[0]].sum()
-    total_loss = df[loss_col[0]].sum()
-    actual = (total_loss / total_input * 100) if total_input else 0.0
+    actual = (total_loss.sum() / total_input.sum() * 100) if total_input.sum() else 0.0
+    plan_col = [col for col in df.columns if "kế hoạch" in col.lower()]
     plan = df[plan_col[0]].mean() if plan_col else 0.0
     return round(actual, 2), round(plan, 2)
 
-# ====== Hiển thị dữ liệu ======
 chart_data = {}
 for label, file in st.session_state.uploaded_data.items():
     if file:
         df = read_mapping_sheet(file)
         st.markdown(f"<h3 style='font-size:22px; color:blue;'>📂 Dữ liệu tổn thất - {label}</h3>", unsafe_allow_html=True)
-        st.dataframe(df.style.set_properties(**{'font-size': '16px'}), use_container_width=True, height=350)
+        with st.expander(f"🧾 Mở rộng/Thu gọn bảng {label}"):
+            st.markdown("<style> .element-container table { font-size: 16px !important; } </style>", unsafe_allow_html=True)
+            st.dataframe(df, use_container_width=True, height=350)
 
         actual, plan = calc_overall_rate(df)
         chart_data[label] = (actual, plan)
 
+        # Vẽ biểu đồ
         st.markdown(f"<h4 style='font-size:18px;'>📉 Biểu đồ tổn thất - {label}</h4>", unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(2, 1))
         bars = ax.bar(["Thực hiện", "Kế hoạch"], [actual, plan], color=["#1976D2", "#FFC107"])
         ax.set_ylim(0, max(actual, plan) * 1.5 + 1)
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2, height + 0.1, f"{height:.2f}%", ha='center', fontsize=6)
+            ax.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}%", ha='center', fontsize=8)
         st.pyplot(fig)
 
-# ====== Biểu đồ tổng hợp so sánh ======
+# ====== Vẽ biểu đồ hợp nhất ======
 if chart_data:
-    st.markdown("<h3 style='font-size:20px;'>📊 Biểu đồ so sánh tổng hợp</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='font-size:22px;'>📊 Biểu đồ so sánh tổng hợp</h3>", unsafe_allow_html=True)
     fig, ax = plt.subplots(figsize=(3, 2))
     labels = list(chart_data.keys())
-    actuals = [v[0] for v in chart_data.values()]
-    plans = [v[1] for v in chart_data.values()]
+    actual_vals = [v[0] for v in chart_data.values()]
+    plan_vals = [v[1] for v in chart_data.values()]
     width = 0.35
     x = np.arange(len(labels))
-    ax.bar(x - width/2, actuals, width, label='Thực hiện')
-    ax.bar(x + width/2, plans, width, label='Kế hoạch')
+    ax.bar(x - width/2, actual_vals, width, label="Thực hiện", color="#42A5F5")
+    ax.bar(x + width/2, plan_vals, width, label="Kế hoạch", color="#FFB300")
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.legend()
     st.pyplot(fig)
 
-# ====== Xuất báo cáo ======
+# ====== Nút tải báo cáo ======
 def export_docx(data):
     doc = Document()
     doc.add_heading("Báo cáo tổn thất TBA", 0)
-    for label, (actual, plan) in data.items():
-        doc.add_heading(f"{label}", level=1)
-        doc.add_paragraph(f"Tỷ lệ tổn thất thực hiện: {actual}%")
-        doc.add_paragraph(f"Tỷ lệ tổn thất kế hoạch: {plan}%")
+    for label, (a, p) in data.items():
+        doc.add_paragraph(f"{label}: Thực hiện {a}% | Kế hoạch {p}%")
     buf = io.BytesIO()
     doc.save(buf)
-    st.download_button("📄 Tải báo cáo Word", data=buf.getvalue(), file_name="bao_cao_ton_that.docx")
+    st.download_button("📄 Tải báo cáo Word", buf.getvalue(), file_name="bao_cao_ton_that.docx")
 
 def export_pdf(data):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Báo cáo tổn thất TBA", ln=1, align='C')
-    for label, (actual, plan) in data.items():
-        pdf.cell(200, 10, txt=f"{label}: Thực hiện {actual}%, Kế hoạch {plan}%", ln=1)
+    pdf.add_font('DejaVu', '', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', uni=True)
+    pdf.set_font("DejaVu", size=14)
+    pdf.cell(200, 10, txt="Báo cáo tổn thất TBA", ln=True, align='C')
+    for label, (a, p) in data.items():
+        pdf.cell(200, 10, txt=f"{label}: Thực hiện {a}% | Kế hoạch {p}%", ln=True)
     buf = io.BytesIO()
     pdf.output(buf)
-    st.download_button("📄 Tải báo cáo PDF", data=buf.getvalue(), file_name="bao_cao_ton_that.pdf")
+    st.download_button("📄 Tải báo cáo PDF", buf.getvalue(), file_name="bao_cao_ton_that.pdf")
 
 def export_pptx(data):
-    ppt = Presentation()
-    slide_layout = ppt.slide_layouts[1]
-    slide = ppt.slides.add_slide(slide_layout)
-    slide.shapes.title.text = "Báo cáo tổn thất TBA"
-    content = ""
-    for label, (actual, plan) in data.items():
-        content += f"{label}: Thực hiện {actual}%, Kế hoạch {plan}%\n"
-    slide.placeholders[1].text = content
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[5])
+    title = slide.shapes.title
+    title.text = "Báo cáo tổn thất TBA"
+    top = PPTInches(1.5)
+    for label, (a, p) in data.items():
+        body_shape = slide.shapes.add_textbox(PPTInches(1), top, PPTInches(8), PPTInches(0.5))
+        tf = body_shape.text_frame
+        tf.text = f"{label}: Thực hiện {a}% | Kế hoạch {p}%"
+        top += PPTInches(0.5)
     buf = io.BytesIO()
-    ppt.save(buf)
-    st.download_button("📊 Tải báo cáo PowerPoint", data=buf.getvalue(), file_name="bao_cao_ton_that.pptx")
+    prs.save(buf)
+    st.download_button("📊 Tải báo cáo PowerPoint", buf.getvalue(), file_name="bao_cao_ton_that.pptx")
 
 if chart_data:
     export_docx(chart_data)
     export_pdf(chart_data)
     export_pptx(chart_data)
-
-# ====== Gợi ý tiếp ======
-st.markdown("""
----
-📌 **Gợi ý:** Có thể thêm phân tích theo ngưỡng tổn thất hoặc xuất bảng chi tiết từng TBA theo yêu cầu.
-""")
