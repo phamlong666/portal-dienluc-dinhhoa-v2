@@ -1,4 +1,4 @@
-from pathlib import Path
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -6,17 +6,10 @@ import matplotlib.pyplot as plt
 import io
 from docx import Document
 from docx.shared import Inches
-from pptx import Presentation
-from pptx.util import Inches as PPT_Inches
-from fpdf import FPDF
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📊 Báo cáo tổn thất các TBA công cộng")
 
-output_dir = Path("/mnt/data")
-output_dir.mkdir(parents=True, exist_ok=True)
-
-# ==== Hàm xử lý dữ liệu ====
 def read_mapping_sheet(uploaded_file):
     try:
         xls = pd.ExcelFile(uploaded_file)
@@ -41,7 +34,6 @@ def read_mapping_sheet(uploaded_file):
         st.warning(f"Lỗi khi đọc file {uploaded_file.name}: {e}")
         return None
 
-
 def calc_overall_rate(df):
     try:
         total_input = df["Điện nhận (kWh)"].sum()
@@ -58,7 +50,6 @@ def calc_overall_rate(df):
     except:
         return 0.0, 0.0
 
-# ==== Giao diện tải file ====
 col_uploads = st.columns(3)
 with col_uploads[0]:
     file_thang = st.file_uploader("📅 File Theo Tháng", type=["xlsx"], key="tba_thang")
@@ -73,7 +64,6 @@ uploaded_files = {
     "Cùng kỳ": file_cungky,
 }
 
-# ==== Xử lý và hiển thị từng file ====
 for label, file in uploaded_files.items():
     if file:
         df = read_mapping_sheet(file)
@@ -96,7 +86,7 @@ for label, file in uploaded_files.items():
             ax.set_ylim(0, max(act, plan) * 1.5 if max(act, plan) > 0 else 5)
             st.pyplot(fig)
 
-            # ==== Tạo báo cáo Word ====
+            # Tạo báo cáo Word
             doc = Document()
             doc.add_heading(f"Báo cáo tổn thất TBA - {label}", 0)
             doc.add_paragraph(f"Tỷ lệ tổn thất thực tế: {act:.2f}%")
@@ -105,12 +95,12 @@ for label, file in uploaded_files.items():
             fig.savefig(chart_stream, format="png")
             chart_stream.seek(0)
             doc.add_picture(chart_stream, width=Inches(4))
-            word_file = output_dir / f"BaoCao_{label}.docx"
-            doc.save(word_file)
 
+            word_bytes = io.BytesIO()
+            doc.save(word_bytes)
             st.download_button(
                 label=f"⬇️ Tải báo cáo Word ({label})",
-                data=open(word_file, "rb").read(),
-                file_name=word_file.name,
+                data=word_bytes.getvalue(),
+                file_name=f"BaoCao_{label}.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
