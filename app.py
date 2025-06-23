@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import io
 from docx import Document
 from docx.shared import Inches
 from pptx import Presentation
-from pptx.util import Inches as PptInches, Pt
+from pptx.util import Inches as PptInches
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📊 Báo cáo tổn thất các TBA công cộng")
@@ -58,32 +58,24 @@ if uploaded_data:
             plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
 
             st.markdown(f"#### 📉 Biểu đồ tổn thất - {key}")
-            fig, ax = plt.subplots(figsize=(1.2, 0.6))  # khung nhỏ hơn nửa bảng
-            x = np.arange(2)
-            ax.bar(x, [actual, plan], width=0.2, tick_label=["Thực tế", "Kế hoạch"], color=["#3498DB", "#F4D03F"])
-            ax.set_xticklabels(["Thực tế", "Kế hoạch"], fontsize=6)  # nhỏ chữ trục
-            for i, v in enumerate([actual, plan]):
-                ax.text(i, v + 0.1, f"{v:.2f}%", ha="center", fontsize=6)  # nhỏ chữ số liệu
-            ax.legend(["Tỷ lệ"], fontsize=6)
-            ax.set_ylim(0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5)
-            st.pyplot(fig)
-
-            with io.BytesIO() as doc_bytes:
-                doc = Document()
-                doc.add_heading(f"Báo cáo tổn thất TBA - {key}", 0)
-                doc.add_paragraph(f"Tỷ lệ tổn thất thực tế: {actual:.2f}%")
-                doc.add_paragraph(f"Tỷ lệ tổn thất kế hoạch: {plan:.2f}%")
-                img_stream = io.BytesIO()
-                fig.savefig(img_stream, format="png")
-                img_stream.seek(0)
-                doc.add_picture(img_stream, width=Inches(4))
-                doc.save(doc_bytes)
-                st.download_button(f"⬇️ Tải báo cáo Word ({key})", doc_bytes.getvalue(), f"BaoCao_{key}.docx")
-
-            ppt = export_powerpoint(f"Báo cáo tổn thất TBA - {key}", actual, plan)
-            ppt_bytes = io.BytesIO()
-            ppt.save(ppt_bytes)
-            st.download_button(f"⬇️ Tải báo cáo PowerPoint ({key})", ppt_bytes.getvalue(), f"BaoCao_{key}.pptx")
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=["Thực tế", "Kế hoạch"],
+                y=[actual, plan],
+                text=[f"{actual:.2f}%", f"{plan:.2f}%"],
+                textposition='auto',
+                marker_color=["#3498DB", "#F4D03F"],
+                width=[0.3, 0.3],
+                name="Tỷ lệ tổn thất"
+            ))
+            fig.update_layout(
+                height=250,
+                margin=dict(l=30, r=30, t=30, b=30),
+                font=dict(size=10),
+                showlegend=False,
+                yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5])
+            )
+            st.plotly_chart(fig, use_container_width=True)
 
         if len(uploaded_data) == 3:
             st.markdown("### 📊 Biểu đồ hợp nhất tổn thất các file")
@@ -98,16 +90,31 @@ if uploaded_data:
                 plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
                 data_total.append((key, actual, plan))
 
-            fig2, ax2 = plt.subplots(figsize=(3, 1))
-            x = np.arange(3)
+            fig2 = go.Figure()
+            x = file_keys
             actuals = [d[1] for d in data_total]
             plans = [d[2] for d in data_total]
-            ax2.bar(x - 0.2, actuals, width=0.3, label="Thực tế", color="#3498DB")
-            ax2.bar(x + 0.2, plans, width=0.3, label="Kế hoạch", color="#F1C40F")
-            ax2.set_xticks(x)
-            ax2.set_xticklabels(file_keys, fontsize=6)
-            ax2.legend(fontsize=6)
-            for i, (a, p) in enumerate(zip(actuals, plans)):
-                ax2.text(i - 0.2, a + 0.1, f"{a:.2f}%", ha="center", fontsize=6)
-                ax2.text(i + 0.2, p + 0.1, f"{p:.2f}%", ha="center", fontsize=6)
-            st.pyplot(fig2)
+            fig2.add_trace(go.Bar(
+                x=x,
+                y=actuals,
+                name='Thực tế',
+                marker_color='#3498DB',
+                text=[f"{v:.2f}%" for v in actuals],
+                textposition='auto'
+            ))
+            fig2.add_trace(go.Bar(
+                x=x,
+                y=plans,
+                name='Kế hoạch',
+                marker_color='#F4D03F',
+                text=[f"{v:.2f}%" for v in plans],
+                textposition='auto'
+            ))
+            fig2.update_layout(
+                barmode='group',
+                height=300,
+                margin=dict(l=30, r=30, t=30, b=30),
+                font=dict(size=10),
+                yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actuals + plans) * 1.2 if actuals else 5])
+            )
+            st.plotly_chart(fig2, use_container_width=True)
