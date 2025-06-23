@@ -73,12 +73,12 @@ for label, file in uploaded_files.items():
                 percent_cols = [col for col in df.columns if "%" in col]
                 for col in percent_cols:
                     df[col] = df[col].map(lambda x: f"{x:.2f}".replace(".", ",") + "%" if pd.notna(x) else "")
-                st.dataframe(df, use_container_width=True)
+                st.dataframe(df.style.set_properties(**{'font-size': '24pt'}), use_container_width=True)
 
             act, plan = calc_overall_rate(df)
 
             st.markdown(f"#### 📉 Biểu đồ tổn thất - {label}")
-            fig, ax = plt.subplots(figsize=(5, 3))
+            fig, ax = plt.subplots(figsize=(1.5, 0.9))
             x = np.arange(2)
             ax.bar(x, [act, plan], width=0.4, tick_label=["Thực tế", "Kế hoạch"])
             for i, v in enumerate([act, plan]):
@@ -158,7 +158,7 @@ def export_pdf(fig):
     st.success("✅ Đã tạo file bao_cao_ton_that.pdf")
 
 # ====================== APP =========================
-st.title("📊 Phân tích tổn thất điện năng - Điện lực Định Hóa")
+# Đã xoá nội dung Phân tích tổn thất điện năng - Điện lực Định Hóa
 
 uploaded_files = st.file_uploader("Tải lên 1 đến 3 file tổn thất", type=["xlsx"], accept_multiple_files=True)
 
@@ -171,3 +171,130 @@ if uploaded_files:
     st.subheader("⬇️ Xuất báo cáo")
     if st.button("Tải báo cáo PDF"):
         export_pdf(fig)
+
+
+
+
+# ========== PHÂN TÍCH TỔNG HỢP TỔN THẤT 3 FILE ==========
+import matplotlib.pyplot as plt
+from pptx import Presentation
+from pptx.util import Inches
+from fpdf import FPDF
+import io
+
+def create_combined_chart(data_dict):
+    fig, ax = plt.subplots(figsize=(6, 3))
+    width = 0.25
+    labels = ["Thực tế", "Kế hoạch"]
+    x = range(len(labels))
+
+    for idx, (label, (act, plan)) in enumerate(data_dict.items()):
+        ax.bar([i + idx * width for i in x], [act, plan], width=width, label=label)
+
+    ax.set_xticks([i + width for i in x])
+    ax.set_xticklabels(labels)
+    ax.set_ylabel("Tỷ lệ tổn thất (%)")
+    ax.set_title("So sánh tổn thất các báo cáo")
+    ax.legend()
+    fig.tight_layout()
+    return fig
+
+def export_pdf_ascii_title(image_path, filename):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=14)
+    pdf.cell(200, 10, txt="BAO CAO TON THAT TONG HOP", ln=True, align="C")
+    pdf.image(image_path, x=10, y=30, w=180)
+    output_path = f"/mnt/data/{filename}.pdf"
+    pdf.output(output_path)
+    return output_path
+
+def export_pptx_from_file(image_path, filename):
+    prs = Presentation()
+    slide_layout = prs.slide_layouts[5]
+    slide = prs.slides.add_slide(slide_layout)
+    left = Inches(1)
+    top = Inches(1.5)
+    slide.shapes.add_picture(image_path, left, top, width=Inches(8))
+    output_path = f"/mnt/data/{filename}.pptx"
+    prs.save(output_path)
+    return output_path
+
+# ======= Giao diện phân tích tổn thất tổng hợp =======
+st.markdown("## 📊 Tổng hợp tổn thất từ 3 file")
+file1 = st.file_uploader("📥 File Theo Tháng", type=["xlsx"], key="file1")
+file2 = st.file_uploader("📥 File Lũy kế", type=["xlsx"], key="file2")
+file3 = st.file_uploader("📥 File Cùng kỳ", type=["xlsx"], key="file3")
+
+uploaded_files_combo = {
+    "Theo Tháng": file1,
+    "Lũy kế": file2,
+    "Cùng kỳ": file3
+}
+
+def read_mapping_sheet(uploaded_file):
+    try:
+        xls = pd.ExcelFile(uploaded_file)
+        sheet_name = [s for s in xls.sheet_names if "ánh xạ" in s.lower()][0]
+        df = pd.read_excel(xls, sheet_name=sheet_name)
+
+        for col in df.columns:
+            if df[col].dtype in [np.float64, np.int64]:
+                df[col] = df[col].round(0).astype("Int64")
+
+        percent_cols = [col for col in df.columns if "%" in col]
+        for col in percent_cols:
+            df[col] = pd.to_numeric(
+                df[col].astype(str)
+                .str.replace("%", "", regex=False)
+                .str.replace(",", ".", regex=False)
+                .replace("", np.nan),
+                errors="coerce",
+            )
+        return df
+    except Exception as e:
+        st.warning(f"Lỗi khi đọc file {uploaded_file.name}: {e}")
+        return None
+
+def calc_overall_rate(df):
+    try:
+        total_input = df["Điện nhận (kWh)"].sum()
+        total_loss = df["Điện tổn thất (kWh)"].sum()
+        actual_rate = (total_loss / total_input * 100) if total_input else 0.0
+        plan_col = [col for col in df.columns if "kế hoạch" in col.lower()][0]
+        plan_series = df[plan_col]
+        plan_rate = (
+            ((plan_series / 100) * df["Điện nhận (kWh)"]).sum() / total_input * 100
+            if total_input
+            else 0.0
+        )
+        return round(actual_rate, 2), round(plan_rate, 2)
+    except:
+        return 0.0, 0.0
+
+result_dict = {}
+for name, file in uploaded_files_combo.items():
+    if file:
+        df = read_mapping_sheet(file)
+        if df is not None:
+            act, plan = calc_overall_rate(df)
+            result_dict[name] = (act, plan)
+
+if result_dict:
+    st.success("✅ Đã xử lý xong dữ liệu tổn thất từ các file.")
+    fig = create_combined_chart(result_dict)
+    image_path = "/mnt/data/bieu_do_ton_that_tong_hop.png"
+    fig.savefig(image_path)
+    st.image(image_path, caption="Biểu đồ tổn thất tổng hợp", use_column_width=True)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("⬇️ Xuất PDF"):
+            export_pdf_ascii_title(image_path, "bao_cao_ton_that_thuc_te")
+            st.success("✅ Đã xuất file PDF")
+            st.markdown("[📄 Tải PDF](sandbox:/mnt/data/bao_cao_ton_that_thuc_te.pdf)")
+    with col2:
+        if st.button("⬇️ Xuất PowerPoint"):
+            export_pptx_from_file(image_path, "bao_cao_ton_that_thuc_te")
+            st.success("✅ Đã xuất file PowerPoint")
+            st.markdown("[📊 Tải PPTX](sandbox:/mnt/data/bao_cao_ton_that_thuc_te.pptx)")
