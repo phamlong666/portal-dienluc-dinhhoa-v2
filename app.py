@@ -9,10 +9,7 @@ st.markdown("""
     .big-font {
         font-size:24px !important;
     }
-    .stButton>button {
-        font-size: 20px !important;
-    }
-    .stFileUploader label {
+    .stButton>button, .stFileUploader label div {
         font-size: 20px !important;
     }
     </style>
@@ -29,18 +26,19 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
 
 if upload_tba_thang:
     df_test = pd.read_excel(upload_tba_thang, skiprows=6)
-    df_test = df_test[~df_test.iloc[:, 2].astype(str).str.contains("Xuat tuyen PA04DAF1223701|PA04DAF1224701|PA04DAF1224702|PA04DAF1224703|Tổng cộng", na=False)]
-    df_test = df_test[df_test.iloc[:, 2].notna()]  # Remove NaN names
+    bo_qua = ["Xuat tuyen PA04DAF1223701", "Xuat tuyen PA04DAF1224701", "Xuat tuyen PA04DAF1224702", "Xuat tuyen PA04DAF1224703", "Tổng cộng"]
+    df_test = df_test[df_test.iloc[:, 2].notna()]  # Bỏ NaN
+    df_test = df_test[~df_test.iloc[:, 2].astype(str).str.strip().isin(bo_qua)]
 
     df_result = pd.DataFrame()
-    df_result["Tên TBA"] = df_test.iloc[:, 2].astype(str)
+    df_result["Tên TBA"] = df_test.iloc[:, 2].astype(str).str.strip()
     df_result["Công suất"] = df_test.iloc[:, 3]
     df_result["Điện nhận"] = df_test.iloc[:, 6]
     df_result["Thương phẩm"] = df_test.iloc[:, 6] - df_test.iloc[:, 7]
     df_result["Điện tổn thất"] = df_test.iloc[:, 13].round(0).astype("Int64")
-    df_result["Tỷ lệ tổn thất"] = df_test.iloc[:, 14]
-    df_result["Kế hoạch"] = df_test.iloc[:, 15]
-    df_result["So sánh"] = df_test.iloc[:, 16]
+    df_result["Tỷ lệ tổn thất"] = df_test.iloc[:, 14].astype(float) / 100  # Loại bỏ ký hiệu % nếu có
+    df_result["Kế hoạch"] = df_test.iloc[:, 15].astype(float) / 100
+    df_result["So sánh"] = df_test.iloc[:, 16].astype(float) / 100
     df_result.reset_index(drop=True, inplace=True)
     df_result.insert(0, "STT", range(1, len(df_result) + 1))
 
@@ -48,17 +46,17 @@ if upload_tba_thang:
         st.dataframe(df_result.style.format({"Tỷ lệ tổn thất": "{:.2%}", "Kế hoạch": "{:.2%}", "So sánh": "{:.2%}"}))
 
     st.markdown("### 📉 Biểu đồ tổn thất theo TBA")
-    fig, ax = plt.subplots(figsize=(14, 6))
+    fig, ax = plt.subplots(figsize=(14, 3))
     try:
         tba_names = df_result["Tên TBA"].astype(str)
-        ton_that = df_result["Điện tổn thất"].astype(float)
+        ton_that = df_result["Điện tổn thất"].astype(float) / 10  # Giảm 10 lần kích thước
         ax.bar(tba_names, ton_that)
         ax.set_xlabel("Tên TBA", fontsize=14)
-        ax.set_ylabel("Điện tổn thất (kWh)", fontsize=14)
+        ax.set_ylabel("Tổn thất (đơn vị rút gọn)", fontsize=14)
         ax.set_title("Biểu đồ tổn thất các TBA công cộng", fontsize=16)
         ax.tick_params(axis='x', labelrotation=90)
         for i, v in enumerate(ton_that):
-            ax.text(i, v, str(int(v)), ha='center', va='bottom', fontsize=10)
+            ax.text(i, v, str(int(v*10)), ha='center', va='bottom', fontsize=10)
         st.pyplot(fig)
     except Exception as e:
         st.error(f"Lỗi khi vẽ biểu đồ: {e}")
