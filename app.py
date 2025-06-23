@@ -58,20 +58,24 @@ if uploaded_data:
             plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
 
             st.markdown(f"#### 📉 Biểu đồ tổn thất - {key}")
-            fig = go.Figure()
-            fig.add_trace(go.Bar(
-                x=["Thực tế", "Kế hoạch"],
-                y=[actual, plan],
-                text=[f"{actual:.2f}%", f"{plan:.2f}%"],
-                textposition='auto',
-                marker_color=["#3498DB", "#F4D03F"],
-                width=[0.3, 0.3],
-                name="Tỷ lệ tổn thất"
-            ))
+            fig = go.Figure(data=[
+                go.Bar(
+                    x=["Thực tế", "Kế hoạch"],
+                    y=[actual, plan],
+                    marker=dict(
+                        color=["#1f77b4", "#ff7f0e"],
+                        line=dict(color='black', width=1)
+                    ),
+                    text=[f"{actual:.2f}%", f"{plan:.2f}%"],
+                    textposition='auto',
+                    width=[0.4, 0.4]
+                )
+            ])
             fig.update_layout(
-                height=250,
-                margin=dict(l=30, r=30, t=30, b=30),
-                font=dict(size=10),
+                title="Tỷ lệ tổn thất điện năng",
+                margin=dict(l=20, r=20, t=40, b=20),
+                height=350,
+                font=dict(size=12),
                 showlegend=False,
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5])
             )
@@ -98,7 +102,7 @@ if uploaded_data:
                 x=x,
                 y=actuals,
                 name='Thực tế',
-                marker_color='#3498DB',
+                marker_color='#1f77b4',
                 text=[f"{v:.2f}%" for v in actuals],
                 textposition='auto'
             ))
@@ -106,15 +110,15 @@ if uploaded_data:
                 x=x,
                 y=plans,
                 name='Kế hoạch',
-                marker_color='#F4D03F',
+                marker_color='#ff7f0e',
                 text=[f"{v:.2f}%" for v in plans],
                 textposition='auto'
             ))
             fig2.update_layout(
                 barmode='group',
-                height=300,
+                height=350,
                 margin=dict(l=30, r=30, t=30, b=30),
-                font=dict(size=10),
+                font=dict(size=12),
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actuals + plans) * 1.2 if actuals else 5])
             )
             st.plotly_chart(fig2, use_container_width=True)
