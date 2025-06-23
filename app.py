@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import io
-import random
 from docx import Document
 from docx.shared import Inches
 from pptx import Presentation
@@ -22,17 +21,14 @@ for i, key in enumerate(file_keys):
     with col_uploads[i]:
         file = st.file_uploader(f"📁 File {key}", type=["xlsx"], key=f"upload_{key}")
         if file:
-            if key not in st.session_state.uploaded_data:
-                st.session_state.uploaded_data[key] = pd.read_excel(file, sheet_name=[s for s in pd.ExcelFile(file).sheet_names if "ánh xạ" in s.lower()][0])
-            df = st.session_state.uploaded_data[key]
             xls = pd.ExcelFile(file)
             sheet_name = [s for s in xls.sheet_names if "ánh xạ" in s.lower()][0]
             df = pd.read_excel(xls, sheet_name=sheet_name)
             uploaded_data[key] = df
 
-if uploaded_data:
-    st.button("🔄 Làm mới", on_click=lambda: st.session_state.clear())
+st.button("🔄 Làm mới", on_click=lambda: st.session_state.clear())
 
+if uploaded_data:
     if st.button("📌 Tạo báo cáo"):
 
         def export_powerpoint(title, actual, plan):
@@ -83,7 +79,7 @@ if uploaded_data:
                 title="Tỷ lệ tổn thất điện năng",
                 margin=dict(l=20, r=20, t=40, b=20),
                 height=350,
-                font=dict(size=12),
+                font=dict(size=16),
                 showlegend=False,
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5])
             )
@@ -126,7 +122,7 @@ if uploaded_data:
                 barmode='group',
                 height=350,
                 margin=dict(l=30, r=30, t=30, b=30),
-                font=dict(size=12),
+                font=dict(size=16),
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actuals + plans) * 1.2 if actuals else 5])
             )
             st.plotly_chart(fig2, use_container_width=True)
