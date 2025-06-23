@@ -61,13 +61,12 @@ if uploaded_data:
             plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
 
             st.markdown(f"#### 📉 Biểu đồ tổn thất - {key}")
-            fig, ax = plt.subplots(figsize=(1.5, 0.8))  # giảm 70%
-            x = np.arange(2)
-            ax.bar(x, [actual, plan], width=0.4, tick_label=["Thực tế", "Kế hoạch"], color=["#3498DB", "#F4D03F"])
-            for i, v in enumerate([actual, plan]):
-                ax.text(i, v + 0.2, f"{v:.2f}%", ha="center", fontsize=10)
-            ax.set_ylim(0, max(actual, plan) * 1.4 if max(actual, plan) > 0 else 5)
-            st.pyplot(fig)
+            fig, ax = plt.subplots(figsize=(1.5, 1.2))  # chỉnh lại khung nhỏ hơn
+x = np.arange(2)
+ax.bar(x, [actual, plan], width=0.3, tick_label=["Thực tế", "Kế hoạch"], color=["#3498DB", "#F4D03F"])
+for i, v in enumerate([actual, plan]):
+    ax.text(i, v + 0.2, f"{v:.2f}%", ha="center", fontsize=8)
+ax.set_ylim(0, max(actual, plan) * 1.3 if max(actual, plan) > 0 else 5)
 
             # Xuất Word
             doc = Document()
