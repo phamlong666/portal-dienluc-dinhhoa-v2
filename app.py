@@ -1,109 +1,71 @@
-# ============================================
-# Mắt Nâu xin phục hồi toàn bộ modul biểu đồ và xuất file PDF cho anh Long
-def export_pdf_from_charts(fig_list, filename="bao_cao_ton_that.pdf"):
-    from fpdf import FPDF
-    import matplotlib.pyplot as plt
-    import tempfile
-    import os
+# ================== STREAMLIT SETUP ==================
+from pathlib import Path
+import streamlit as st
+st.set_page_config(page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa", layout="wide")
 
+# ================== IMPORT THƯ VIỆN ==================
+import pandas as pd
+import matplotlib.pyplot as plt
+from io import BytesIO
+from fpdf import FPDF
+import base64
+
+# ================== HÀM VẼ BIỂU ĐỒ ==================
+def draw_combined_chart(data):
+    fig, ax = plt.subplots(figsize=(6, 4))
+    bar_width = 0.35
+    x = range(len(data))
+
+    actuals = [d['actual'] for d in data]
+    plans = [d['plan'] for d in data]
+    labels = [d['label'] for d in data]
+
+    ax.bar(x, actuals, width=bar_width, label='Thực hiện', color='orange')
+    ax.bar([p + bar_width for p in x], plans, width=bar_width, label='Kế hoạch', color='green')
+
+    ax.set_xticks([p + bar_width / 2 for p in x])
+    ax.set_xticklabels(labels, fontsize=11)
+    ax.legend(fontsize=10)
+    plt.tight_layout()
+    return fig
+
+# ================== HÀM XUẤT PDF ==================
+def export_pdf(chart_data):
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     pdf.set_font("Arial", size=14)
-    pdf.cell(200, 10, txt="Báo cáo tổn thất - Trung tâm điều hành số", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
-    pdf.ln(5)
+    pdf.cell(200, 10, txt="BÁO CÁO PHÂN TÍCH TỔN THẤT", ln=True, align="C")
 
-    for fig in fig_list:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-            fig.savefig(tmpfile.name, dpi=150, bbox_inches='tight')
-            pdf.image(tmpfile.name, w=160)  # width ~ A4 size - margin
-            os.unlink(tmpfile.name)
-            pdf.ln(10)
+    for i, fig in enumerate(chart_data):
+        buf = BytesIO()
+        fig.savefig(buf, format="png", dpi=150, bbox_inches='tight')
+        buf.seek(0)
+        img_path = f"chart_{i}.png"
+        with open(img_path, "wb") as f:
+            f.write(buf.getbuffer())
+        pdf.image(img_path, x=10, w=pdf.w * 0.7)
+        buf.close()
 
-    pdf.output(filename)
-    return filename
+    pdf_buffer = BytesIO()
+    pdf.output(pdf_buffer)
+    pdf_buffer.seek(0)
+    b64 = base64.b64encode(pdf_buffer.read()).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="bao_cao_ton_that.pdf">📄 Tải báo cáo PDF</a>'
+    st.markdown(href, unsafe_allow_html=True)
 
-# ============================================
-# Biểu đồ ngưỡng tổn thất
+# ================== GIAO DIỆN STREAMLIT ==================
+st.title("📊 Biểu đồ tổn thất - Điện lực Định Hóa")
 
-def ve_bieu_do_nguong(df):
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+sample_data = [
+    {"label": "Theo Tháng", "actual": 0.0312, "plan": 0.0712},
+    {"label": "Lũy kế", "actual": 0.0389, "plan": 0.0712},
+    {"label": "Cùng kỳ", "actual": 0.0444, "plan": 0.0712},
+]
 
-    nguong_labels = [
-        "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%",
-        ">=5 và <7%", ">=7%"
-    ]
+st.subheader("🔎 So sánh tỷ lệ tổn thất")
+fig1 = draw_combined_chart(sample_data)
+st.pyplot(fig1)
 
-    df_group = df.groupby(["Ngưỡng tổn thất", "Loại"]).size().unstack().reindex(nguong_labels).fillna(0)
-    df_group = df_group.astype(int)
-
-    # Bar chart
-    fig, ax = plt.subplots(figsize=(10, 5))
-    df_group.plot(kind="bar", ax=ax, color=["lightgray", "#0072B2"])
-    ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=14)
-    ax.set_ylabel("Số lượng")
-    ax.set_xlabel("")
-    ax.legend(title="Loại")
-    plt.xticks(rotation=0)
-    plt.tight_layout()
-
-    return fig
-
-# ============================================
-# Biểu đồ tròn tỷ trọng
-
-def ve_bieu_do_ti_trong(df):
-    import matplotlib.pyplot as plt
-
-    df_ratio = df["Ngưỡng tổn thất"].value_counts().reindex([
-        "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%",
-        ">=5 và <7%", ">=7%"
-    ]).fillna(0)
-
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d4aa00", "#17becf", "#d62728"]
-
-    fig, ax = plt.subplots(figsize=(5, 5))
-    wedges, texts, autotexts = ax.pie(
-        df_ratio,
-        labels=df_ratio.index,
-        colors=colors,
-        autopct='%1.2f%%',
-        startangle=90,
-        textprops={'fontsize': 10}
-    )
-    ax.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=13)
-    plt.tight_layout()
-    return fig
-
-# ============================================
-# Biểu đồ hợp nhất so sánh
-
-def ve_bieu_do_hop_nhat(df):
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-
-    df_count = df.groupby(["Ngưỡng tổn thất", "Loại"]).size().unstack().fillna(0)
-    df_ratio = df["Ngưỡng tổn thất"].value_counts().sort_index()
-    nguong_labels = [
-        "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%",
-        ">=5 và <7%", ">=7%"
-    ]
-
-    fig, ax1 = plt.subplots(figsize=(10, 5))
-
-    df_count = df_count.reindex(nguong_labels)
-    df_count.plot(kind="bar", ax=ax1, position=0, width=0.4, color=["gray", "orange"], legend=False)
-    ax1.set_ylabel("Số TBA")
-    ax1.set_xlabel("")
-    ax1.set_title("So sánh ngưỡng tổn thất (Số TBA - Tỷ trọng)")
-    ax1.tick_params(axis='y')
-
-    ax2 = ax1.twinx()
-    ax2.plot(df_ratio.index, df_ratio.values / df_ratio.values.sum(), 'o--', color='blue')
-    ax2.set_ylabel("Tỷ trọng")
-    ax2.tick_params(axis='y')
-
-    fig.tight_layout()
-    return fig
+# ================== XUẤT PDF ==================
+if st.button("📤 Tải báo cáo PDF"):
+    export_pdf([fig1])
