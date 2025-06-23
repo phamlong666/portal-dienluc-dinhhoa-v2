@@ -44,10 +44,10 @@ def read_mapping_sheet(uploaded_file):
 # ====== Giao diện tải file ======
 col1, col2, col3 = st.columns(3)
 with col1:
-    file_thang = st.file_uploader("🗕️ Tải File Theo Tháng", type="xlsx")
+    file_thang = st.file_uploader("📅 Tải File Theo Tháng", type="xlsx")
     if file_thang: st.session_state.uploaded_data["Theo Tháng"] = file_thang
 with col2:
-    file_luyke = st.file_uploader("📈 Tải File Lũy Kế", type="xlsx")
+    file_luyke = st.file_uploader("📊 Tải File Lũy Kế", type="xlsx")
     if file_luyke: st.session_state.uploaded_data["Lũy kế"] = file_luyke
 with col3:
     file_cungky = st.file_uploader("📈 Tải File Cùng Kỳ", type="xlsx")
@@ -60,10 +60,8 @@ if st.button("🔄 Làm mới (Xóa dữ liệu đã tải)"):
 
 # ====== Xử lý và hiển thị từng bảng ======
 def calc_overall_rate(df):
-    col_dien_nhan = [col for col in df.columns if "điện nhận" in col.lower()][0]
-    col_ton_that = [col for col in df.columns if "tổn thất" in col.lower()][0]
-    total_input = df[col_dien_nhan].sum()
-    total_loss = df[col_ton_that].sum()
+    total_input = df["Điện nhận đầu nguồn"].sum()
+    total_loss = df["Tổn thất (KWh)"].sum()
     actual = (total_loss / total_input * 100) if total_input else 0.0
     plan_col = [col for col in df.columns if "kế hoạch" in col.lower()]
     if plan_col:
@@ -76,14 +74,17 @@ for label, file in st.session_state.uploaded_data.items():
     if file:
         df = read_mapping_sheet(file)
         st.markdown(f"<h3 style='font-size:22px; color:blue;'>📂 Dữ liệu tổn thất - {label}</h3>", unsafe_allow_html=True)
-        with st.expander(f"🗒 Mở rộng/Thu gọn bảng {label}"):
-            st.dataframe(df, use_container_width=True, height=380)
+        with st.expander(f"🧾 Mở rộng/Thu gọn bảng {label}"):
+            st.dataframe(df.style.set_table_styles(
+                [{'selector': 'th', 'props': [('font-size', '16px')]},
+                 {'selector': 'td', 'props': [('font-size', '14px')]}]
+            ), use_container_width=True, height=300)
 
         actual, plan = calc_overall_rate(df)
 
         # Vẽ biểu đồ
         st.markdown(f"<h4 style='font-size:18px;'>📉 Biểu đồ tổn thất - {label}</h4>", unsafe_allow_html=True)
-        fig, ax = plt.subplots(figsize=(4,2))
+        fig, ax = plt.subplots(figsize=(2, 1.2))
         bars = ax.bar(["Thực hiện", "Kế hoạch"], [actual, plan], color=["#1976D2", "#FFC107"])
         ax.set_ylim(0, max(actual, plan) * 1.5 + 1)
         for bar in bars:
@@ -102,7 +103,7 @@ if all(st.session_state.uploaded_data.values()):
             combined_df = pd.concat([combined_df, df], ignore_index=True)
 
     with st.expander("📋 Xem bảng tổng hợp so sánh"):
-        st.dataframe(combined_df, use_container_width=True, height=420)
+        st.dataframe(combined_df, use_container_width=True, height=400)
 
 # ====== Gợi ý tiếp theo ======
 st.markdown("""
