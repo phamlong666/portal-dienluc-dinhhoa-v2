@@ -12,3 +12,4 @@ streamlit-folium
 openpyxl
 numpy
 yagmail
+plotly
