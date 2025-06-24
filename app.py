@@ -32,6 +32,17 @@ if "tba_thang_file" not in st.session_state:
 if upload_tba_thang is not None:
     st.session_state["tba_thang_file"] = upload_tba_thang
 
+
+# ======= GIỮ TRẠNG THÁI CHO FILE LŨY KẾ + CÙNG KỲ =======
+for key in ["tba_luyke_file", "tba_ck_file"]:
+    if key not in st.session_state:
+        st.session_state[key] = None
+
+if upload_tba_luyke is not None:
+    st.session_state["tba_luyke_file"] = upload_tba_luyke
+if upload_tba_cungkyd is not None:
+    st.session_state["tba_ck_file"] = upload_tba_cungkyd
+
 file_to_process = st.session_state["tba_thang_file"]
 if file_to_process:
     df_test = pd.read_excel(file_to_process, skiprows=6)
@@ -198,3 +209,61 @@ if file_to_process:
     for i, v in enumerate(df_result["Điện tổn thất"]):
         ax.text(i, v, str(v), ha='center', va='bottom', fontsize=8)
     st.pyplot(fig)
+
+# ======= HIỂN THỊ BIỂU ĐỒ LŨY KẾ =======
+if st.session_state["tba_luyke_file"]:
+    df_lk = pd.read_excel(st.session_state["tba_luyke_file"], skiprows=6)
+    df_lk_result = pd.DataFrame()
+    df_lk_result["Tên TBA"] = df_lk.iloc[:, 2]
+    df_lk_result["Tỷ lệ tổn thất"] = df_lk.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+    df_lk_result["Ngưỡng"] = df_lk_result["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
+    lk_count = df_lk_result["Ngưỡng"].value_counts().reindex(colors.keys(), fill_value=0)
+
+    with st.expander("📊 Biểu đồ tổn thất lũy kế theo ngưỡng"):
+        fig_lk = go.Figure()
+        for nguong, color in colors.items():
+            fig_lk.add_trace(go.Bar(
+                name=nguong,
+                x=["Lũy kế"],
+                y=[lk_count.get(nguong, 0)],
+                marker_color=color,
+                text=[lk_count.get(nguong, 0)],
+                textposition="outside"
+            ))
+        fig_lk.update_layout(
+            height=400,
+            title="Số lượng TBA theo ngưỡng tổn thất - Lũy kế",
+            xaxis_title="Dữ liệu",
+            yaxis_title="Số lượng TBA",
+            barmode="group"
+        )
+        st.plotly_chart(fig_lk, use_container_width=True)
+
+# ======= HIỂN THỊ BIỂU ĐỒ CÙNG KỲ =======
+if st.session_state["tba_ck_file"]:
+    df_ck = pd.read_excel(st.session_state["tba_ck_file"], skiprows=6)
+    df_ck_result = pd.DataFrame()
+    df_ck_result["Tên TBA"] = df_ck.iloc[:, 2]
+    df_ck_result["Tỷ lệ tổn thất"] = df_ck.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+    df_ck_result["Ngưỡng"] = df_ck_result["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
+    ck_count = df_ck_result["Ngưỡng"].value_counts().reindex(colors.keys(), fill_value=0)
+
+    with st.expander("📊 Biểu đồ tổn thất theo ngưỡng - Cùng kỳ"):
+        fig_ck = go.Figure()
+        for nguong, color in colors.items():
+            fig_ck.add_trace(go.Bar(
+                name=nguong,
+                x=["Cùng kỳ"],
+                y=[ck_count.get(nguong, 0)],
+                marker_color=color,
+                text=[ck_count.get(nguong, 0)],
+                textposition="outside"
+            ))
+        fig_ck.update_layout(
+            height=400,
+            title="Số lượng TBA theo ngưỡng tổn thất - Cùng kỳ",
+            xaxis_title="Dữ liệu",
+            yaxis_title="Số lượng TBA",
+            barmode="group"
+        )
+        st.plotly_chart(fig_ck, use_container_width=True)
