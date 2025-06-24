@@ -19,10 +19,11 @@ for i, key in enumerate(file_keys):
             sheet_name = [s for s in xls.sheet_names if "ánh xạ" in s.lower()][0]
             df = pd.read_excel(xls, sheet_name=sheet_name)
             st.session_state.uploaded_data[key] = df
+
 def plot_dynamic_bar_chart(uploaded_data):
     try:
         common_col = [col for col in uploaded_data["Theo Tháng"].columns if "tháng" in col.lower()][0]
-    except:
+    except IndexError: # Changed to IndexError for more specific error handling
         common_col = uploaded_data["Theo Tháng"].columns[0]
 
     months = uploaded_data["Theo Tháng"][common_col].astype(str).tolist()
@@ -37,7 +38,14 @@ def plot_dynamic_bar_chart(uploaded_data):
         df = uploaded_data[key]
         value_col = [col for col in df.columns if "%" in col or "tỷ lệ" in col.lower()]
         if not value_col:
-            value_col = [col for col in df.columns if col != common_col][:1]
+            # Fallback if no '%' or 'tỷ lệ' column is found, take the first non-common column
+            value_col = [col for col in df.columns if col != common_col]
+            if value_col:
+                value_col = value_col[:1] # Take only the first such column
+            else:
+                st.warning(f"Không tìm thấy cột giá trị nào phù hợp trong file '{key}'. Vui lòng kiểm tra lại cấu trúc file Excel.")
+                continue # Skip this dataset if no value column is found
+
         y = df[value_col[0]].tolist()
         datasets.append((key, y))
 
@@ -62,6 +70,7 @@ def plot_dynamic_bar_chart(uploaded_data):
         yaxis=dict(title="Tỷ lệ / Giá trị", gridcolor="lightgray")
     )
     st.plotly_chart(fig, use_container_width=True)
+
 if st.session_state.uploaded_data:
     if st.button("📌 Tạo báo cáo"):
 
@@ -86,12 +95,24 @@ if st.session_state.uploaded_data:
             data_total = []
             for key in file_keys:
                 df = st.session_state.uploaded_data[key]
-                total_input = df["Điện nhận (kWh)"].sum()
-                total_loss = df["Điện tổn thất (kWh)"].sum()
-                actual = (total_loss / total_input * 100) if total_input else 0
-                plan_col = [c for c in df.columns if "kế hoạch" in c.lower()][0]
-                plan_series = df[plan_col]
-                plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
+                # Ensure columns exist before accessing them
+                if "Điện nhận (kWh)" in df.columns and "Điện tổn thất (kWh)" in df.columns:
+                    total_input = df["Điện nhận (kWh)"].sum()
+                    total_loss = df["Điện tổn thất (kWh)"].sum()
+                    actual = (total_loss / total_input * 100) if total_input else 0
+                else:
+                    st.warning(f"File '{key}' thiếu cột 'Điện nhận (kWh)' hoặc 'Điện tổn thất (kWh)'. Bỏ qua tính toán.")
+                    actual = 0 # Default to 0 or handle as appropriate
+
+                plan_col = [c for c in df.columns if "kế hoạch" in c.lower()]
+                plan = 0
+                if plan_col and "Điện nhận (kWh)" in df.columns:
+                    plan_series = df[plan_col[0]]
+                    plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
+                else:
+                    st.warning(f"File '{key}' thiếu cột kế hoạch hoặc 'Điện nhận (kWh)'. Bỏ qua tính toán kế hoạch.")
+
+
                 data_total.append((key, actual, plan))
 
             fig2 = go.Figure()
@@ -120,10 +141,4 @@ if st.session_state.uploaded_data:
                 yaxis=dict(title="Tỷ lệ (%)"),
                 plot_bgcolor='rgba(240,240,240,1)'
             )
-            st.plotly_chart(fig2, use_container_width=True)
-
-            # 🎯 CHÈN PHẦN MỚI: biểu đồ cột nhóm mô phỏng 3D
-            st.markdown("### 📊 Biểu đồ mô phỏng 3D (cột nhóm theo tháng)")
-            plot_dynamic_bar_chart(st.session_state.uploaded_data)
-
-st.session_state.setdefault("dummy", 1)
+            st.
