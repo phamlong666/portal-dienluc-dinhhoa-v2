@@ -88,29 +88,31 @@ if st.session_state.uploaded_data:
             fig2 = go.Figure()
             for i, (label, actual, plan) in enumerate(data_total):
                 fig2.add_trace(go.Bar(
-                    x=[label],
+                    x=[f"{label} - Thực tế"],
                     y=[actual],
                     name=f"Thực tế - {label}",
                     marker=dict(color=marker_colors[label][0], line=dict(color='black', width=1.5)),
                     text=f"{actual:.2f}%",
                     textposition='auto',
                     textfont=dict(size=18),
+                    width=0.6,
                     opacity=0.95
                 ))
                 fig2.add_trace(go.Bar(
-                    x=[label],
+                    x=[f"{label} - Kế hoạch"],
                     y=[plan],
                     name=f"Kế hoạch - {label}",
                     marker=dict(color=marker_colors[label][1], line=dict(color='black', width=1.5)),
                     text=f"{plan:.2f}%",
                     textposition='auto',
                     textfont=dict(size=18),
+                    width=0.6,
                     opacity=0.85
                 ))
 
             fig2.update_layout(
                 barmode='group',
-                height=450,
+                height=550,
                 margin=dict(l=30, r=30, t=40, b=30),
                 font=dict(size=17),
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual + plan for _, actual, plan in data_total) * 1.2]),
@@ -119,6 +121,7 @@ if st.session_state.uploaded_data:
             st.plotly_chart(fig2, use_container_width=True)
 
         if st.button("📊 Biểu đồ theo ngưỡng tổn thất"):
+            st.markdown("**⏳ Đang xử lý báo cáo...**")
             categories = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
             values_cungky = [4, 2, 24, 42, 86, 35]
             values_thuchien = [4, 14, 32, 55, 69, 29]
@@ -146,3 +149,6 @@ if st.session_state.uploaded_data:
             ])
             fig4.update_layout(title="🔄 Tỷ trọng TBA theo ngưỡng tổn thất", height=400)
             st.plotly_chart(fig4, use_container_width=True)
+
+# Ghi nhớ dữ liệu khi tải lại trang
+st.session_state.setdefault("dummy", 1)  # trick giữ dữ liệu nếu cần reload thủ công
