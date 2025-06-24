@@ -141,4 +141,10 @@ if st.session_state.uploaded_data:
                 yaxis=dict(title="Tỷ lệ (%)"),
                 plot_bgcolor='rgba(240,240,240,1)'
             )
-            st.
+            st.plotly_chart(fig2, use_container_width=True)
+
+            # 🎯 CHÈN PHẦN MỚI: biểu đồ cột nhóm mô phỏng 3D
+            st.markdown("### 📊 Biểu đồ mô phỏng 3D (cột nhóm theo tháng)")
+            plot_dynamic_bar_chart(st.session_state.uploaded_data)
+
+st.session_state.setdefault("dummy", 1)
