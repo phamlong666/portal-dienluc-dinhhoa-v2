@@ -42,7 +42,83 @@ if upload_tba_thang:
     df_result["Kế hoạch"] = df_test.iloc[:, 15].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
     df_result["So sánh"] = df_test.iloc[:, 16].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
 
-    st.markdown("### 📊 Kết quả ánh xạ dữ liệu:")
+    
+    with st.expander("📊 Kết quả ánh xạ dữ liệu + Biểu đồ theo ngưỡng", expanded=True):
+        st.markdown("#### 📄 Kết quả ánh xạ dữ liệu:")
+        st.dataframe(df_result)
+
+        # ===== BIỂU ĐỒ THEO NGƯỠNG TỔN THẤT =====
+        import plotly.graph_objects as go
+
+        def phan_loai_nghiem(x):
+            try:
+                x = float(x.replace(",", "."))
+            except:
+                return "Không rõ"
+            if x < 2:
+                return "<2%"
+            elif 2 <= x < 3:
+                return ">=2 và <3%"
+            elif 3 <= x < 4:
+                return ">=3 và <4%"
+            elif 4 <= x < 5:
+                return ">=4 và <5%"
+            elif 5 <= x < 7:
+                return ">=5 và <7%"
+            else:
+                return ">=7%"
+
+        df_result["Ngưỡng"] = df_result["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
+
+        tong_so = len(df_result)
+        tong_theo_nguong = df_result["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
+
+        colors = {
+            "<2%": "steelblue",
+            ">=2 và <3%": "darkorange",
+            ">=3 và <4%": "forestgreen",
+            ">=4 và <5%": "goldenrod",
+            ">=5 và <7%": "teal",
+            ">=7%": "red"
+        }
+
+        col1, col2 = st.columns([2, 2])
+        with col1:
+            st.markdown("#### 📊 Số lượng TBA theo ngưỡng tổn thất")
+            fig_bar = go.Figure()
+            for nguong, color in colors.items():
+                fig_bar.add_trace(go.Bar(
+                    name=nguong,
+                    x=["Cùng kỳ", "Thực hiện"],
+                    y=[0, tong_theo_nguong.get(nguong, 0)],
+                    marker_color=color,
+                    text=[0, tong_theo_nguong.get(nguong, 0)],
+                    textposition='outside'
+                ))
+            fig_bar.update_layout(
+                barmode='group',
+                height=400,
+                xaxis_title='Phân loại',
+                yaxis_title='Số lượng TBA',
+                legend_title='Ngưỡng tổn thất',
+                margin=dict(l=20, r=20, t=40, b=40)
+            )
+            st.plotly_chart(fig_bar, use_container_width=True)
+
+        with col2:
+            st.markdown(f"#### 🧩 Tỷ trọng TBA theo ngưỡng tổn thất (Tổng số: {tong_so})")
+            fig_pie = go.Figure(data=[
+                go.Pie(
+                    labels=list(colors.keys()),
+                    values=[tong_theo_nguong.get(k, 0) for k in colors.keys()],
+                    hole=0.5,
+                    marker=dict(colors=list(colors.values())),
+                    textinfo='percent+label',
+                )
+            ])
+            fig_pie.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=40))
+            st.plotly_chart(fig_pie, use_container_width=True)
+
     st.dataframe(df_result)
 
     # Hiển thị biểu đồ minh họa nhanh
