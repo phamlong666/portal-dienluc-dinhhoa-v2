@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from datetime import datetime
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
@@ -21,134 +22,52 @@ for i, key in enumerate(file_keys):
             df = pd.read_excel(xls, sheet_name=sheet_name)
             st.session_state.uploaded_data[key] = df
 
-if st.session_state.uploaded_data:
-    if st.button("📌 Tạo báo cáo"):
+if st.session_state.uploaded_data and len(st.session_state.uploaded_data) == 3:
+    if st.button("📊 Biểu đồ lũy kế theo tháng như mẫu"):
+        df_2023 = st.session_state.uploaded_data["Theo Tháng"]
+        df_kh = st.session_state.uploaded_data["Lũy kế"]
+        df_ck = st.session_state.uploaded_data["Cùng kỳ"]
 
-        marker_colors = {
-            "Theo Tháng": ["#3366cc", "#ff9900"],
-            "Lũy kế": ["#2ca02c", "#d62728"],
-            "Cùng kỳ": ["#8e44ad", "#f1c40f"]
-        }
+        # Giả định có cột 'Tháng' và 'Số lượng'
+        months = sorted(list(set(df_2023['Tháng'].unique()) | set(df_kh['Tháng'].unique()) | set(df_ck['Tháng'].unique())))
 
-        for key, df in st.session_state.uploaded_data.items():
-            with st.expander(f"🔍 Dữ liệu: {key}", expanded=True):
-                df_copy = df.copy()
-                percent_cols = [col for col in df_copy.columns if "%" in col]
-                for col in percent_cols:
-                    df_copy[col] = pd.to_numeric(df_copy[col], errors="coerce")
-                    df_copy[col] = df_copy[col].map(lambda x: f"{x:.2f}%" if pd.notna(x) else "")
-                st.dataframe(df_copy.style.set_properties(**{"font-size": "16pt"}), use_container_width=True)
+        def get_month_data(df):
+            return df.groupby('Tháng')['Số lượng'].sum().reindex(months, fill_value=0).tolist()
 
-                total_input = df["Điện nhận (kWh)"].sum()
-                total_loss = df["Điện tổn thất (kWh)"].sum()
-                actual = (total_loss / total_input * 100) if total_input else 0
-                plan_col = [c for c in df.columns if "kế hoạch" in c.lower()][0]
-                plan_series = df[plan_col]
-                plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
+        values_2023 = get_month_data(df_2023)
+        values_kh = get_month_data(df_kh)
+        values_ck = get_month_data(df_ck)
 
-                fig = go.Figure(data=[
-                    go.Bar(
-                        x=["Thực tế", "Kế hoạch"],
-                        y=[actual, plan],
-                        marker=dict(
-                            color=marker_colors.get(key, ["#888", "#ccc"]),
-                            line=dict(color='black', width=1.5)
-                        ),
-                        text=[f"{actual:.2f}%", f"{plan:.2f}%"],
-                        textposition='auto',
-                        textfont=dict(size=20),
-                        width=0.6,
-                        opacity=0.9
-                    )
-                ])
-                fig.update_layout(
-                    title=f"Tỷ lệ tổn thất – {key}",
-                    margin=dict(l=20, r=20, t=40, b=20),
-                    height=400,
-                    font=dict(size=18),
-                    showlegend=False,
-                    yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5]),
-                    plot_bgcolor='rgba(240,240,255,1)'
-                )
-                st.plotly_chart(fig, use_container_width=True)
+        data_values = {"Năm 2023": values_2023,
+                       "Kế hoạch giao": values_kh,
+                       "Cùng kỳ năm 2022": values_ck}
+        colors = {"Năm 2023": "#f1c40f", "Kế hoạch giao": "#2ecc71", "Cùng kỳ năm 2022": "#3498db"}
 
-        if len(st.session_state.uploaded_data) == 3:
-            st.markdown("### 📊 Biểu đồ hợp nhất tổn thất các file")
-            data_total = []
-            for key in file_keys:
-                df = st.session_state.uploaded_data[key]
-                total_input = df["Điện nhận (kWh)"].sum()
-                total_loss = df["Điện tổn thất (kWh)"].sum()
-                actual = (total_loss / total_input * 100) if total_input else 0
-                plan_col = [c for c in df.columns if "kế hoạch" in c.lower()][0]
-                plan_series = df[plan_col]
-                plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
-                data_total.append((key, actual, plan))
+        fig, ax = plt.subplots(figsize=(12, 6))
+        bar_width = 0.25
+        index = np.arange(len(months))
 
-            fig2 = go.Figure()
-            for i, (label, actual, plan) in enumerate(data_total):
-                fig2.add_trace(go.Bar(
-                    x=[f"{label} - Thực tế"],
-                    y=[actual],
-                    name=f"Thực tế - {label}",
-                    marker=dict(color=marker_colors[label][0], line=dict(color='black', width=1.5)),
-                    text=f"{actual:.2f}%",
-                    textposition='auto',
-                    textfont=dict(size=18),
-                    width=0.6,
-                    opacity=0.95
-                ))
-                fig2.add_trace(go.Bar(
-                    x=[f"{label} - Kế hoạch"],
-                    y=[plan],
-                    name=f"Kế hoạch - {label}",
-                    marker=dict(color=marker_colors[label][1], line=dict(color='black', width=1.5)),
-                    text=f"{plan:.2f}%",
-                    textposition='auto',
-                    textfont=dict(size=18),
-                    width=0.6,
-                    opacity=0.85
-                ))
+        for i, (label, values) in enumerate(data_values.items()):
+            ax.bar(index + i * bar_width, values, bar_width, label=label,
+                   color=colors[label], edgecolor='black')
+            for j, val in enumerate(values):
+                ax.text(index[j] + i * bar_width, val + 0.1, str(val), ha='center', va='bottom', fontsize=12, fontweight='bold')
 
-            fig2.update_layout(
-                barmode='group',
-                height=550,
-                margin=dict(l=30, r=30, t=40, b=30),
-                font=dict(size=17),
-                yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual + plan for _, actual, plan in data_total) * 1.2]),
-                plot_bgcolor='rgba(240,240,240,1)'
-            )
-            st.plotly_chart(fig2, use_container_width=True)
+        ax.set_title("Lũy kế cùng kỳ năm 2022", fontsize=16, weight='bold', color='white')
+        ax.set_xticks(index + bar_width)
+        ax.set_xticklabels(months, fontsize=12)
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.set_facecolor('#001f99')
+        fig.patch.set_facecolor('#001f99')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('white')
+        ax.spines['bottom'].set_color('white')
+        ax.tick_params(axis='y', colors='white')
+        ax.tick_params(axis='x', colors='white')
+        ax.yaxis.label.set_color('white')
+        ax.legend(loc='upper left', fontsize=12)
 
-        if st.button("📊 Biểu đồ theo ngưỡng tổn thất"):
-            st.markdown("**⏳ Đang xử lý báo cáo...**")
-            categories = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
-            values_cungky = [4, 2, 24, 42, 86, 35]
-            values_thuchien = [4, 14, 32, 55, 69, 29]
-            sizes = [6.9, 6.9, 15.76, 27.09, 33.99, 14.29]
+        st.pyplot(fig)
 
-            fig3 = go.Figure()
-            fig3.add_trace(go.Bar(name="Cùng kỳ", x=categories, y=values_cungky, marker_color="lightgray",
-                                  text=values_cungky, textposition='auto', textfont=dict(size=18)))
-            fig3.add_trace(go.Bar(name="Thực hiện", x=categories, y=values_thuchien, marker_color="#1f77b4",
-                                  text=values_thuchien, textposition='auto', textfont=dict(size=18)))
-            fig3.update_layout(
-                barmode='group',
-                title="📊 Số lượng TBA theo ngưỡng tổn thất",
-                height=400,
-                margin=dict(l=30, r=30, t=40, b=30),
-                font=dict(size=16),
-                plot_bgcolor='rgba(245,245,245,1)'
-            )
-            st.plotly_chart(fig3, use_container_width=True)
-
-            fig4 = go.Figure(data=[
-                go.Pie(labels=categories, values=sizes, hole=.4, textinfo='label+percent',
-                       marker=dict(colors=["#1f77b4", "#ff9900", "#2ca02c", "#bcbd22", "#17becf", "#d62728"]),
-                       textfont=dict(size=16))
-            ])
-            fig4.update_layout(title="🔄 Tỷ trọng TBA theo ngưỡng tổn thất", height=400)
-            st.plotly_chart(fig4, use_container_width=True)
-
-# Ghi nhớ dữ liệu khi tải lại trang
-st.session_state.setdefault("dummy", 1)  # trick giữ dữ liệu nếu cần reload thủ công
+st.session_state.setdefault("dummy", 1)
