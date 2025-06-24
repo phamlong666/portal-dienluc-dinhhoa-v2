@@ -13,11 +13,18 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
         try:
             xls = pd.ExcelFile(upload_tba_thang)
             sheet_names = xls.sheet_names
-            if "Bảng Kết quả ánh xạ dữ liệu" not in sheet_names:
+
+            sheet_target = None
+            for s in sheet_names:
+                if s.strip().lower() == "bảng kết quả ánh xạ dữ liệu".lower():
+                    sheet_target = s
+                    break
+
+            if sheet_target is None:
                 st.error(f"❌ Không tìm thấy sheet 'Bảng Kết quả ánh xạ dữ liệu'. Sheet hiện có: {sheet_names}")
             else:
-                df = xls.parse("Bảng Kết quả ánh xạ dữ liệu")
-                st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng")
+                df = xls.parse(sheet_target)
+                st.success(f"✅ Đã đọc dữ liệu từ sheet: {sheet_target}")
                 st.dataframe(df)
 
                 def phan_loai(x):
