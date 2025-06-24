@@ -14,6 +14,11 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
     upload_tba_cungkyd = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
 
+with st.expander("⚡ Tổn thất hạ thế"):
+    upload_ha_thang = st.file_uploader("📅 Tải dữ liệu hạ áp - Theo tháng", type=["xlsx"], key="ha_thang")
+    upload_ha_luyke = st.file_uploader("📊 Tải dữ liệu hạ áp - Lũy kế", type=["xlsx"], key="ha_luyke")
+    upload_ha_ck = st.file_uploader("📈 Tải dữ liệu hạ áp - Cùng kỳ", type=["xlsx"], key="ha_ck")
+
 with st.expander("⚡ Tổn thất các đường dây trung thế"):
     upload_trung_thang = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang")
     upload_trung_luyke = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke")
@@ -199,7 +204,21 @@ if file_to_process:
         fig_pie.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=40))
         st.plotly_chart(fig_pie, use_container_width=True)
 
+    
+    df_result["Tên TBA"] = df_result["Tên TBA"].astype(str)
+    df_result = df_result.dropna(subset=["Tên TBA", "Điện tổn thất"])
+
     st.markdown("### 📉 Biểu đồ tổn thất theo TBA")
+    fig, ax = plt.subplots()
+    ax.bar(df_result["Tên TBA"], df_result["Điện tổn thất"])
+    ax.set_xlabel("Tên TBA")
+    ax.set_ylabel("Điện tổn thất (kWh)")
+    ax.set_title("Biểu đồ tổn thất các TBA công cộng")
+    ax.tick_params(axis='x', labelrotation=90)
+    for i, v in enumerate(df_result["Điện tổn thất"]):
+        ax.text(i, v, str(v), ha='center', va='bottom', fontsize=8)
+    st.pyplot(fig)
+
     fig, ax = plt.subplots()
     ax.bar(df_result["Tên TBA"], df_result["Điện tổn thất"])
     ax.set_xlabel("Tên TBA")
