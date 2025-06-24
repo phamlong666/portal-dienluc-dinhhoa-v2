@@ -46,6 +46,62 @@ if upload_tba_thang:
     st.dataframe(df_result)
 
     # Hiển thị biểu đồ minh họa nhanh
+    # ===== BIỂU ĐỒ THEO NGƯỠNG TỔN THẤT =====
+    import plotly.graph_objects as go
+    import numpy as np
+
+    # Hàm phân loại tổn thất theo ngưỡng
+    def phan_loai_nghiem(x):
+        try:
+            x = float(x.replace(",", "."))
+        except:
+            return "Không rõ"
+        if x < 2:
+            return "<2%"
+        elif 2 <= x < 3:
+            return ">=2 và <3%"
+        elif 3 <= x < 4:
+            return ">=3 và <4%"
+        elif 4 <= x < 5:
+            return ">=4 và <5%"
+        elif 5 <= x < 7:
+            return ">=5 và <7%"
+        else:
+            return ">=7%"
+
+    df_result["Ngưỡng"] = df_result["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
+
+    tong_so = len(df_result)
+    tong_theo_nguong = df_result["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
+
+    col1, col2 = st.columns([2,2])
+    with col1:
+        st.markdown("#### 📊 Số lượng TBA theo ngưỡng tổn thất")
+        fig_bar = go.Figure(data=[
+            go.Bar(name='Thực hiện', x=tong_theo_nguong.index, y=tong_theo_nguong.values, marker_color='steelblue'),
+        ])
+        fig_bar.update_layout(
+            height=400,
+            xaxis_title='Ngưỡng tổn thất',
+            yaxis_title='Số lượng TBA',
+            margin=dict(l=20, r=20, t=40, b=40)
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    with col2:
+        st.markdown(f"#### 🧩 Tỷ trọng TBA theo ngưỡng tổn thất (Tổng số: {tong_so})")
+        fig_pie = go.Figure(data=[
+            go.Pie(
+                labels=tong_theo_nguong.index,
+                values=tong_theo_nguong.values,
+                hole=0.5,
+                marker=dict(colors=['steelblue', 'darkorange', 'forestgreen', 'goldenrod', 'teal', 'red']),
+                textinfo='percent+label',
+            )
+        ])
+        fig_pie.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=40))
+        st.plotly_chart(fig_pie, use_container_width=True)
+
     st.markdown("### 📉 Biểu đồ tổn thất theo TBA")
     fig, ax = plt.subplots()
     ax.bar(df_result["Tên TBA"], df_result["Điện tổn thất"])
