@@ -16,19 +16,24 @@ for i, key in enumerate(file_keys):
         file = st.file_uploader(f"📁 File {key}", type=["xlsx"], key=f"upload_{key}")
         if file:
             xls = pd.ExcelFile(file)
-            # Explicitly set the sheet name as per user's instruction
-            sheet_name = "Bảng Kết quả ánh xạ dữ liệu"
-            if sheet_name in xls.sheet_names:
-                df = pd.read_excel(xls, sheet_name=sheet_name)
+            found_sheet = None
+            # Flexible search for sheet name
+            for s_name in xls.sheet_names:
+                if "bảng kết quả" in s_name.lower() and "ánh xạ dữ liệu" in s_name.lower():
+                    found_sheet = s_name
+                    break
+            
+            if found_sheet:
+                df = pd.read_excel(xls, sheet_name=found_sheet)
                 st.session_state.uploaded_data[key] = df
             else:
-                st.error(f"File '{key}' không tìm thấy sheet '{sheet_name}'. Vui lòng kiểm tra lại tên sheet.")
-
+                st.error(f"File '{key}' không tìm thấy sheet chứa cả 'Bảng kết quả' và 'ánh xạ dữ liệu'. Vui lòng kiểm tra lại tên sheet trong file Excel.")
+                st.write(f"Các sheet có sẵn trong file '{key}': {xls.sheet_names}") # Gợi ý các sheet có sẵn
+                
 def plot_dynamic_bar_chart(uploaded_data):
     try:
         common_col = [col for col in uploaded_data["Theo Tháng"].columns if "tháng" in col.lower()][0]
     except IndexError:
-        # Fallback to the first column if no "tháng" column is found
         common_col = uploaded_data["Theo Tháng"].columns[0]
 
     months = uploaded_data["Theo Tháng"][common_col].astype(str).tolist()
@@ -42,12 +47,11 @@ def plot_dynamic_bar_chart(uploaded_data):
     for key in file_keys:
         df = uploaded_data[key]
         y = []
-        # Explicitly use "Tỷ lệ tổn thất (%)" for the 3D chart
         if "Tỷ lệ tổn thất (%)" in df.columns:
             y = df["Tỷ lệ tổn thất (%)"].tolist()
         else:
             st.warning(f"File '{key}' thiếu cột 'Tỷ lệ tổn thất (%)'. Biểu đồ 3D có thể không hiển thị đầy đủ.")
-            continue # Skip this dataset if the required column is missing
+            continue
 
         datasets.append((key, y))
 
@@ -101,15 +105,12 @@ if st.session_state.uploaded_data:
                 actual = 0
                 plan = 0
 
-                # Explicitly use "Tỷ lệ tổn thất (%)" and "Kế hoạch (%)"
                 if "Tỷ lệ tổn thất (%)" in df.columns and not df["Tỷ lệ tổn thất (%)"].empty:
-                    # Assuming the first value is the one to be plotted for the combined chart
                     actual = df["Tỷ lệ tổn thất (%)"].iloc[0] 
                 else:
                     st.warning(f"File '{key}' thiếu hoặc rỗng cột 'Tỷ lệ tổn thất (%)'.")
 
                 if "Kế hoạch (%)" in df.columns and not df["Kế hoạch (%)"].empty:
-                    # Assuming the first value is the one to be plotted for the combined chart
                     plan = df["Kế hoạch (%)"].iloc[0]
                 else:
                     st.warning(f"File '{key}' thiếu hoặc rỗng cột 'Kế hoạch (%)'.")
@@ -144,7 +145,6 @@ if st.session_state.uploaded_data:
             )
             st.plotly_chart(fig2, use_container_width=True)
 
-            # 🎯 CHÈN PHẦN MỚI: biểu đồ cột nhóm mô phỏng 3D
             st.markdown("### 📊 Biểu đồ mô phỏng 3D (cột nhóm theo tháng)")
             plot_dynamic_bar_chart(st.session_state.uploaded_data)
 
