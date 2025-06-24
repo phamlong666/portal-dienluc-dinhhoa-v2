@@ -16,14 +16,19 @@ for i, key in enumerate(file_keys):
         file = st.file_uploader(f"📁 File {key}", type=["xlsx"], key=f"upload_{key}")
         if file:
             xls = pd.ExcelFile(file)
-            sheet_name = [s for s in xls.sheet_names if "ánh xạ" in s.lower()][0]
-            df = pd.read_excel(xls, sheet_name=sheet_name)
-            st.session_state.uploaded_data[key] = df
+            # Explicitly set the sheet name as per user's instruction
+            sheet_name = "Bảng Kết quả ánh xạ dữ liệu"
+            if sheet_name in xls.sheet_names:
+                df = pd.read_excel(xls, sheet_name=sheet_name)
+                st.session_state.uploaded_data[key] = df
+            else:
+                st.error(f"File '{key}' không tìm thấy sheet '{sheet_name}'. Vui lòng kiểm tra lại tên sheet.")
 
 def plot_dynamic_bar_chart(uploaded_data):
     try:
         common_col = [col for col in uploaded_data["Theo Tháng"].columns if "tháng" in col.lower()][0]
-    except IndexError: # Changed to IndexError for more specific error handling
+    except IndexError:
+        # Fallback to the first column if no "tháng" column is found
         common_col = uploaded_data["Theo Tháng"].columns[0]
 
     months = uploaded_data["Theo Tháng"][common_col].astype(str).tolist()
@@ -36,17 +41,14 @@ def plot_dynamic_bar_chart(uploaded_data):
 
     for key in file_keys:
         df = uploaded_data[key]
-        value_col = [col for col in df.columns if "%" in col or "tỷ lệ" in col.lower()]
-        if not value_col:
-            # Fallback if no '%' or 'tỷ lệ' column is found, take the first non-common column
-            value_col = [col for col in df.columns if col != common_col]
-            if value_col:
-                value_col = value_col[:1] # Take only the first such column
-            else:
-                st.warning(f"Không tìm thấy cột giá trị nào phù hợp trong file '{key}'. Vui lòng kiểm tra lại cấu trúc file Excel.")
-                continue # Skip this dataset if no value column is found
+        y = []
+        # Explicitly use "Tỷ lệ tổn thất (%)" for the 3D chart
+        if "Tỷ lệ tổn thất (%)" in df.columns:
+            y = df["Tỷ lệ tổn thất (%)"].tolist()
+        else:
+            st.warning(f"File '{key}' thiếu cột 'Tỷ lệ tổn thất (%)'. Biểu đồ 3D có thể không hiển thị đầy đủ.")
+            continue # Skip this dataset if the required column is missing
 
-        y = df[value_col[0]].tolist()
         datasets.append((key, y))
 
     fig = go.Figure()
@@ -95,24 +97,23 @@ if st.session_state.uploaded_data:
             data_total = []
             for key in file_keys:
                 df = st.session_state.uploaded_data[key]
-                # Ensure columns exist before accessing them
-                if "Điện nhận (kWh)" in df.columns and "Điện tổn thất (kWh)" in df.columns:
-                    total_input = df["Điện nhận (kWh)"].sum()
-                    total_loss = df["Điện tổn thất (kWh)"].sum()
-                    actual = (total_loss / total_input * 100) if total_input else 0
-                else:
-                    st.warning(f"File '{key}' thiếu cột 'Điện nhận (kWh)' hoặc 'Điện tổn thất (kWh)'. Bỏ qua tính toán.")
-                    actual = 0 # Default to 0 or handle as appropriate
-
-                plan_col = [c for c in df.columns if "kế hoạch" in c.lower()]
+                
+                actual = 0
                 plan = 0
-                if plan_col and "Điện nhận (kWh)" in df.columns:
-                    plan_series = df[plan_col[0]]
-                    plan = ((plan_series / 100 * df["Điện nhận (kWh)"]).sum() / total_input * 100) if total_input else 0
+
+                # Explicitly use "Tỷ lệ tổn thất (%)" and "Kế hoạch (%)"
+                if "Tỷ lệ tổn thất (%)" in df.columns and not df["Tỷ lệ tổn thất (%)"].empty:
+                    # Assuming the first value is the one to be plotted for the combined chart
+                    actual = df["Tỷ lệ tổn thất (%)"].iloc[0] 
                 else:
-                    st.warning(f"File '{key}' thiếu cột kế hoạch hoặc 'Điện nhận (kWh)'. Bỏ qua tính toán kế hoạch.")
+                    st.warning(f"File '{key}' thiếu hoặc rỗng cột 'Tỷ lệ tổn thất (%)'.")
 
-
+                if "Kế hoạch (%)" in df.columns and not df["Kế hoạch (%)"].empty:
+                    # Assuming the first value is the one to be plotted for the combined chart
+                    plan = df["Kế hoạch (%)"].iloc[0]
+                else:
+                    st.warning(f"File '{key}' thiếu hoặc rỗng cột 'Kế hoạch (%)'.")
+                
                 data_total.append((key, actual, plan))
 
             fig2 = go.Figure()
