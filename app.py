@@ -25,8 +25,18 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
     upload_dv_ck = st.file_uploader("📈 Tải dữ liệu Đơn vị - Cùng kỳ", type=["xlsx"], key="dv_ck")
 
 # Kết quả chạy thử: kiểm tra dữ liệu đầu vào tổn thất TBA công cộng theo tháng
-if upload_tba_thang:
-    df_test = pd.read_excel(upload_tba_thang, skiprows=6)
+
+if "tba_thang_file" not in st.session_state:
+    st.session_state["tba_thang_file"] = None
+
+if upload_tba_thang is not None:
+    st.session_state["tba_thang_file"] = upload_tba_thang
+
+file_to_process = st.session_state["tba_thang_file"]
+if file_to_process:
+    df_test = pd.read_excel(file_to_process, skiprows=6)
+    st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
+
     st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
     st.dataframe(df_test.head())
 
@@ -93,7 +103,7 @@ if upload_tba_thang:
                     y=[0, tong_theo_nguong.get(nguong, 0)],
                     marker_color=color,
                     text=[0, tong_theo_nguong.get(nguong, 0)],
-                    textposition='outside'
+                    textposition="outside",
                 ))
             fig_bar.update_layout(
                 barmode='group',
