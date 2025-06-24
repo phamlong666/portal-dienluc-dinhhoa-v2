@@ -63,7 +63,7 @@ if uploaded_data:
                     x=["Thực tế", "Kế hoạch"],
                     y=[actual, plan],
                     marker=dict(
-                        color=["#3366cc", "#ff9900"],
+                        color=["#1f77b4", "#ff7f0e"],
                         line=dict(color='black', width=1)
                     ),
                     text=[f"{actual:.2f}%", f"{plan:.2f}%"],
@@ -75,7 +75,7 @@ if uploaded_data:
                 title="Tỷ lệ tổn thất điện năng",
                 margin=dict(l=20, r=20, t=40, b=20),
                 height=350,
-                font=dict(size=16),
+                font=dict(size=12),
                 showlegend=False,
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actual, plan) * 1.2 if max(actual, plan) > 0 else 5])
             )
@@ -102,7 +102,7 @@ if uploaded_data:
                 x=x,
                 y=actuals,
                 name='Thực tế',
-                marker_color='#3366cc',
+                marker_color='#1f77b4',
                 text=[f"{v:.2f}%" for v in actuals],
                 textposition='auto'
             ))
@@ -110,7 +110,7 @@ if uploaded_data:
                 x=x,
                 y=plans,
                 name='Kế hoạch',
-                marker_color='#ff9900',
+                marker_color='#ff7f0e',
                 text=[f"{v:.2f}%" for v in plans],
                 textposition='auto'
             ))
@@ -118,40 +118,7 @@ if uploaded_data:
                 barmode='group',
                 height=350,
                 margin=dict(l=30, r=30, t=30, b=30),
-                font=dict(size=16),
+                font=dict(size=12),
                 yaxis=dict(title="Tỷ lệ (%)", range=[0, max(actuals + plans) * 1.2 if actuals else 5])
             )
             st.plotly_chart(fig2, use_container_width=True)
-# ============== Biểu đồ tổn thất theo ngưỡng =====================
-
-import matplotlib.pyplot as plt
-
-def ve_bieu_do_nguong_ton_that():
-    categories = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
-    values_cungky = [4, 2, 24, 42, 86, 35]
-    values_thuchien = [4, 14, 32, 55, 69, 29]
-
-    fig1, ax = plt.subplots(figsize=(10, 5))
-    x = range(len(categories))
-    ax.bar([i - 0.2 for i in x], values_cungky, width=0.4, label="Cùng kỳ", color="lightgray")
-    ax.bar([i + 0.2 for i in x], values_thuchien, width=0.4, label="Thực hiện", color="teal")
-    ax.set_xticks(x)
-    ax.set_xticklabels(categories, fontsize=14)
-    ax.set_ylabel("Số lượng TBA", fontsize=16)
-    ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=18)
-    ax.legend()
-    ax.grid(axis='y', linestyle='--', alpha=0.5)
-    st.pyplot(fig1)
-
-    # Donut chart
-    sizes = [6.90, 6.90, 15.76, 27.09, 33.99, 14.29]
-    colors = ["#1f77b4", "#ff9900", "#2ca02c", "#bcbd22", "#17becf", "#d62728"]
-    fig2, ax2 = plt.subplots(figsize=(6, 6))
-    wedges, texts, autotexts = ax2.pie(sizes, labels=categories, colors=colors,
-                                       autopct='%1.1f%%', startangle=90,
-                                       wedgeprops=dict(width=0.3))
-    ax2.set(aspect="equal", title='Tỷ trọng TBA theo ngưỡng tổn thất')
-    st.pyplot(fig2)
-
-if st.button("📊 Biểu đồ theo ngưỡng tổn thất"):
-    ve_bieu_do_nguong_ton_that()
