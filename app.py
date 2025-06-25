@@ -15,7 +15,15 @@ if 'df_tba_luyke' not in st.session_state:
     st.session_state.df_tba_luyke = None
 if 'df_tba_ck' not in st.session_state:
     st.session_state.df_tba_ck = None
-# Thêm khởi tạo cho các loại dữ liệu khác nếu cần
+# Thêm khởi tạo cho các loại dữ liệu khác nếu cần, ví dụ:
+if 'df_ha_thang' not in st.session_state:
+    st.session_state.df_ha_thang = None
+if 'df_trung_thang_tt' not in st.session_state:
+    st.session_state.df_trung_thang_tt = None
+if 'df_trung_thang_dy' not in st.session_state:
+    st.session_state.df_trung_thang_dy = None
+if 'df_dv_thang' not in st.session_state:
+    st.session_state.df_dv_thang = None
 
 
 # --- Nút "Làm mới" ---
@@ -24,6 +32,10 @@ if st.button("🔄 Làm mới dữ liệu"):
     st.session_state.df_tba_luyke = None
     st.session_state.df_tba_ck = None
     # Đặt lại tất cả các biến Session State khác về None nếu có
+    st.session_state.df_ha_thang = None
+    st.session_state.df_trung_thang_tt = None
+    st.session_state.df_trung_thang_dy = None
+    st.session_state.df_dv_thang = None
     st.experimental_rerun()
 
 
@@ -51,28 +63,36 @@ def process_tba_data(df):
     if df is None:
         return None, None
     df_temp = pd.DataFrame()
-    df_temp["Tỷ lệ tổn thất"] = df.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-    df_temp["Ngưỡng"] = df_temp["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
-    tong_so = len(df_temp)
-    tong_theo_nguong = df_temp["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
-    return tong_so, tong_theo_nguong
+    # Ensure column 14 (index 13) exists before accessing
+    if df.shape[1] > 13: # Check if there are at least 14 columns (0-indexed 13)
+        df_temp["Tỷ lệ tổn thất"] = df.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+        df_temp["Ngưỡng"] = df_temp["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
+        tong_so = len(df_temp)
+        tong_theo_nguong = df_temp["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
+        return tong_so, tong_theo_nguong
+    else:
+        st.warning("File Excel không có đủ cột để tính toán 'Tỷ lệ tổn thất'. Vui lòng kiểm tra định dạng file.")
+        return None, None
 
 
 # Tạo các tiện ích con theo phân nhóm
 with st.expander("🔌 Tổn thất các TBA công cộng"):
     temp_upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
     if temp_upload_tba_thang:
-        st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, skiprows=6)
+        # Changed: Specify sheet_name
+        st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
         st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
 
     temp_upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
     if temp_upload_tba_luyke:
-        st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, skiprows=6)
+        # Changed: Specify sheet_name
+        st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
         st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Lũy kế!")
 
     temp_upload_tba_ck = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
     if temp_upload_tba_ck:
-        st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, skiprows=6)
+        # Changed: Specify sheet_name
+        st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
         st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Cùng kỳ!")
 
 # --- Xử lý và hiển thị dữ liệu tổng hợp nếu có ít nhất một file được tải lên ---
@@ -222,20 +242,62 @@ if st.session_state.df_tba_thang is not None or \
 
 with st.expander("⚡ Tổn thất hạ thế"):
     upload_ha_thang = st.file_uploader("📅 Tải dữ liệu hạ áp - Theo tháng", type=["xlsx"], key="ha_thang")
+    if upload_ha_thang:
+        st.session_state.df_ha_thang = pd.read_excel(upload_ha_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất hạ áp - Theo tháng!")
     upload_ha_luyke = st.file_uploader("📊 Tải dữ liệu hạ áp - Lũy kế", type=["xlsx"], key="ha_luyke")
+    # Add processing for ha_luyke and ha_ck similarly
+    if upload_ha_luyke:
+        st.session_state.df_ha_luyke = pd.read_excel(upload_ha_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất hạ áp - Lũy kế!")
     upload_ha_ck = st.file_uploader("📈 Tải dữ liệu hạ áp - Cùng kỳ", type=["xlsx"], key="ha_ck")
+    if upload_ha_ck:
+        st.session_state.df_ha_ck = pd.read_excel(upload_ha_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất hạ áp - Cùng kỳ!")
+
 
 with st.expander("⚡ Tổn thất trung thế"):
+    # Correcting keys here based on previous user request
     upload_trung_thang_tt = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang_tt")
+    if upload_trung_thang_tt:
+        st.session_state.df_trung_thang_tt = pd.read_excel(upload_trung_thang_tt, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Trung áp (Trung thế) - Theo tháng!")
     upload_trung_luyke_tt = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke_tt")
+    if upload_trung_luyke_tt:
+        st.session_state.df_trung_luyke_tt = pd.read_excel(upload_trung_luyke_tt, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Trung áp (Trung thế) - Lũy kế!")
     upload_trung_ck_tt = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck_tt")
+    if upload_trung_ck_tt:
+        st.session_state.df_trung_ck_tt = pd.read_excel(upload_trung_ck_tt, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Trung áp (Trung thế) - Cùng kỳ!")
+
 
 with st.expander("⚡ Tổn thất các đường dây trung thế"):
+    # Correcting keys here based on previous user request
     upload_trung_thang_dy = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang_dy")
+    if upload_trung_thang_dy:
+        st.session_state.df_trung_thang_dy = pd.read_excel(upload_trung_thang_dy, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Đường dây Trung thế - Theo tháng!")
     upload_trung_luyke_dy = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke_dy")
+    if upload_trung_luyke_dy:
+        st.session_state.df_trung_luyke_dy = pd.read_excel(upload_trung_luyke_dy, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Đường dây Trung thế - Lũy kế!")
     upload_trung_ck_dy = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck_dy")
+    if upload_trung_ck_dy:
+        st.session_state.df_trung_ck_dy = pd.read_excel(upload_trung_ck_dy, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Đường dây Trung thế - Cùng kỳ!")
+
 
 with st.expander("🏢 Tổn thất toàn đơn vị"):
     upload_dv_thang = st.file_uploader("📅 Tải dữ liệu Đơn vị - Theo tháng", type=["xlsx"], key="dv_thang")
+    if upload_dv_thang:
+        st.session_state.df_dv_thang = pd.read_excel(upload_dv_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Toàn đơn vị - Theo tháng!")
     upload_dv_luyke = st.file_uploader("📊 Tải dữ liệu Đơn vị - Lũy kế", type=["xlsx"], key="dv_luyke")
+    if upload_dv_luyke:
+        st.session_state.df_dv_luyke = pd.read_excel(upload_dv_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Toàn đơn vị - Lũy kế!")
     upload_dv_ck = st.file_uploader("📈 Tải dữ liệu Đơn vị - Cùng kỳ", type=["xlsx"], key="dv_ck")
+    if upload_dv_ck:
+        st.session_state.df_dv_ck = pd.read_excel(upload_dv_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất Toàn đơn vị - Cùng kỳ!")
