@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -485,17 +486,3 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
         except Exception as e:
             st.error(f"Đã xảy ra lỗi không mong muốn khi đọc file đơn vị cùng kỳ: {e}")
             st.session_state.df_dv_ck = None
-col1, col2 = st.columns([1, 2])
-with col1:
-    if st.button('🔁 Làm mới dữ liệu'):
-        st.experimental_rerun()
-with col2:
-    st.markdown('### 📁 Tải file mẫu')
-    from pathlib import Path
-    templates_path = Path(r'C:/Users/ADMIN/Dropbox/20. CNTT - VTDR/Trợ lý AI/Tổn thất/templates')
-    if templates_path.exists():
-        for file in templates_path.glob('*'):
-            with open(file, 'rb') as f:
-                st.download_button(f'⬇️ Tải {file.name}', f, file_name=file.name)
-    else:
-        st.warning('Chưa tìm thấy thư mục chứa file mẫu.')
