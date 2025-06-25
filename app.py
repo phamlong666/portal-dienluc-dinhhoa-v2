@@ -317,7 +317,10 @@ if st.session_state.df_tba_thang is not None or \
                 df_result["Kế hoạch"] = df_test[expected_cols["Kế hoạch"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
                 df_result["So sánh"] = df_test[expected_cols["So sánh"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
                 # ADDED THIS LINE: Now adding the "Ngưỡng" column to df_result
-                df_result["Ngưỡng"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: phan_loai_nghiem(x)) #
+                
+                df_result["Ngưỡng"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: phan_loai_nghiem(x))
+                df_result["Ngưỡng"] = pd.Categorical(df_result["Ngưỡng"], categories=["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], ordered=True)
+
                 st.dataframe(df_result)
             except KeyError as e:
                 st.error(f"Lỗi khi ánh xạ dữ liệu: Không tìm thấy cột cần thiết '{e}'. Vui lòng kiểm tra tên cột trong file Excel của bạn trên sheet 'dữ liệu'.")
