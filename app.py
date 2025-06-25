@@ -13,6 +13,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
     upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
     upload_tba_cungkyd = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
+
 # Kết quả chạy thử: kiểm tra dữ liệu đầu vào tổn thất TBA công cộng theo tháng
 if upload_tba_thang:
     df_test = pd.read_excel(upload_tba_thang, skiprows=6)
