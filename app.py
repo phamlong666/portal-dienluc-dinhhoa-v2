@@ -319,7 +319,15 @@ if st.session_state.df_tba_thang is not None or \
                 # ADDED THIS LINE: Now adding the "Ngưỡng" column to df_result
                 
                 df_result["Ngưỡng"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: phan_loai_nghiem(x))
+                nguong_options = ["Tất cả", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
+                chon_nguong = st.selectbox("🎯 Lọc theo ngưỡng tổn thất:", nguong_options)
+                if chon_nguong != "Tất cả":
+                    df_result = df_result[df_result["Ngưỡng"] == chon_nguong]
                 df_result["Ngưỡng"] = pd.Categorical(df_result["Ngưỡng"], categories=["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], ordered=True)
+                nguong_options = ["Tất cả", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
+                chon_nguong = st.selectbox("🎯 Lọc theo ngưỡng tổn thất:", nguong_options)
+                if chon_nguong != "Tất cả":
+                    df_result = df_result[df_result["Ngưỡng"] == chon_nguong]
 
                 st.dataframe(df_result)
             except KeyError as e:
