@@ -1,138 +1,114 @@
 
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📥 Tải dữ liệu đầu vào - Báo cáo tổn thất")
 
-# === Nút làm mới ===
-if st.button("🔄 Làm mới"):
-    st.session_state.clear()
-    st.experimental_rerun()
+st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
 
+# Tạo các tiện ích con theo phân nhóm
 with st.expander("🔌 Tổn thất các TBA công cộng"):
     upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
+    upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
+    upload_tba_cungkyd = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
 
-    if upload_tba_thang is not None:
+with st.expander("⚡ Tổn thất các đường dây trung thế"):
+    upload_trung_thang = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang")
+    upload_trung_luyke = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke")
+    upload_trung_ck = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck")
+
+with st.expander("🏢 Tổn thất toàn đơn vị"):
+    upload_dv_thang = st.file_uploader("📅 Tải dữ liệu Đơn vị - Theo tháng", type=["xlsx"], key="dv_thang")
+    upload_dv_luyke = st.file_uploader("📊 Tải dữ liệu Đơn vị - Lũy kế", type=["xlsx"], key="dv_luyke")
+    upload_dv_ck = st.file_uploader("📈 Tải dữ liệu Đơn vị - Cùng kỳ", type=["xlsx"], key="dv_ck")
+
+# Kết quả chạy thử: kiểm tra dữ liệu đầu vào tổn thất TBA công cộng theo tháng
+if upload_tba_thang:
+    df_test = pd.read_excel(upload_tba_thang, skiprows=6)
+    st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
+    st.dataframe(df_test.head())
+
+    # Ánh xạ nhanh theo bảng chuẩn đã tạo
+    df_result = pd.DataFrame()
+    df_result["STT"] = range(1, len(df_test) + 1)
+    df_result["Tên TBA"] = df_test.iloc[:, 2]
+    df_result["Công suất"] = df_test.iloc[:, 3]
+    df_result["Điện nhận"] = df_test.iloc[:, 6]
+    df_result["Thương phẩm"] = df_test.iloc[:, 6] - df_test.iloc[:, 7]
+    df_result["Điện tổn thất"] = df_test.iloc[:, 13].round(0).astype("Int64")
+    df_result["Tỷ lệ tổn thất"] = df_test.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+    df_result["Kế hoạch"] = df_test.iloc[:, 15].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+    df_result["So sánh"] = df_test.iloc[:, 16].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+
+    st.markdown("### 📊 Kết quả ánh xạ dữ liệu:")
+    st.dataframe(df_result)
+
+    # Hiển thị biểu đồ minh họa nhanh
+    # ===== BIỂU ĐỒ THEO NGƯỠNG TỔN THẤT =====
+    import plotly.graph_objects as go
+    import numpy as np
+
+    # Hàm phân loại tổn thất theo ngưỡng
+    def phan_loai_nghiem(x):
         try:
-            xls = pd.ExcelFile(upload_tba_thang)
-            sheet_names = xls.sheet_names
+            x = float(x.replace(",", "."))
+        except:
+            return "Không rõ"
+        if x < 2:
+            return "<2%"
+        elif 2 <= x < 3:
+            return ">=2 và <3%"
+        elif 3 <= x < 4:
+            return ">=3 và <4%"
+        elif 4 <= x < 5:
+            return ">=4 và <5%"
+        elif 5 <= x < 7:
+            return ">=5 và <7%"
+        else:
+            return ">=7%"
 
-            sheet_target = None
-            for s in sheet_names:
-                if s.strip().lower() == "bảng kết quả ánh xạ dữ liệu".lower():
-                    sheet_target = s
-                    break
+    df_result["Ngưỡng"] = df_result["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
 
-            if sheet_target is None:
-                st.error(f"❌ Không tìm thấy sheet 'Bảng Kết quả ánh xạ dữ liệu'. Sheet hiện có: {sheet_names}")
-            else:
-                # Lấy tháng/năm từ dòng đầu tiên của Sheet1
-                try:
-                    df_info = pd.read_excel(upload_tba_thang, sheet_name="Sheet1", nrows=1, header=None)
-                    thong_tin_thang = df_info.iloc[0, 0] if not df_info.empty else ""
-                except:
-                    thong_tin_thang = ""
+    tong_so = len(df_result)
+    tong_theo_nguong = df_result["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
 
-                df = xls.parse(sheet_target)
+    col1, col2 = st.columns([2,2])
+    with col1:
+        st.markdown("#### 📊 Số lượng TBA theo ngưỡng tổn thất")
+        fig_bar = go.Figure(data=[
+            go.Bar(name='Thực hiện', x=tong_theo_nguong.index, y=tong_theo_nguong.values, marker_color='steelblue'),
+        ])
+        fig_bar.update_layout(
+            height=400,
+            xaxis_title='Ngưỡng tổn thất',
+            yaxis_title='Số lượng TBA',
+            margin=dict(l=20, r=20, t=40, b=40)
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
 
-                # Format dữ liệu: giữ 2 số sau dấu phẩy cho tỷ lệ, có . ngăn cách nghìn
-                def format_number(x):
-                    try:
-                        return f"{int(x):,}".replace(",", ".")
-                    except:
-                        return x
+    with col2:
+        st.markdown(f"#### 🧩 Tỷ trọng TBA theo ngưỡng tổn thất (Tổng số: {tong_so})")
+        fig_pie = go.Figure(data=[
+            go.Pie(
+                labels=tong_theo_nguong.index,
+                values=tong_theo_nguong.values,
+                hole=0.5,
+                marker=dict(colors=['steelblue', 'darkorange', 'forestgreen', 'goldenrod', 'teal', 'red']),
+                textinfo='percent+label',
+            )
+        ])
+        fig_pie.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=40))
+        st.plotly_chart(fig_pie, use_container_width=True)
 
-                df["Tỷ lệ tổn thất (%)"] = df["Tỷ lệ tổn thất (%)"].map(lambda x: f"{float(x):.2f}".replace(".", ",") if pd.notna(x) else "")
-                if "So sánh (%)" in df.columns:
-                    df["So sánh (%)"] = df["So sánh (%)"].map(lambda x: f"{float(x):.2f}".replace(".", ",") if pd.notna(x) else "")
-                if "Điện nhận (kWh)" in df.columns:
-                    df["Điện nhận (kWh)"] = df["Điện nhận (kWh)"].map(format_number)
-                if "Thương phẩm (kWh)" in df.columns:
-                    df["Thương phẩm (kWh)"] = df["Thương phẩm (kWh)"].map(format_number)
-                if "Điện tổn thất (kWh)" in df.columns:
-                    df["Điện tổn thất (kWh)"] = df["Điện tổn thất (kWh)"].map(format_number)
-
-                with st.expander("📋 Xem bảng dữ liệu đã ánh xạ", expanded=False):
-                    st.dataframe(df)
-
-                # Phân loại tổn thất
-                def phan_loai(x):
-                    try:
-                        x = float(x)
-                    except:
-                        return "Không rõ"
-                    if x < 2:
-                        return "<2%"
-                    elif x < 3:
-                        return ">=2 và <3%"
-                    elif x < 4:
-                        return ">=3 và <4%"
-                    elif x < 5:
-                        return ">=4 và <5%"
-                    elif x < 7:
-                        return ">=5 và <7%"
-                    else:
-                        return ">=7%"
-
-                df["Ngưỡng"] = df["Tỷ lệ tổn thất (%)"].apply(phan_loai)
-                tong_theo_nguong = df["Ngưỡng"].value_counts().reindex(
-                    ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"],
-                    fill_value=0
-                )
-
-                colors = {
-                    "<2%": "steelblue",
-                    ">=2 và <3%": "darkorange",
-                    ">=3 và <4%": "forestgreen",
-                    ">=4 và <5%": "goldenrod",
-                    ">=5 và <7%": "teal",
-                    ">=7%": "crimson"
-                }
-
-                col1, col2 = st.columns([2, 2])
-                with col1:
-                    st.markdown(f"#### 📊 Số lượng TBA theo ngưỡng tổn thất {thong_tin_thang}")
-                    fig_bar = go.Figure()
-                    for nguong, color in colors.items():
-                        fig_bar.add_trace(go.Bar(
-                            name=nguong,
-                            x=["Thực hiện"],
-                            y=[tong_theo_nguong[nguong]],
-                            marker_color=color,
-                            text=[tong_theo_nguong[nguong]],
-                            textposition="outside",
-                            textfont=dict(size=14, color="black")
-                        ))
-                    fig_bar.update_layout(
-                        barmode='group',
-                        xaxis_title="",
-                        yaxis_title="Số lượng TBA",
-                        height=400,
-                        font=dict(color="black", size=14),
-                        showlegend=False
-                    )
-                    st.plotly_chart(fig_bar, use_container_width=True)
-
-                with col2:
-                    st.markdown(f"#### 🧩 Tỷ trọng TBA theo ngưỡng tổn thất {thong_tin_thang}")
-                    fig_pie = go.Figure(data=[
-                        go.Pie(
-                            labels=list(colors.keys()),
-                            values=[tong_theo_nguong[k] for k in colors.keys()],
-                            marker=dict(colors=list(colors.values())),
-                            hole=0.5,
-                            textinfo='percent+label',
-                            textfont=dict(size=14, color="black")
-                        )
-                    ])
-                    fig_pie.update_layout(
-                        annotations=[dict(text=f"Tổng số TBA<br><b>{df.shape[0]}</b>", x=0.5, y=0.5, font_size=16, showarrow=False, font_color="black")],
-                        height=400,
-                        font=dict(color="black", size=14)
-                    )
-                    st.plotly_chart(fig_pie, use_container_width=True)
-
-        except Exception as e:
-            st.error(f"Lỗi khi đọc file: {e}")
+    st.markdown("### 📉 Biểu đồ tổn thất theo TBA")
+    fig, ax = plt.subplots()
+    ax.bar(df_result["Tên TBA"], df_result["Điện tổn thất"])
+    ax.set_xlabel("Tên TBA")
+    ax.set_ylabel("Điện tổn thất (kWh)")
+    ax.set_title("Biểu đồ tổn thất các TBA công cộng")
+    ax.tick_params(axis='x', labelrotation=90)
+    for i, v in enumerate(df_result["Điện tổn thất"]):
+        ax.text(i, v, str(v), ha='center', va='bottom', fontsize=8)
+    st.pyplot(fig)
