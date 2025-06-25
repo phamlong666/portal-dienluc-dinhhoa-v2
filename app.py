@@ -4,9 +4,9 @@ import plotly.graph_objects as go
 import numpy as np
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
-st.title("📥 AI_Trợ lý tổn thất")
+st.title("\ud83d\udcc5 AI_Trợ lý tổn thất")
 
-st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
+st.markdown("### \ud83d\udd0d Chọn loại dữ liệu tổn thất để tải lên:")
 
 # --- Khởi tạo Session State cho dữ liệu tải lên ---
 df_keys = ["df_tba_thang", "df_tba_luyke", "df_tba_ck"]
@@ -14,7 +14,7 @@ for key in df_keys:
     if key not in st.session_state:
         st.session_state[key] = None
 
-if st.button("🔄 Làm mới dữ liệu"):
+if st.button("\ud83d\udd04 Làm mới dữ liệu"):
     for key in df_keys:
         st.session_state[key] = None
     st.experimental_rerun()
@@ -55,21 +55,21 @@ def process_tba_data(df):
     tong_theo_nguong = df_temp["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
     return tong_so, tong_theo_nguong, df_temp
 
-with st.expander("🔌 Tổn thất các TBA công cộng"):
-    temp_upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
+with st.expander("\ud83d\udd0c Tổn thất các TBA công cộng"):
+    temp_upload_tba_thang = st.file_uploader("\ud83d\uddd5\ufe0f Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
     if temp_upload_tba_thang:
         st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="dữ liệu", skiprows=6)
 
-    temp_upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
+    temp_upload_tba_luyke = st.file_uploader("\ud83d\udcca Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
     if temp_upload_tba_luyke:
         st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="dữ liệu", skiprows=6)
 
-    temp_upload_tba_ck = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
+    temp_upload_tba_ck = st.file_uploader("\ud83d\udcc8 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
     if temp_upload_tba_ck:
         st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="dữ liệu", skiprows=6)
 
 if st.session_state.df_tba_thang is not None or st.session_state.df_tba_luyke is not None or st.session_state.df_tba_ck is not None:
-    st.markdown("### 📊 Kết quả ánh xạ dữ liệu:")
+    st.markdown("### \ud83d\udcca Kết quả ánh xạ dữ liệu:")
 
     tong_so_thang, tong_theo_nguong_thang, df_tba_thang = process_tba_data(st.session_state.df_tba_thang)
     tong_so_luyke, tong_theo_nguong_luyke, _ = process_tba_data(st.session_state.df_tba_luyke)
@@ -79,7 +79,7 @@ if st.session_state.df_tba_thang is not None or st.session_state.df_tba_luyke is
     colors = ['steelblue', 'darkorange', 'forestgreen', 'goldenrod', 'teal', 'red']
 
     with col1:
-        st.markdown("#### 📊 Số lượng TBA theo ngưỡng tổn thất")
+        st.markdown("#### \ud83d\udcca Số lượng TBA theo ngưỡng tổn thất")
         fig_bar = go.Figure()
         if tong_theo_nguong_thang is not None:
             fig_bar.add_bar(name="Theo tháng", x=tong_theo_nguong_thang.index, y=tong_theo_nguong_thang.values, text=tong_theo_nguong_thang.values, textposition='outside', marker_color='black')
@@ -88,21 +88,21 @@ if st.session_state.df_tba_thang is not None or st.session_state.df_tba_luyke is
         if tong_theo_nguong_ck is not None:
             fig_bar.add_bar(name="Cùng kỳ", x=tong_theo_nguong_ck.index, y=tong_theo_nguong_ck.values, text=tong_theo_nguong_ck.values, textposition='outside', marker_color='black')
 
-        fig_bar.update_layout(barmode='group', height=400, xaxis_title='Ngưỡng tổn thất', yaxis_title='Số lượng TBA', font=dict(color='black', size=14, family='Arial', bold=True))
+        fig_bar.update_layout(barmode='group', height=400, xaxis_title='Ngưỡng tổn thất', yaxis_title='Số lượng TBA', font=dict(color='black', size=14, family='Arial'))
         st.plotly_chart(fig_bar, use_container_width=True)
 
     with col2:
-        st.markdown("#### 🧩 Tỷ trọng TBA theo ngưỡng tổn thất")
+        st.markdown("#### \ud83e\udde9 Tỷ trọng TBA theo ngưỡng tổn thất")
         for label, tong, data in [("Theo tháng", tong_so_thang, tong_theo_nguong_thang), ("Lũy kế", tong_so_luyke, tong_theo_nguong_luyke), ("Cùng kỳ", tong_so_ck, tong_theo_nguong_ck)]:
             if data is not None:
                 st.markdown(f"##### {label} (Tổng số: {tong})")
                 fig_pie = go.Figure(data=[
                     go.Pie(labels=data.index, values=data.values, hole=0.5, marker=dict(colors=colors), textinfo='percent+label')
                 ])
-                fig_pie.update_layout(height=300, showlegend=False, font=dict(color='black', size=14, family='Arial', bold=True))
+                fig_pie.update_layout(height=300, showlegend=False, font=dict(color='black', size=14, family='Arial'))
                 st.plotly_chart(fig_pie, use_container_width=True)
 
-    st.markdown("#### 📋 Danh sách TBA đã ánh xạ")
+    st.markdown("#### \ud83d\udccb Danh sách TBA đã ánh xạ")
     nguong_options = ["(All)"] + ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
     selected_nguong = st.selectbox("Ngưỡng tổn thất", nguong_options)
     if selected_nguong != "(All)":
