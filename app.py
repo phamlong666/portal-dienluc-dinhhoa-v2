@@ -120,7 +120,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_thang:
         try:
             # Đã thay thế "TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN" bằng "dữ liệu"
-            st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="dữ liệu") #
+            st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="dữ liệu", skiprows=6) #
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -134,7 +134,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_luyke:
         try:
             # Đã thay thế "TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN" bằng "dữ liệu"
-            st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="dữ liệu") #
+            st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="dữ liệu", skiprows=6) #
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet.")
@@ -147,7 +147,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_ck:
         try:
             # Đã thay thế "TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN" bằng "dữ liệu"
-            st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="dữ liệu") #
+            st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="dữ liệu", skiprows=6) #
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet.")
@@ -280,7 +280,7 @@ if st.session_state.df_tba_thang is not None or \
             "Tên TBA": "Tên TBA",
             "Công suất": "Công suất",
             "Điện nhận": "Điện nhận",
-            "Điện tổn thất thực tế": "Điện tổn thất thực tế", # Cột này dùng để tính Thương phẩm
+            "Điện thương phẩm": "Điện thương phẩm", # Cột này dùng để tính Thương phẩm
             "Điện tổn thất": "Điện tổn thất", # Cột này là giá trị tổn thất hiển thị
             "Tỷ lệ tổn thất": "Tỷ lệ tổn thất", # hoặc 'Tỷ lệ tổn thất (%)'
             "Kế hoạch": "Kế hoạch",
@@ -306,11 +306,11 @@ if st.session_state.df_tba_thang is not None or \
                 df_result["Điện nhận"] = df_test[expected_cols["Điện nhận"]]
                 
                 # Cần đảm bảo cả hai cột đều tồn tại để tính toán Thương phẩm
-                if expected_cols["Điện nhận"] in df_test.columns and expected_cols["Điện tổn thất thực tế"] in df_test.columns:
-                     df_result["Thương phẩm"] = df_test[expected_cols["Điện nhận"]] - df_test[expected_cols["Điện tổn thất thực tế"]]
+                if expected_cols["Điện nhận"] in df_test.columns and expected_cols["Điện thương phẩm"] in df_test.columns:
+                     df_result["Thương phẩm"] = df_test[expected_cols["Điện nhận"]] - df_test[expected_cols["Điện thương phẩm"]]
                 else:
                     df_result["Thương phẩm"] = np.nan # Hoặc giá trị mặc định khác nếu không đủ cột
-                    st.warning("Không đủ cột để tính Thương phẩm. Đảm bảo có cột 'Điện nhận' và 'Điện tổn thất thực tế'.")
+                    st.warning("Không đủ cột để tính Thương phẩm. Đảm bảo có cột 'Điện nhận' và 'Điện thương phẩm'.")
 
                 df_result["Điện tổn thất"] = df_test[expected_cols["Điện tổn thất"]].round(0).astype("Int64", errors='ignore')
                 df_result["Tỷ lệ tổn thất"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
