@@ -9,16 +9,44 @@ st.title("📥 Tải dữ liệu đầu vào - Báo cáo tổn thất")
 
 st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
 
+# --- Khởi tạo Session State cho dữ liệu tải lên ---
+# Dùng để lưu trữ DataFrame sau khi đọc file
+if 'df_tba_thang' not in st.session_state:
+    st.session_state.df_tba_thang = None
+if 'df_tba_luyke' not in st.session_state:
+    st.session_state.df_tba_luyke = None
+# ... (Bạn sẽ cần khởi tạo tương tự cho tất cả các loại dữ liệu khác nếu muốn giữ chúng lại)
+
+
+# --- Nút "Làm mới" ---
+if st.button("🔄 Làm mới dữ liệu"):
+    st.session_state.df_tba_thang = None # Đặt lại dữ liệu TBA tháng về None
+    st.session_state.df_tba_luyke = None # Đặt lại dữ liệu TBA lũy kế về None
+    # ... (Đặt lại tất cả các biến Session State khác về None nếu có)
+    st.experimental_rerun() # Chạy lại ứng dụng để cập nhật giao diện
+
+
 # Tạo các tiện ích con theo phân nhóm
 with st.expander("🔌 Tổn thất các TBA công cộng"):
-    upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
+    # Sử dụng biến tạm thời để xử lý file_uploader
+    temp_upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
+    if temp_upload_tba_thang:
+        st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
+
     upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
+    if upload_tba_luyke:
+        st.session_state.df_tba_luyke = pd.read_excel(upload_tba_luyke, skiprows=6)
+        st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Lũy kế!")
+
     upload_tba_cungkyd = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
+    # Tương tự cho các file khác nếu bạn muốn lưu vào session_state
+
 
 # Kết quả chạy thử: kiểm tra dữ liệu đầu vào tổn thất TBA công cộng theo tháng
-if upload_tba_thang:
-    df_test = pd.read_excel(upload_tba_thang, skiprows=6)
-    st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
+# Bây giờ chúng ta kiểm tra dữ liệu từ session_state thay vì biến cục bộ
+if st.session_state.df_tba_thang is not None:
+    df_test = st.session_state.df_tba_thang
     st.dataframe(df_test.head())
 
     # Ánh xạ nhanh theo bảng chuẩn đã tạo
@@ -66,8 +94,18 @@ if upload_tba_thang:
     col1, col2 = st.columns([2,2])
     with col1:
         st.markdown("#### 📊 Số lượng TBA theo ngưỡng tổn thất")
+        # Định nghĩa màu cho từng cột
+        colors = ['steelblue', 'darkorange', 'forestgreen', 'goldenrod', 'teal', 'red']
         fig_bar = go.Figure(data=[
-            go.Bar(name='Thực hiện', x=tong_theo_nguong.index, y=tong_theo_nguong.values, marker_color='steelblue'),
+            go.Bar(
+                name='Thực hiện',
+                x=tong_theo_nguong.index,
+                y=tong_theo_nguong.values,
+                marker_color=colors, # Áp dụng màu riêng biệt
+                text=tong_theo_nguong.values, # Hiển thị giá trị
+                textposition='outside', # Vị trí hiển thị giá trị (trên cùng của cột)
+                textfont=dict(color='black') # Màu chữ của giá trị
+            )
         ])
         fig_bar.update_layout(
             height=400,
@@ -93,21 +131,24 @@ if upload_tba_thang:
 
 with st.expander("⚡ Tổn thất hạ thế"):
     upload_ha_thang = st.file_uploader("📅 Tải dữ liệu hạ áp - Theo tháng", type=["xlsx"], key="ha_thang")
+    # ... (Tương tự, bạn có thể lưu dữ liệu hạ áp vào session_state)
     upload_ha_luyke = st.file_uploader("📊 Tải dữ liệu hạ áp - Lũy kế", type=["xlsx"], key="ha_luyke")
     upload_ha_ck = st.file_uploader("📈 Tải dữ liệu hạ áp - Cùng kỳ", type=["xlsx"], key="ha_ck")
 
 with st.expander("⚡ Tổn thất trung thế"):
     upload_trung_thang_tt = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang_tt")
+    # ... (Tương tự, bạn có thể lưu dữ liệu trung thế vào session_state)
     upload_trung_luyke_tt = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke_tt")
     upload_trung_ck_tt = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck_tt")
 
 with st.expander("⚡ Tổn thất các đường dây trung thế"):
-    # Changed keys here to make them unique
     upload_trung_thang_dy = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang_dy")
+    # ... (Tương tự, bạn có thể lưu dữ liệu đường dây trung thế vào session_state)
     upload_trung_luyke_dy = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke_dy")
     upload_trung_ck_dy = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck_dy")
 
 with st.expander("🏢 Tổn thất toàn đơn vị"):
     upload_dv_thang = st.file_uploader("📅 Tải dữ liệu Đơn vị - Theo tháng", type=["xlsx"], key="dv_thang")
+    # ... (Tương tự, bạn có thể lưu dữ liệu đơn vị vào session_state)
     upload_dv_luyke = st.file_uploader("📊 Tải dữ liệu Đơn vị - Lũy kế", type=["xlsx"], key="dv_luyke")
     upload_dv_ck = st.file_uploader("📈 Tải dữ liệu Đơn vị - Cùng kỳ", type=["xlsx"], key="dv_ck")
