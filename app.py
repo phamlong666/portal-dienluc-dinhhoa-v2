@@ -320,14 +320,16 @@ if st.session_state.df_tba_thang is not None or \
                 
                 df_result["Ngưỡng"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: phan_loai_nghiem(x))
                 nguong_options = ["Tất cả", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
-                chon_nguong = st.selectbox("🎯 Lọc theo ngưỡng tổn thất:", nguong_options, key="tba_thang_nguong_filter") # Added unique key
+                
+                # Hiển thị selectbox lọc ngay phía trên dataframe
+                chon_nguong = st.selectbox("🎯 Lọc theo ngưỡng tổn thất:", nguong_options, key="tba_thang_nguong_filter") 
+                
                 if chon_nguong != "Tất cả":
                     df_result = df_result[df_result["Ngưỡng"] == chon_nguong]
+                
                 df_result["Ngưỡng"] = pd.Categorical(df_result["Ngưỡng"], categories=["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], ordered=True)
-                # The second selectbox was removed as it was a duplicate and causing the error.
-                # The Categorical conversion is now applied after filtering.
 
-                st.dataframe(df_result)
+                st.dataframe(df_result, use_container_width=True) # Ensure it uses full width
             except KeyError as e:
                 st.error(f"Lỗi khi ánh xạ dữ liệu: Không tìm thấy cột cần thiết '{e}'. Vui lòng kiểm tra tên cột trong file Excel của bạn trên sheet 'dữ liệu'.")
             except Exception as e:
