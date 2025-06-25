@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import numpy as np
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
-st.title("📥 AI_Trợ lý tổn thất")
+st.title("📥 Tải dữ liệu đầu vào - Báo cáo tổn thất")
 
 st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
 
@@ -51,15 +51,7 @@ def process_tba_data(df):
     if df is None:
         return None, None
     df_temp = pd.DataFrame()
-    
-    # Xử lý cột 'Tỷ lệ tổn thất' an toàn
-    if "Tỷ lệ tổn thất" in df.columns:
-        df_temp["Tỷ lệ tổn thất"] = df["Tỷ lệ tổn thất"].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-    elif df.shape[1] > 7:
-        df_temp["Tỷ lệ tổn thất"] = df.iloc[:, 7].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-    else:
-        df_temp["Tỷ lệ tổn thất"] = ""
-
+    df_temp["Tỷ lệ tổn thất"] = df.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
     df_temp["Ngưỡng"] = df_temp["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
     tong_so = len(df_temp)
     tong_theo_nguong = df_temp["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
@@ -70,17 +62,17 @@ def process_tba_data(df):
 with st.expander("🔌 Tổn thất các TBA công cộng"):
     temp_upload_tba_thang = st.file_uploader("📅 Tải dữ liệu TBA công cộng - Theo tháng", type=["xlsx"], key="tba_thang")
     if temp_upload_tba_thang:
-        st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, skiprows=6)
         st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
 
     temp_upload_tba_luyke = st.file_uploader("📊 Tải dữ liệu TBA công cộng - Lũy kế", type=["xlsx"], key="tba_luyke")
     if temp_upload_tba_luyke:
-        st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, skiprows=6)
         st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Lũy kế!")
 
     temp_upload_tba_ck = st.file_uploader("📈 Tải dữ liệu TBA công cộng - Cùng kỳ", type=["xlsx"], key="tba_ck")
     if temp_upload_tba_ck:
-        st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6)
+        st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, skiprows=6)
         st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Cùng kỳ!")
 
 # --- Xử lý và hiển thị dữ liệu tổng hợp nếu có ít nhất một file được tải lên ---
