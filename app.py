@@ -491,3 +491,15 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
         except Exception as e:
             st.error(f"Đã xảy ra lỗi không mong muốn khi đọc file đơn vị cùng kỳ: {e}")
             st.session_state.df_dv_ck = None
+st.subheader('📁 Tải file mẫu')
+template_folder = os.path.join(os.getcwd(), 'templates')
+if not os.path.exists(template_folder):
+    os.makedirs(template_folder)
+file_list = os.listdir(template_folder)
+if file_list:
+    for filename in file_list:
+        file_path = os.path.join(template_folder, filename)
+        with open(file_path, 'rb') as f:
+            st.download_button(f'⬇️ Tải {filename}', f, file_name=filename)
+else:
+    st.info('Chưa có file mẫu nào trong thư mục `templates`.')
