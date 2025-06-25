@@ -99,7 +99,7 @@ def process_tba_data(df):
     if 'Tỷ lệ tổn thất' in df.columns:
         df_temp["Tỷ lệ tổn thất"] = df['Tỷ lệ tổn thất'].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
     elif df.shape[1] > 14: # Check for the 15th column (index 14)
-        df_temp["Tỷ lệ tổn thất"] = df["Tỷ lệ tổn thất (%)"].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "") if pd.notna(x) else "")
+        df_temp["Tỷ lệ tổn thất"] = df["Tỷ lệ tổn thất (%)"].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
     else:
         st.warning("File Excel không có cột 'Tỷ lệ tổn thất' hoặc không đủ cột để tính toán. Vui lòng kiểm tra định dạng file và sheet.")
         return None, None
