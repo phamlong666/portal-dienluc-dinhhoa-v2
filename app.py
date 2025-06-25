@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import numpy as np
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
-st.title("📥 AI_Trợ lý tổn thất")
+st.title("📥 Tải dữ liệu đầu vào - Báo cáo tổn thất")
 
 st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
 
@@ -99,7 +99,7 @@ def process_tba_data(df):
     if 'Tỷ lệ tổn thất' in df.columns:
         df_temp["Tỷ lệ tổn thất"] = df['Tỷ lệ tổn thất'].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
     elif df.shape[1] > 14: # Check for the 15th column (index 14)
-        df_temp["Tỷ lệ tổn thất"] = df.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
+        df_temp["Tỷ lệ tổn thất"] = df["Tỷ lệ tổn thất (%)"].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "") if pd.notna(x) else "")
     else:
         st.warning("File Excel không có cột 'Tỷ lệ tổn thất' hoặc không đủ cột để tính toán. Vui lòng kiểm tra định dạng file và sheet.")
         return None, None
@@ -116,7 +116,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_thang:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -130,7 +130,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_luyke:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet.")
@@ -143,7 +143,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_ck:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet.")
@@ -314,7 +314,7 @@ with st.expander("⚡ Tổn thất hạ thế"):
     if upload_ha_thang:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_ha_thang = pd.read_excel(upload_ha_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_ha_thang = pd.read_excel(upload_ha_thang, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất hạ áp - Theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet hạ áp theo tháng: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -327,7 +327,7 @@ with st.expander("⚡ Tổn thất hạ thế"):
     if upload_ha_luyke:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_ha_luyke = pd.read_excel(upload_ha_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_ha_luyke = pd.read_excel(upload_ha_luyke, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất hạ áp - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet hạ áp lũy kế: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -340,7 +340,7 @@ with st.expander("⚡ Tổn thất hạ thế"):
     if upload_ha_ck:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_ha_ck = pd.read_excel(upload_ha_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_ha_ck = pd.read_excel(upload_ha_ck, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất hạ áp - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet hạ áp cùng kỳ: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -355,7 +355,7 @@ with st.expander("⚡ Tổn thất trung thế"):
     if upload_trung_thang_tt:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_trung_thang_tt = pd.read_excel(upload_trung_thang_tt, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_trung_thang_tt = pd.read_excel(upload_trung_thang_tt, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Trung áp (Trung thế) - Theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet trung áp (TT) theo tháng: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -368,7 +368,7 @@ with st.expander("⚡ Tổn thất trung thế"):
     if upload_trung_luyke_tt:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_trung_luyke_tt = pd.read_excel(upload_trung_luyke_tt, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_trung_luyke_tt = pd.read_excel(upload_trung_luyke_tt, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Trung áp (Trung thế) - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet trung áp (TT) lũy kế: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -381,7 +381,7 @@ with st.expander("⚡ Tổn thất trung thế"):
     if upload_trung_ck_tt:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_trung_ck_tt = pd.read_excel(upload_trung_ck_tt, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_trung_ck_tt = pd.read_excel(upload_trung_ck_tt, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Trung áp (Trung thế) - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet trung áp (TT) cùng kỳ: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -396,7 +396,7 @@ with st.expander("⚡ Tổn thất các đường dây trung thế"):
     if upload_trung_thang_dy:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_trung_thang_dy = pd.read_excel(upload_trung_thang_dy, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_trung_thang_dy = pd.read_excel(upload_trung_thang_dy, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Đường dây Trung thế - Theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet đường dây trung thế theo tháng: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -409,7 +409,7 @@ with st.expander("⚡ Tổn thất các đường dây trung thế"):
     if upload_trung_luyke_dy:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_trung_luyke_dy = pd.read_excel(upload_trung_luyke_dy, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_trung_luyke_dy = pd.read_excel(upload_trung_luyke_dy, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Đường dây Trung thế - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet đường dây trung thế lũy kế: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -422,7 +422,7 @@ with st.expander("⚡ Tổn thất các đường dây trung thế"):
     if upload_trung_ck_dy:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_trung_ck_dy = pd.read_excel(upload_trung_ck_dy, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_trung_ck_dy = pd.read_excel(upload_trung_ck_dy, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Đường dây Trung thế - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet đường dây trung thế cùng kỳ: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -437,7 +437,7 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
     if upload_dv_thang:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_dv_thang = pd.read_excel(upload_dv_thang, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_dv_thang = pd.read_excel(upload_dv_thang, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Toàn đơn vị - Theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet đơn vị theo tháng: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -450,7 +450,7 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
     if upload_dv_luyke:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_dv_luyke = pd.read_excel(upload_dv_luyke, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_dv_luyke = pd.read_excel(upload_dv_luyke, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Toàn đơn vị - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet đơn vị lũy kế: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -463,7 +463,7 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
     if upload_dv_ck:
         try:
             # IMPORTANT: Replace "Bảng Kết quả ánh xạ dữ liệu" with the EXACT sheet name you confirmed
-            st.session_state.df_dv_ck = pd.read_excel(upload_dv_ck, sheet_name="Bảng Kết quả ánh xạ dữ liệu", skiprows=6) # <<< CHANGE THIS LINE
+            st.session_state.df_dv_ck = pd.read_excel(upload_dv_ck, sheet_name="TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN", skiprows=6) # <<< CHANGE THIS LINE
             st.success("✅ Đã tải dữ liệu tổn thất Toàn đơn vị - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet đơn vị cùng kỳ: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
