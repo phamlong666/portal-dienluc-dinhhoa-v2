@@ -1,7 +1,8 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+import numpy as np
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📥 Tải dữ liệu đầu vào - Báo cáo tổn thất")
@@ -37,8 +38,6 @@ if upload_tba_thang:
 
     # Hiển thị biểu đồ minh họa nhanh
     # ===== BIỂU ĐỒ THEO NGƯỠNG TỔN THẤT =====
-    import plotly.graph_objects as go
-    import numpy as np
 
     # Hàm phân loại tổn thất theo ngưỡng
     def phan_loai_nghiem(x):
@@ -92,26 +91,23 @@ if upload_tba_thang:
         fig_pie.update_layout(height=400, margin=dict(l=20, r=20, t=40, b=40))
         st.plotly_chart(fig_pie, use_container_width=True)
 
-with st.expander("⚡ Tổn thất ha thế"):
+with st.expander("⚡ Tổn thất hạ thế"):
     upload_ha_thang = st.file_uploader("📅 Tải dữ liệu hạ áp - Theo tháng", type=["xlsx"], key="ha_thang")
     upload_ha_luyke = st.file_uploader("📊 Tải dữ liệu hạ áp - Lũy kế", type=["xlsx"], key="ha_luyke")
     upload_ha_ck = st.file_uploader("📈 Tải dữ liệu hạ áp - Cùng kỳ", type=["xlsx"], key="ha_ck")
 
 with st.expander("⚡ Tổn thất trung thế"):
-    upload_trung_thang = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang")
-    upload_trung_luyke = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke")
-    upload_trung_ck = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck")
+    upload_trung_thang_tt = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang_tt")
+    upload_trung_luyke_tt = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke_tt")
+    upload_trung_ck_tt = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck_tt")
 
 with st.expander("⚡ Tổn thất các đường dây trung thế"):
-    upload_trung_thang = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang")
-    upload_trung_luyke = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke")
-    upload_trung_ck = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck")
+    # Changed keys here to make them unique
+    upload_trung_thang_dy = st.file_uploader("📅 Tải dữ liệu Trung áp - Theo tháng", type=["xlsx"], key="trung_thang_dy")
+    upload_trung_luyke_dy = st.file_uploader("📊 Tải dữ liệu Trung áp - Lũy kế", type=["xlsx"], key="trung_luyke_dy")
+    upload_trung_ck_dy = st.file_uploader("📈 Tải dữ liệu Trung áp - Cùng kỳ", type=["xlsx"], key="trung_ck_dy")
 
 with st.expander("🏢 Tổn thất toàn đơn vị"):
     upload_dv_thang = st.file_uploader("📅 Tải dữ liệu Đơn vị - Theo tháng", type=["xlsx"], key="dv_thang")
     upload_dv_luyke = st.file_uploader("📊 Tải dữ liệu Đơn vị - Lũy kế", type=["xlsx"], key="dv_luyke")
     upload_dv_ck = st.file_uploader("📈 Tải dữ liệu Đơn vị - Cùng kỳ", type=["xlsx"], key="dv_ck")
-
-
-
-  
