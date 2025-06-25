@@ -120,7 +120,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_thang:
         try:
             # Đã thay thế "TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN" bằng "dữ liệu"
-            st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="dữ liệu", skiprows=6) #
+            st.session_state.df_tba_thang = pd.read_excel(temp_upload_tba_thang, sheet_name="dữ liệu") #
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng theo tháng!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet trong file Excel.")
@@ -134,7 +134,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_luyke:
         try:
             # Đã thay thế "TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN" bằng "dữ liệu"
-            st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="dữ liệu", skiprows=6) #
+            st.session_state.df_tba_luyke = pd.read_excel(temp_upload_tba_luyke, sheet_name="dữ liệu") #
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Lũy kế!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet.")
@@ -147,7 +147,7 @@ with st.expander("🔌 Tổn thất các TBA công cộng"):
     if temp_upload_tba_ck:
         try:
             # Đã thay thế "TÊN_SHEET_CHÍNH_XÁC_CỦA_BẠN" bằng "dữ liệu"
-            st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="dữ liệu", skiprows=6) #
+            st.session_state.df_tba_ck = pd.read_excel(temp_upload_tba_ck, sheet_name="dữ liệu") #
             st.success("✅ Đã tải dữ liệu tổn thất TBA công cộng - Cùng kỳ!")
         except ValueError as e:
             st.error(f"Lỗi khi đọc sheet: {e}. Vui lòng kiểm tra tên sheet.")
