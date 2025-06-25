@@ -210,6 +210,8 @@ if st.session_state.df_tba_thang is not None or \
             ))
 
         fig_bar.update_layout(
+    xaxis=dict(title_font=dict(color='black', size=14, family='Arial',), tickfont=dict(color='black', size=13, family='Arial')),
+    yaxis=dict(title_font=dict(color='black', size=14, family='Arial'), tickfont=dict(color='black', size=13, family='Arial')),
             barmode='group',
             height=400,
             xaxis_title='Ngưỡng tổn thất',
