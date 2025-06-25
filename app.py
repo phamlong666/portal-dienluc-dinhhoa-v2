@@ -8,16 +8,6 @@ st.title("📥 AI_Trợ lý tổn thất")
 
 st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
 
-# --- Khởi tạo Session State cho dữ liệu tải lên ---import streamlit as st
-import pandas as pd
-import plotly.graph_objects as go
-import numpy as np
-
-st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
-st.title("📥 AI_Trợ lý tổn thất")
-
-st.markdown("### 🔍 Chọn loại dữ liệu tổn thất để tải lên:")
-
 # --- Khởi tạo Session State cho dữ liệu tải lên ---
 if 'df_tba_thang' not in st.session_state:
     st.session_state.df_tba_thang = None
@@ -194,7 +184,7 @@ if st.session_state.df_tba_thang is not None or \
                 y=tong_theo_nguong_thang.values,
                 text=tong_theo_nguong_thang.values,
                 textposition='outside',
-                textfont=dict(color='black')
+                textfont=dict(color='black', size=13, family='Arial')
             ))
 
         # Thêm các thanh cho "Lũy kế"
@@ -205,7 +195,7 @@ if st.session_state.df_tba_thang is not None or \
                 y=tong_theo_nguong_luyke.values,
                 text=tong_theo_nguong_luyke.values,
                 textposition='outside',
-                textfont=dict(color='black')
+                textfont=dict(color='black', size=13, family='Arial')
             ))
 
         # Thêm các thanh cho "Cùng kỳ"
@@ -216,7 +206,7 @@ if st.session_state.df_tba_thang is not None or \
                 y=tong_theo_nguong_ck.values,
                 text=tong_theo_nguong_ck.values,
                 textposition='outside',
-                textfont=dict(color='black')
+                textfont=dict(color='black', size=13, family='Arial')
             ))
 
         fig_bar.update_layout(
@@ -240,7 +230,7 @@ if st.session_state.df_tba_thang is not None or \
                     values=tong_theo_nguong_thang.values,
                     hole=0.5,
                     marker=dict(colors=colors),
-                    textinfo='percent+label',
+                    textinfo='percent+label', textfont=dict(color='black', size=13, family='Arial'),
                     name='Theo tháng'
                 )
             ])
@@ -255,7 +245,7 @@ if st.session_state.df_tba_thang is not None or \
                     values=tong_theo_nguong_luyke.values,
                     hole=0.5,
                     marker=dict(colors=colors),
-                    textinfo='percent+label',
+                    textinfo='percent+label', textfont=dict(color='black', size=13, family='Arial'),
                     name='Lũy kế'
                 )
             ])
@@ -270,7 +260,7 @@ if st.session_state.df_tba_thang is not None or \
                     values=tong_theo_nguong_ck.values,
                     hole=0.5,
                     marker=dict(colors=colors),
-                    textinfo='percent+label',
+                    textinfo='percent+label', textfont=dict(color='black', size=13, family='Arial'),
                     name='Cùng kỳ'
                 )
             ])
@@ -495,81 +485,3 @@ with st.expander("🏢 Tổn thất toàn đơn vị"):
         except Exception as e:
             st.error(f"Đã xảy ra lỗi không mong muốn khi đọc file đơn vị cùng kỳ: {e}")
             st.session_state.df_dv_ck = None
-if 'df_tba_thang' not in st.session_state:
-    st.session_state.df_tba_thang = None
-if 'df_tba_luyke' not in st.session_state:
-    st.session_state.df_tba_luyke = None
-if 'df_tba_ck' not in st.session_state:
-    st.session_state.df_tba_ck = None
-
-# Hàm phân loại tổn thất theo ngưỡng
-def phan_loai_nghiem(x):
-    try:
-        x = float(str(x).replace(",", "."))
-    except (ValueError, AttributeError):
-        return "Không rõ"
-    if x < 2:
-        return "<2%"
-    elif 2 <= x < 3:
-        return ">=2 và <3%"
-    elif 3 <= x < 4:
-        return ">=3 và <4%"
-    elif 4 <= x < 5:
-        return ">=4 và <5%"
-    elif 5 <= x < 7:
-        return ">=5 và <7%"
-    else:
-        return ">=7%"
-
-# Hàm xử lý DataFrame và trả về số lượng TBA theo ngưỡng
-def process_tba_data(df):
-    if df is None:
-        return None, None
-    df_temp = pd.DataFrame()
-
-    loss_rate_col_found = False
-    if 'Tỷ lệ tổn thất' in df.columns:
-        df_temp["Tỷ lệ tổn thất"] = df['Tỷ lệ tổn thất'].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-        loss_rate_col_found = True
-    elif 'Tỷ lệ tổn thất (%)' in df.columns:
-        df_temp["Tỷ lệ tổn thất"] = df['Tỷ lệ tổn thất (%)'].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-        loss_rate_col_found = True
-    elif df.shape[1] > 14:
-        st.warning("Cảnh báo: Cột 'Tỷ lệ tổn thất' không tìm thấy theo tên. Đang sử dụng cột thứ 15 (chỉ số 14) làm 'Tỷ lệ tổn thất'. Vui lòng kiểm tra file Excel để đảm bảo chính xác.")
-        df_temp["Tỷ lệ tổn thất"] = df.iloc[:, 14].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-        loss_rate_col_found = True
-    else:
-        st.error("Lỗi: File Excel không có cột 'Tỷ lệ tổn thất' (theo tên hoặc theo chỉ số 14). Vui lòng kiểm tra định dạng file và sheet 'dữ liệu' của bạn.")
-        return None, None
-
-    if not loss_rate_col_found:
-        return None, None
-
-    df_temp["Ngưỡng"] = df_temp["Tỷ lệ tổn thất"].apply(phan_loai_nghiem)
-    tong_so = len(df_temp)
-    tong_theo_nguong = df_temp["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
-    return tong_so, tong_theo_nguong
-
-# --- Biểu đồ ---
-if st.session_state.df_tba_thang is not None:
-    st.markdown("#### 📊 Số lượng TBA theo ngưỡng tổn thất")
-    tong_so, tong_theo_nguong = process_tba_data(st.session_state.df_tba_thang)
-    if tong_theo_nguong is not None:
-        fig_bar = go.Figure()
-        fig_bar.add_trace(go.Bar(
-            x=tong_theo_nguong.index,
-            y=tong_theo_nguong.values,
-            text=tong_theo_nguong.values,
-            textposition='outside',
-            marker_color='steelblue',
-            textfont=dict(color='black', size=16, family="Arial")
-        ))
-        fig_bar.update_layout(
-            height=400,
-            xaxis_title='Ngưỡng tổn thất',
-            yaxis_title='Số lượng TBA',
-            margin=dict(l=20, r=20, t=40, b=40),
-            font=dict(color='black', size=16, family="Arial"),
-            showlegend=False
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
