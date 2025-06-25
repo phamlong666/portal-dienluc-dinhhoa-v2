@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+import os # Import os module to handle file paths
 
 st.set_page_config(page_title="Báo cáo tổn thất TBA", layout="wide")
 st.title("📥 AI_Trợ lý tổn thất")
@@ -37,26 +38,6 @@ if 'df_dv_luyke' not in st.session_state:
     st.session_state.df_dv_luyke = None
 if 'df_dv_ck' not in st.session_state:
     st.session_state.df_dv_ck = None
-
-
-# --- Nút "Làm mới" ---
-if st.button("🔄 Làm mới dữ liệu"):
-    st.session_state.df_tba_thang = None
-    st.session_state.df_tba_luyke = None
-    st.session_state.df_tba_ck = None
-    st.session_state.df_ha_thang = None
-    st.session_state.df_ha_luyke = None
-    st.session_state.df_ha_ck = None
-    st.session_state.df_trung_thang_tt = None
-    st.session_state.df_trung_luyke_tt = None
-    st.session_state.df_trung_ck_tt = None
-    st.session_state.df_trung_thang_dy = None
-    st.session_state.df_trung_luyke_dy = None
-    st.session_state.df_trung_ck_dy = None
-    st.session_state.df_dv_thang = None
-    st.session_state.df_dv_luyke = None
-    st.session_state.df_dv_ck = None
-    st.experimental_rerun()
 
 
 # Hàm phân loại tổn thất theo ngưỡng
@@ -110,6 +91,52 @@ def process_tba_data(df):
     tong_so = len(df_temp)
     tong_theo_nguong = df_temp["Ngưỡng"].value_counts().reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], fill_value=0)
     return tong_so, tong_theo_nguong
+
+# --- Đặt các nút "Làm mới dữ liệu" và "Tải file mẫu" cạnh nhau ---
+col_refresh, col_download_folder = st.columns([1, 1])
+
+with col_refresh:
+    if st.button("🔄 Làm mới dữ liệu"):
+        st.session_state.df_tba_thang = None
+        st.session_state.df_tba_luyke = None
+        st.session_state.df_tba_ck = None
+        st.session_state.df_ha_thang = None
+        st.session_state.df_ha_luyke = None
+        st.session_state.df_ha_ck = None
+        st.session_state.df_trung_thang_tt = None
+        st.session_state.df_trung_luyke_tt = None
+        st.session_state.df_trung_ck_tt = None
+        st.session_state.df_trung_thang_dy = None
+        st.session_state.df_trung_luyke_dy = None
+        st.session_state.df_trung_ck_dy = None
+        st.session_state.df_dv_thang = None
+        st.session_state.df_dv_luyke = None
+        st.session_state.df_dv_ck = None
+        st.experimental_rerun()
+
+with col_download_folder:
+    with st.expander("📁 Tải file mẫu"):
+        st.markdown("Bạn có thể tải xuống các file Excel mẫu dưới đây để sử dụng với chương trình:")
+
+        # Đường dẫn tới thư mục chứa file mẫu
+        template_folder = "templates"
+
+        # Đảm bảo thư mục templates tồn tại
+        if not os.path.exists(template_folder):
+            st.warning(f"Thư mục '{template_folder}' không tồn tại. Vui lòng tạo thư mục này và đặt các file mẫu vào đó.")
+        else:
+            # Lặp qua các file trong thư mục templates và tạo nút download
+            for filename in os.listdir(template_folder):
+                if filename.endswith(".xlsx"): # Chỉ hiển thị các file Excel
+                    file_path = os.path.join(template_folder, filename)
+                    with open(file_path, "rb") as file:
+                        st.download_button(
+                            label=f"Tải xuống {filename}",
+                            data=file,
+                            file_name=filename,
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            key=f"download_{filename}"
+                        )
 
 
 # Tạo các tiện ích con theo phân nhóm
@@ -316,7 +343,6 @@ if st.session_state.df_tba_thang is not None or \
                 df_result["Tỷ lệ tổn thất"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
                 df_result["Kế hoạch"] = df_test[expected_cols["Kế hoạch"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
                 df_result["So sánh"] = df_test[expected_cols["So sánh"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-                # ADDED THIS LINE: Now adding the "Ngưỡng" column to df_result
                 
                 df_result["Ngưỡng"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: phan_loai_nghiem(x))
                 nguong_options = ["Tất cả", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
