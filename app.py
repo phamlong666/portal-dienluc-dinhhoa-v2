@@ -318,7 +318,18 @@ if st.session_state.df_tba_thang is not None or \
                 df_result["Tỷ lệ tổn thất"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
                 df_result["Kế hoạch"] = df_test[expected_cols["Kế hoạch"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
                 df_result["So sánh"] = df_test[expected_cols["So sánh"]].map(lambda x: f"{x:.2f}".replace(".", ",") if pd.notna(x) else "")
-                st.dataframe(df_result)
+                
+        # Thêm cột 'Ngưỡng' từ tỷ lệ tổn thất
+        df_result["Ngưỡng"] = df_test[expected_cols["Tỷ lệ tổn thất"]].map(lambda x: phan_loai_nghiem(x))
+
+        # Bộ lọc ngưỡng tổn thất
+        nguong_options = ["Tất cả", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
+        chon_nguong = st.selectbox("🎯 Lọc theo ngưỡng tổn thất:", nguong_options)
+
+        if chon_nguong != "Tất cả":
+            df_result = df_result[df_result["Ngưỡng"] == chon_nguong]
+
+        st.dataframe(df_result)
             except KeyError as e:
                 st.error(f"Lỗi khi ánh xạ dữ liệu: Không tìm thấy cột cần thiết '{e}'. Vui lòng kiểm tra tên cột trong file Excel của bạn trên sheet 'dữ liệu'.")
             except Exception as e:
