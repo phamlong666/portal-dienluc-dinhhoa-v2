@@ -9,7 +9,7 @@ import os
 import re
 
 # Import các thư viện Google API
-from googleapiclient.discovery import build
+from googleapiclient.discovery import build #
 # Bạn có thể không cần các thư viện google.oauth2 và google.auth nếu chỉ dùng API Key cho folder công khai
 # from google.oauth2.credentials import Credentials
 # from google.auth.transport.requests import Request
@@ -36,17 +36,16 @@ with col3:
 
 # ==== CẤU HÌNH GOOGLE DRIVE API ====
 # Khóa API của bạn đã được thay thế vào đây
-API_KEY = "AIzaSyB2sDczQAzYdi8ffFut3Ie0DluchLta4Ls" 
+API_KEY = "AIzaSyB2sDczQAzYdi8ffFut3Ie0DluchLta4Ls" #
 
 # ID của thư mục Google Drive công khai của bạn
-# Chỉ lấy phần ID sau "folders/"
-FOLDER_ID = "1o1O5jMhvJ6V2bqr6VdNoWTfXYiFYnl98"
+FOLDER_ID = "1o1O5jMhvJ6V2bqr6VdNoWTfXYiFYnl98" #
 
 # Hàm khởi tạo dịch vụ Google Drive API
 @st.cache_resource # Sử dụng cache để tránh khởi tạo lại service mỗi lần chạy lại script
 def get_drive_service(api_key):
     try:
-        service = build('drive', 'v3', developerKey=api_key)
+        service = build('drive', 'v3', developerKey=api_key) #
         st.success("Đã khởi tạo dịch vụ Google Drive API thành công.")
         return service
     except Exception as e:
@@ -64,7 +63,7 @@ def get_file_links_from_drive_api(service, folder_id):
         # Tìm các tệp trong thư mục cụ thể, chỉ lấy tên và ID
         # q: Tìm kiếm các tệp có 'folder_id' trong parents và có mimeType là Excel
         # fields: chỉ định các trường cần lấy (file id và tên)
-        results = service.files().list(
+        results = service.files().list( #
             q=f"'{folder_id}' in parents and (mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or mimeType='application/vnd.ms-excel')",
             fields="files(id, name)"
         ).execute()
@@ -92,9 +91,7 @@ def download_excel_from_drive_api(service, file_id):
 
     try:
         # Sử dụng API để tải nội dung tệp
-        # Tệp lớn hơn 10MB cần dùng requests.get(download_url) thay vì service.files().get_media()
-        # Đối với file Excel nhỏ, get_media là đủ.
-        request = service.files().get_media(fileId=file_id)
+        request = service.files().get_media(fileId=file_id) #
         file_content = BytesIO(request.execute())
         
         df = pd.read_excel(file_content, sheet_name="dữ liệu")
@@ -115,7 +112,7 @@ def load_data_from_drive(file_list, drive_files_map, drive_service): # Thêm dri
         file_id = drive_files_map.get(file)
         if file_id:
             st.write(f"Đang tải tệp: {file} (ID: {file_id})")
-            df = download_excel_from_drive_api(drive_service, file_id) # Gọi hàm API mới
+            df = download_excel_from_drive_api(drive_service, file_id) # Gọi hàm API mới #
             if not df.empty:
                 dfs.append(df)
             else:
@@ -136,12 +133,12 @@ st.markdown("---")
 st.write("Bắt đầu quá trình xử lý dữ liệu...")
 
 # Khởi tạo dịch vụ Drive API
-drive_service = get_drive_service(API_KEY)
+drive_service = get_drive_service(API_KEY) #
 
 # Lấy danh sách tệp từ Drive bằng API
 drive_files_map = {}
 if drive_service:
-    drive_files_map = get_file_links_from_drive_api(drive_service, FOLDER_ID)
+    drive_files_map = get_file_links_from_drive_api(drive_service, FOLDER_ID) #
 else:
     st.error("Không thể khởi tạo dịch vụ Google Drive API. Vui lòng kiểm tra API Key.")
 
