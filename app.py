@@ -30,6 +30,9 @@ with col3:
 SERVICE_ACCOUNT_FILE = '/mnt/data/tonthat-2afb015bec9d.json'
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
+if not os.path.exists(SERVICE_ACCOUNT_FILE):
+    st.error(f"❌ Không tìm thấy file: {SERVICE_ACCOUNT_FILE}. Hãy chắc chắn đã upload đúng file JSON lên.")
+
 @st.cache_data
 def get_drive_service():
     credentials = service_account.Credentials.from_service_account_file(
