@@ -13,3 +13,5 @@ openpyxl
 numpy
 yagmail
 plotly
+google-auth
+google-api-python-client
