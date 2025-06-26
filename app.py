@@ -1,9 +1,11 @@
 # app_tba_congcong.py
 import streamlit as st
 import pandas as pd
-import os
+import requests
+from io import BytesIO
 from datetime import datetime
 import matplotlib.pyplot as plt
+from bs4 import BeautifulSoup
 
 st.set_page_config(layout="wide", page_title="Phân tích tổn thất TBA công cộng")
 st.title("📊 Phân tích tổn thất các TBA công cộng")
@@ -28,13 +30,40 @@ with col3:
 def generate_filenames(year, start_month, end_month):
     return [f"TBA_{year}_{str(m).zfill(2)}.xlsx" for m in range(start_month, end_month + 1)]
 
-# ==== ĐỌC FILE GIẢ LẬP (TỪ LOCAL TRƯỚC) ====
+# ==== HÀM LẤY FILE TỪ GOOGLE DRIVE THƯ MỤC PUBLIC ====
+FOLDER_URL = "https://drive.google.com/drive/folders/1o1O5jMhvJ6V2bqr6VdNoWTfXYiFYnl98"
+
+def get_google_drive_file_map():
+    file_map = {}
+    page = requests.get(FOLDER_URL)
+    soup = BeautifulSoup(page.content, "html.parser")
+    for link in soup.find_all("a"):
+        href = link.get("href")
+        if href and "/file/d/" in href:
+            parts = href.split("/file/d/")
+            if len(parts) > 1:
+                file_id = parts[1].split("/")[0]
+                name = link.text.strip()
+                if name.endswith(".xlsx"):
+                    file_map[name] = file_id
+    return file_map
+
+def get_file_from_google_drive(filename):
+    file_map = get_google_drive_file_map()
+    file_id = file_map.get(filename)
+    if file_id:
+        download_url = f"https://drive.google.com/uc?id={file_id}"
+        response = requests.get(download_url)
+        if response.ok:
+            return pd.read_excel(BytesIO(response.content))
+    return pd.DataFrame()
+
+# ==== ĐỌC FILE TỪ GOOGLE DRIVE ====
 def load_data(file_list):
     data_frames = []
     for file in file_list:
-        file_path = f"/mnt/data/{file}"
-        if os.path.exists(file_path):
-            df = pd.read_excel(file_path)
+        df = get_file_from_google_drive(file)
+        if not df.empty:
             data_frames.append(df)
     return pd.concat(data_frames) if data_frames else pd.DataFrame()
 
@@ -78,7 +107,6 @@ st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
 
-    # Vẽ biểu đồ mẫu nếu có cột "Tỷ lệ tổn thất"
     if "Tỷ lệ tổn thất" in df.columns:
         fig, ax = plt.subplots()
         df.plot(kind="bar", x="Tên TBA", y="Tỷ lệ tổn thất", ax=ax)
@@ -89,4 +117,4 @@ if not df.empty:
         ax.tick_params(axis='y', labelcolor='black', labelsize=10)
         st.pyplot(fig)
 else:
-    st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong thư mục test.")
+    st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong Google Drive.")
