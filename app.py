@@ -7,7 +7,6 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import os
 import re
-from bs4 import BeautifulSoup
 
 st.set_page_config(layout="wide", page_title="Phân tích tổn thất TBA công cộng")
 st.title("📊 Phân tích tổn thất các TBA công cộng")
@@ -35,8 +34,7 @@ def get_file_links_from_drive(folder_url):
     folder_id = folder_url.split("folders/")[-1].split("?")[0]
     url = f"https://drive.google.com/drive/folders/{folder_id}"
     res = requests.get(url)
-    soup = BeautifulSoup(res.text, "html.parser")
-    pattern = re.compile(r'\"(https://drive.google.com/file/d/[^/]+)\"')
+    pattern = re.compile(r'"(https://drive.google.com/file/d/[^/]+)"')
     matches = pattern.findall(res.text)
     files = {}
     for match in matches:
