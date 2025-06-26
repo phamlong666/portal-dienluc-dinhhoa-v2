@@ -1,79 +1,95 @@
-# app_tba_congcong_fix.py
+
 import streamlit as st
 import pandas as pd
-import requests
-from io import BytesIO
-from datetime import datetime
 import matplotlib.pyplot as plt
+from datetime import datetime
+import io
+import os
+import json
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 
 st.set_page_config(layout="wide", page_title="Phân tích tổn thất TBA công cộng")
 st.title("📊 Phân tích tổn thất các TBA công cộng")
 
-# ==== CẤU HÌNH CHẾ ĐỘ PHÂN TÍCH ====
+# ================= CẤU HÌNH PHÂN TÍCH =================
 col1, col2, col3 = st.columns(3)
-
 with col1:
     mode = st.radio("Chế độ phân tích", ["Theo tháng", "Lũy kế", "So sánh cùng kỳ", "Lũy kế cùng kỳ"])
-
 with col2:
     thang_from = st.selectbox("Từ tháng", list(range(1, 13)), index=0)
     if "Lũy kế" in mode:
         thang_to = st.selectbox("Đến tháng", list(range(thang_from, 13)), index=4)
     else:
         thang_to = thang_from
-
 with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
 
-# ==== TỪ ĐIỂN TÊN FILE - FILE_ID ====
-drive_file_ids = {
-    "TBA_2024_01.xlsx": "1abc123...",  # Anh Long cần cập nhật các ID thật vào đây
-    "TBA_2024_02.xlsx": "1def456...",
-    "TBA_2025_01.xlsx": "1ghi789...",
-    "TBA_2025_02.xlsx": "1xyz987...",
-    # ... thêm tiếp cho đủ các tháng
-}
+# ================= THIẾT LẬP KẾT NỐI DRIVE =================
+SERVICE_ACCOUNT_FILE = '/mnt/data/tonthat-2afb015bec9d.json'
+FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
-# ==== HÀM PHỤ ====
+@st.cache_data
+def get_drive_service():
+    credentials = service_account.Credentials.from_service_account_file(
+        SERVICE_ACCOUNT_FILE,
+        scopes=["https://www.googleapis.com/auth/drive"]
+    )
+    return build('drive', 'v3', credentials=credentials)
+
+@st.cache_data
+def list_excel_files():
+    service = get_drive_service()
+    query = f"'{FOLDER_ID}' in parents and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'"
+    results = service.files().list(q=query, fields="files(id, name)").execute()
+    return {f['name']: f['id'] for f in results.get('files', [])}
+
+def download_excel(file_id):
+    service = get_drive_service()
+    request = service.files().get_media(fileId=file_id)
+    fh = io.BytesIO()
+    downloader = MediaIoBaseDownload(fh, request)
+    done = False
+    while done is False:
+        _, done = downloader.next_chunk()
+    fh.seek(0)
+    try:
+        return pd.read_excel(fh, sheet_name="dữ liệu")
+    except:
+        return pd.DataFrame()
+
 def generate_filenames(year, start_month, end_month):
     return [f"TBA_{year}_{str(m).zfill(2)}.xlsx" for m in range(start_month, end_month + 1)]
 
-def download_excel_from_drive(file_id):
-    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-    response = requests.get(download_url)
-    if response.status_code == 200:
-        try:
-            return pd.read_excel(BytesIO(response.content), sheet_name="dữ liệu")
-        except:
-            return pd.DataFrame()
-    return pd.DataFrame()
-
-def load_data(file_list):
+def load_data(file_list, all_files):
     dfs = []
     for fname in file_list:
-        file_id = drive_file_ids.get(fname)
+        file_id = all_files.get(fname)
         if file_id:
-            df = download_excel_from_drive(file_id)
+            df = download_excel(file_id)
             if not df.empty:
                 dfs.append(df)
     return pd.concat(dfs) if dfs else pd.DataFrame()
 
-# ==== XỬ LÝ ====
+# ================= PHÂN TÍCH DỮ LIỆU =================
+all_files = list_excel_files()
+
 if mode == "Theo tháng":
     files = generate_filenames(nam, thang_from, thang_from)
-    df = load_data(files)
+    df = load_data(files, all_files)
 
 elif mode == "Lũy kế":
     files = generate_filenames(nam, thang_from, thang_to)
-    df = load_data(files)
+    df = load_data(files, all_files)
     if not df.empty and "Tên TBA" in df.columns:
         df = df.groupby("Tên TBA", as_index=False).sum()
 
 elif mode == "So sánh cùng kỳ":
     files_now = generate_filenames(nam, thang_from, thang_from)
     files_last = generate_filenames(nam - 1, thang_from, thang_from)
-    df_now = load_data(files_now)
-    df_last = load_data(files_last)
+    df_now = load_data(files_now, all_files)
+    df_last = load_data(files_last, all_files)
     if not df_now.empty and not df_last.empty:
         df = df_now.merge(df_last, on="Tên TBA", suffixes=(f"_{nam}", f"_{nam-1}"))
         df["Chênh lệch tổn thất"] = df[f"Điện tổn thất_{nam}"] - df[f"Điện tổn thất_{nam-1}"]
@@ -83,8 +99,8 @@ elif mode == "So sánh cùng kỳ":
 elif mode == "Lũy kế cùng kỳ":
     files_now = generate_filenames(nam, thang_from, thang_to)
     files_last = generate_filenames(nam - 1, thang_from, thang_to)
-    df_now = load_data(files_now)
-    df_last = load_data(files_last)
+    df_now = load_data(files_now, all_files)
+    df_last = load_data(files_last, all_files)
     if not df_now.empty and not df_last.empty:
         df_now_group = df_now.groupby("Tên TBA", as_index=False).sum()
         df_last_group = df_last.groupby("Tên TBA", as_index=False).sum()
@@ -93,7 +109,7 @@ elif mode == "Lũy kế cùng kỳ":
     else:
         df = pd.DataFrame()
 
-# ==== HIỂN THỊ ====
+# ================= HIỂN THỊ =================
 st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
@@ -107,4 +123,4 @@ if not df.empty:
         ax.tick_params(axis='y', labelcolor='black', labelsize=10)
         st.pyplot(fig)
 else:
-    st.warning("Không có dữ liệu phù hợp hoặc thiếu tệp Excel theo định dạng yêu cầu.")
+    st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong thư mục Drive.")
