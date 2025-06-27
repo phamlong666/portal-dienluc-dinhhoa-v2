@@ -83,6 +83,9 @@ if "cùng kỳ" in mode.lower() and nam_cungkỳ:
 # ============ TIỀN XỬ LÝ ========== 
 if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN nhận đầu nguồn"]):
     df = df.copy()
+    df = df.dropna(subset=["Tổn thất (KWh)", "ĐN nhận đầu nguồn"])
+    df = df[df["ĐN nhận đầu nguồn"] != 0]
+
     df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
     df["Ngưỡng tổn thất"] = pd.cut(
         df["Tỷ lệ tổn thất"],
@@ -96,6 +99,8 @@ if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN
     for col in ["ĐN nhận đầu nguồn", "Điện thương phẩm", "Tổn thất (KWh)"]:
         if col in df.columns:
             df[col] = df[col].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+
+    st.info(f"📌 Số dòng dữ liệu sau xử lý: {df.shape[0]}")
 
 # ============ HIỂN THỊ ========== 
 st.markdown("---")
