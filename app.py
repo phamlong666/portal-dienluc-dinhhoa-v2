@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -27,7 +26,8 @@ with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
 
 # ================= THIẾT LẬP KẾT NỐI DRIVE =================
-SERVICE_ACCOUNT_FILE = '/mnt/data/tonthat-2afb015bec9d.json'
+# Corrected path for SERVICE_ACCOUNT_FILE
+SERVICE_ACCOUNT_FILE = 'tonthat-2afb015bec9d.json' # Changed from '/mnt/data/tonthat-2afb015bec9d.json'
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
 if not os.path.exists(SERVICE_ACCOUNT_FILE):
