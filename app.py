@@ -80,7 +80,7 @@ if "cùng kỳ" in mode.lower() and nam_cungkỳ:
     df_ck = load_data(files_ck, all_files, "Cùng kỳ")
     df = pd.concat([df, df_ck])
 
-# ============ TIỀN XỬ LÝ ==========
+# ============ TIỀN XỬ LÝ ========== 
 if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN nhận đầu nguồn"]):
     df = df.copy()
     df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
@@ -96,9 +96,15 @@ st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
 
-    # Biểu đồ cột theo kỳ và ngưỡng tổn thất
-    if "Ngưỡng tổn thất" in df.columns and "Kỳ" in df.columns:
-        count_df = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reset_index()
+    # ===== BIỂU ĐỒ PHÂN TÍCH THEO NGƯỠNG =====
+    count_df = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reset_index()
+    tong_df = df["Ngưỡng tổn thất"].value_counts().reset_index()
+    tong_df.columns = ["Ngưỡng tổn thất", "Số lượng"]
+    tong_tba = tong_df["Số lượng"].sum()
+
+    col_chart1, col_chart2 = st.columns([2, 1])
+
+    with col_chart1:
         fig, ax = plt.subplots(figsize=(10, 5))
         width = 0.35
         x = range(len(count_df))
@@ -106,16 +112,31 @@ if not df.empty:
         cols.remove("Ngưỡng tổn thất")
         for i, col in enumerate(cols):
             offset = (i - (len(cols) - 1)/2) * width
-            bars = ax.bar([xi + offset for xi in x], count_df[col], width, label=col, color=("teal" if "Thực" in col else "lightgray"))
+            bars = ax.bar([xi + offset for xi in x], count_df[col], width, label=col,
+                          color=("steelblue" if "Thực" in col else "lightgray"))
             for bar in bars:
                 height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', fontsize=9, fontweight='bold', color='black')
+                ax.text(bar.get_x() + bar.get_width()/2, height + 0.8, f'{int(height)}',
+                        ha='center', fontsize=9, fontweight='bold', color='black')
         ax.set_xticks(x)
         ax.set_xticklabels(count_df["Ngưỡng tổn thất"], fontsize=10, fontweight='bold')
         ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=14, fontweight="bold")
-        ax.set_ylabel("Số lượng")
+        ax.set_ylabel("Số lượng", fontsize=10)
         ax.legend()
         st.pyplot(fig)
+
+    with col_chart2:
+        fig2, ax2 = plt.subplots(figsize=(5, 5))
+        colors = ['#4e79a7', '#f28e2b', '#76b7b2', '#59a14f', '#edc948', '#e15759']
+        labels = tong_df["Ngưỡng tổn thất"]
+        sizes = tong_df["Số lượng"]
+        wedges, texts, autotexts = ax2.pie(sizes, labels=labels, colors=colors, autopct='%1.2f%%',
+                                           textprops={'fontsize': 9, 'weight': 'bold'}, startangle=90)
+        centre_circle = plt.Circle((0, 0), 0.70, fc='white')
+        fig2.gca().add_artist(centre_circle)
+        ax2.text(0, 0, f"Tổng số\nTBA\n{tong_tba}", ha='center', va='center', fontsize=12, fontweight='bold')
+        ax2.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=12, fontweight='bold')
+        st.pyplot(fig2)
 
 else:
     st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong thư mục Drive.")
