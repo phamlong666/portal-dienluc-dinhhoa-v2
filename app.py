@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 from datetime import datetime
 import io
 from google.oauth2 import service_account
@@ -19,6 +20,9 @@ with col2:
     thang_to = st.selectbox("Đến tháng", list(range(thang_from, 13)), index=4) if "Lũy kế" in mode else thang_from
 with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
+    nam_cungkỳ = nam - 1 if "cùng kỳ" in mode.lower() else None
+
+nguong = st.selectbox("Ngưỡng tổn thất", ["(All)", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"])
 
 # ============ KẾT NỐI GOOGLE DRIVE ============
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
@@ -55,65 +59,74 @@ def download_excel(file_id):
 def generate_filenames(year, start_month, end_month):
     return [f"TBA_{year}_{str(m).zfill(2)}.xlsx" for m in range(start_month, end_month + 1)]
 
-def load_data(file_list, all_files):
+def load_data(file_list, all_files, nhan="Thực hiện"):
     dfs = []
     for fname in file_list:
         file_id = all_files.get(fname)
         if file_id:
             df = download_excel(file_id)
             if not df.empty:
+                df["Kỳ"] = nhan
                 dfs.append(df)
     return pd.concat(dfs) if dfs else pd.DataFrame()
 
 # ============ PHÂN TÍCH ============
 all_files = list_excel_files()
 
-if mode == "Theo tháng":
-    files = generate_filenames(nam, thang_from, thang_from)
-    df = load_data(files, all_files)
+def apply_filters_and_metrics(df):
+    if df.empty:
+        return df
+    df = df.copy()
+    df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
+    df["ĐN nhận đầu nguồn"] = df["ĐN nhận đầu nguồn"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+    df["Điện thương phẩm"] = df["Điện thương phẩm"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+    df["Tổn thất (KWh)"] = df["Tổn thất (KWh)"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+    if nguong != "(All)":
+        df = df[df["Ngưỡng tổn thất"] == nguong]
+    return df
 
-elif mode == "Lũy kế":
-    files = generate_filenames(nam, thang_from, thang_to)
-    df = load_data(files, all_files)
-    if not df.empty and "Tên TBA" in df.columns:
-        df = df.groupby("Tên TBA", as_index=False).sum()
+files = generate_filenames(nam, thang_from, thang_to if "Lũy kế" in mode else thang_from)
+df = load_data(files, all_files, "Thực hiện")
+if "cùng kỳ" in mode.lower() and nam_cungkỳ:
+    files_ck = generate_filenames(nam_cungkỳ, thang_from, thang_to if "Lũy kế" in mode else thang_from)
+    df_ck = load_data(files_ck, all_files, "Cùng kỳ")
+    df = pd.concat([df, df_ck])
 
-elif mode == "So sánh cùng kỳ":
-    files_now = generate_filenames(nam, thang_from, thang_from)
-    files_last = generate_filenames(nam - 1, thang_from, thang_from)
-    df_now = load_data(files_now, all_files)
-    df_last = load_data(files_last, all_files)
-    if not df_now.empty and not df_last.empty:
-        df = df_now.merge(df_last, on="Tên TBA", suffixes=(f"_{nam}", f"_{nam-1}"))
-        df["Chênh lệch tổn thất"] = df[f"Điện tổn thất_{nam}"] - df[f"Điện tổn thất_{nam-1}"]
-    else:
-        df = pd.DataFrame()
-
-elif mode == "Lũy kế cùng kỳ":
-    files_now = generate_filenames(nam, thang_from, thang_to)
-    files_last = generate_filenames(nam - 1, thang_from, thang_to)
-    df_now = load_data(files_now, all_files)
-    df_last = load_data(files_last, all_files)
-    if not df_now.empty and not df_last.empty:
-        df_now_group = df_now.groupby("Tên TBA", as_index=False).sum()
-        df_last_group = df_last.groupby("Tên TBA", as_index=False).sum()
-        df = df_now_group.merge(df_last_group, on="Tên TBA", suffixes=(f"_{nam}", f"_{nam-1}"))
-        df["Chênh lệch tổn thất"] = df[f"Điện tổn thất_{nam}"] - df[f"Điện tổn thất_{nam-1}"]
-    else:
-        df = pd.DataFrame()
+df = apply_filters_and_metrics(df)
 
 # ============ HIỂN THỊ ============
 st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
-    if "Tỷ lệ tổn thất" in df.columns:
+
+    # Biểu đồ cột theo kỳ và ngưỡng tổn thất
+    if "Ngưỡng tổn thất" in df.columns and "Kỳ" in df.columns:
+        count_df = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reset_index()
         fig, ax = plt.subplots()
-        df.plot(kind="bar", x="Tên TBA", y="Tỷ lệ tổn thất", ax=ax)
-        ax.set_title("Biểu đồ tỷ lệ tổn thất các TBA", fontsize=14, fontweight='bold', color='black')
-        ax.set_ylabel("Tỷ lệ tổn thất (%)", fontsize=12, fontweight='bold', color='black')
-        ax.set_xlabel("Tên TBA", fontsize=12, fontweight='bold', color='black')
-        ax.tick_params(axis='x', labelrotation=90, labelcolor='black', labelsize=10)
-        ax.tick_params(axis='y', labelcolor='black', labelsize=10)
+        width = 0.35
+        x = range(len(count_df))
+        bar1 = ax.bar([i - width/2 for i in x], count_df["Thực hiện"], width, label="Thực hiện", color="teal")
+        bar2 = ax.bar([i + width/2 for i in x], count_df["Cùng kỳ"], width, label="Cùng kỳ", color="lightgray")
+        ax.set_xticks(x)
+        ax.set_xticklabels(count_df["Ngưỡng tổn thất"])
+        ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=14, fontweight="bold")
+        ax.set_ylabel("Số lượng")
+        for bars in [bar1, bar2]:
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', fontsize=9, fontweight='bold', color='black')
+        ax.legend()
         st.pyplot(fig)
+
+    # Biểu đồ tròn tỷ trọng
+    if "Ngưỡng tổn thất" in df.columns:
+        pie_df = df["Ngưỡng tổn thất"].value_counts().sort_index()
+        labels = pie_df.index
+        sizes = pie_df.values
+        fig1, ax1 = plt.subplots()
+        ax1.pie(sizes, labels=labels, autopct='%1.2f%%', startangle=90)
+        ax1.axis('equal')
+        ax1.set_title("Tỷ trọng TBA theo ngưỡng tổn thất")
+        st.pyplot(fig1)
 else:
     st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong thư mục Drive.")
