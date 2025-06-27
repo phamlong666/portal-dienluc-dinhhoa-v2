@@ -83,7 +83,7 @@ if "cùng kỳ" in mode.lower() and nam_cungkỳ:
 # ============ TIỀN XỬ LÝ ==========
 if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN nhận đầu nguồn"]):
     df = df.copy()
-    df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
+    # Bỏ dòng tính tỷ lệ tổn thất sai, giữ nguyên cột gốc
     # Định dạng số liệu cột điện nhận, điện thương phẩm, tổn thất
     for col in ["ĐN nhận đầu nguồn", "Điện thương phẩm", "Tổn thất (KWh)"]:
         if col in df.columns:
@@ -105,48 +105,68 @@ st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
 
-    # Biểu đồ cột và donut theo ngưỡng tổn thất – giống ảnh báo cáo
+    # Phân loại ngưỡng tổn thất từ cột "Tỷ lệ tổn thất"
+    def classify_nguong(x):
+        if x < 2:
+            return "<2%"
+        elif 2 <= x < 3:
+            return ">=2 và <3%"
+        elif 3 <= x < 4:
+            return ">=3 và <4%"
+        elif 4 <= x < 5:
+            return ">=4 và <5%"
+        elif 5 <= x < 7:
+            return ">=5 và <7%"
+        else:
+            return ">=7%"
 
-    chart_data = {
-        "<2%": {"Thực hiện": 105, "Cùng kỳ": 4},
-        ">=2 và <3%": {"Thực hiện": 44, "Cùng kỳ": 10},
-        ">=3 và <4%": {"Thực hiện": 27, "Cùng kỳ": 34},
-        ">=4 và <5%": {"Thực hiện": 16, "Cùng kỳ": 46},
-        ">=5 và <7%": {"Thực hiện": 11, "Cùng kỳ": 68},
-        ">=7%": {"Thực hiện": 0, "Cùng kỳ": 31},
-    }
+    if "Tỷ lệ tổn thất" in df.columns:
+        df["Ngưỡng tổn thất"] = df["Tỷ lệ tổn thất"].apply(classify_nguong)
 
-    labels = list(chart_data.keys())
-    thuchien = [chart_data[k]["Thực hiện"] for k in labels]
-    cungky = [chart_data[k]["Cùng kỳ"] for k in labels]
-    colors = ["#2f69bf", "#f28e2b", "#bab0ac", "#59a14f", "#e6b000", "#d62728"]
-
+    # Biểu đồ đúng bố cục: cột + donut song song
     import matplotlib.pyplot as plt
+    import numpy as np
 
-    # Biểu đồ cột
-    fig1, ax1 = plt.subplots(figsize=(10, 5))
-    width = 0.35
-    x = range(len(labels))
-    bars1 = ax1.bar([i - width/2 for i in x], thuchien, width=width, color=colors, label="Thực hiện")
-    bars2 = ax1.bar([i + width/2 for i in x], cungky, width=width, color="#d3d3d3", label="Cùng kỳ")
+    chart_df = df[df["Kỳ"] == "Thực hiện"] if "Kỳ" in df.columns else df
+    nguong_order = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
+    count_data = chart_df["Ngưỡng tổn thất"].value_counts().reindex(nguong_order, fill_value=0)
 
-    for bars in [bars1, bars2]:
+    # Nếu có cột 'Kỳ' thì vẽ so sánh cả "Cùng kỳ"
+    if "Kỳ" in df.columns:
+        count_full = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reindex(nguong_order, fill_value=0)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[2, 1])
+
+        bar_width = 0.35
+        x = np.arange(len(nguong_order))
+        cols = list(count_full.columns)
+        for i, col in enumerate(cols):
+            offset = (i - (len(cols)-1)/2) * bar_width
+            bars = ax1.bar(x + offset, count_full[col], width=bar_width, label=col,
+                        color="#2f69bf" if "Thực" in col else "#d3d3d3")
+            for bar in bars:
+                height = bar.get_height()
+                ax1.text(bar.get_x() + bar.get_width()/2, height + 1, str(height),
+                         ha='center', fontsize=9, fontweight='bold', color='black')
+
+        ax1.set_xticks(x)
+        ax1.set_xticklabels(nguong_order, fontsize=10, fontweight='bold')
+        ax1.set_ylabel("Số lượng")
+        ax1.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=13, fontweight='bold')
+        ax1.legend()
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[2, 1])
+        bars = ax1.bar(nguong_order, count_data.values, color="#2f69bf")
         for bar in bars:
             height = bar.get_height()
-            ax1.text(bar.get_x() + bar.get_width()/2, height + 1, str(height), ha='center', fontsize=9, fontweight='bold', color='black')
+            ax1.text(bar.get_x() + bar.get_width()/2, height + 1, str(height),
+                     ha='center', fontsize=9, fontweight='bold', color='black')
+        ax1.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=13, fontweight='bold')
 
-    ax1.set_xticks(range(len(labels)))
-    ax1.set_xticklabels(labels, fontsize=10, fontweight='bold')
-    ax1.set_ylabel("Số lượng")
-    ax1.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=13, fontweight='bold')
-    ax1.legend()
-    st.pyplot(fig1)
-
-    # Biểu đồ donut
-    total = sum(thuchien)
-    fig2, ax2 = plt.subplots(figsize=(5, 5))
+    # Donut chart
+    total = count_data.sum()
+    colors = ["#2f69bf", "#f28e2b", "#bab0ac", "#59a14f", "#e6b000", "#d62728"]
     wedges, texts, autotexts = ax2.pie(
-        thuchien,
+        count_data.values,
         labels=None,
         autopct=lambda p: f'{p:.2f}%' if p > 0 else '',
         startangle=90,
@@ -157,8 +177,11 @@ if not df.empty:
         autotext.set_fontweight('bold')
         autotext.set_color('black')
         autotext.set_fontsize(10)
-    ax2.text(0, 0, f"Tổng số TBA\n{total}", ha='center', va='center', fontsize=12, fontweight='bold')
-    st.pyplot(fig2)
+    ax2.text(0, 0, f'Tổng số TBA\n{total}', ha='center', va='center', fontsize=12, fontweight='bold')
+    ax2.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=12, fontweight='bold')
+
+    plt.tight_layout()
+    st.pyplot(fig)
 
 
     # Biểu đồ cột theo kỳ và ngưỡng tổn thất
