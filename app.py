@@ -105,6 +105,62 @@ st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
 
+    # Biểu đồ cột và donut theo ngưỡng tổn thất – giống ảnh báo cáo
+
+    chart_data = {
+        "<2%": {"Thực hiện": 105, "Cùng kỳ": 4},
+        ">=2 và <3%": {"Thực hiện": 44, "Cùng kỳ": 10},
+        ">=3 và <4%": {"Thực hiện": 27, "Cùng kỳ": 34},
+        ">=4 và <5%": {"Thực hiện": 16, "Cùng kỳ": 46},
+        ">=5 và <7%": {"Thực hiện": 11, "Cùng kỳ": 68},
+        ">=7%": {"Thực hiện": 0, "Cùng kỳ": 31},
+    }
+
+    labels = list(chart_data.keys())
+    thuchien = [chart_data[k]["Thực hiện"] for k in labels]
+    cungky = [chart_data[k]["Cùng kỳ"] for k in labels]
+    colors = ["#2f69bf", "#f28e2b", "#bab0ac", "#59a14f", "#e6b000", "#d62728"]
+
+    import matplotlib.pyplot as plt
+
+    # Biểu đồ cột
+    fig1, ax1 = plt.subplots(figsize=(10, 5))
+    width = 0.35
+    x = range(len(labels))
+    bars1 = ax1.bar([i - width/2 for i in x], thuchien, width=width, color=colors, label="Thực hiện")
+    bars2 = ax1.bar([i + width/2 for i in x], cungky, width=width, color="#d3d3d3", label="Cùng kỳ")
+
+    for bars in [bars1, bars2]:
+        for bar in bars:
+            height = bar.get_height()
+            ax1.text(bar.get_x() + bar.get_width()/2, height + 1, str(height), ha='center', fontsize=9, fontweight='bold', color='black')
+
+    ax1.set_xticks(range(len(labels)))
+    ax1.set_xticklabels(labels, fontsize=10, fontweight='bold')
+    ax1.set_ylabel("Số lượng")
+    ax1.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=13, fontweight='bold')
+    ax1.legend()
+    st.pyplot(fig1)
+
+    # Biểu đồ donut
+    total = sum(thuchien)
+    fig2, ax2 = plt.subplots(figsize=(5, 5))
+    wedges, texts, autotexts = ax2.pie(
+        thuchien,
+        labels=None,
+        autopct=lambda p: f'{p:.2f}%' if p > 0 else '',
+        startangle=90,
+        colors=colors,
+        wedgeprops={'width': 0.3}
+    )
+    for autotext in autotexts:
+        autotext.set_fontweight('bold')
+        autotext.set_color('black')
+        autotext.set_fontsize(10)
+    ax2.text(0, 0, f"Tổng số TBA\n{total}", ha='center', va='center', fontsize=12, fontweight='bold')
+    st.pyplot(fig2)
+
+
     # Biểu đồ cột theo kỳ và ngưỡng tổn thất
     if "Ngưỡng tổn thất" in df.columns and "Kỳ" in df.columns:
         count_df = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reset_index()
