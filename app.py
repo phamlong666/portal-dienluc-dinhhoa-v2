@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import io
-import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -24,15 +23,10 @@ with col3:
 # ============ KẾT NỐI GOOGLE DRIVE ============
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
-SERVICE_ACCOUNT_FILE = "tonthat-2afb015bec9d.json"
-if not os.path.exists(SERVICE_ACCOUNT_FILE):
-    st.error("❌ Không tìm thấy file JSON chứng thực. Vui lòng chắc chắn đã tải lên.")
-    st.stop()
-
 @st.cache_data
 def get_drive_service():
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["google"],
         scopes=["https://www.googleapis.com/auth/drive"]
     )
     return build('drive', 'v3', credentials=credentials)
