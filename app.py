@@ -73,18 +73,6 @@ def load_data(file_list, all_files, nhan="Thực hiện"):
 # ============ PHÂN TÍCH ============
 all_files = list_excel_files()
 
-def apply_filters_and_metrics(df):
-    if df.empty:
-        return df
-    df = df.copy()
-    df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
-    df["ĐN nhận đầu nguồn"] = df["ĐN nhận đầu nguồn"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
-    df["Điện thương phẩm"] = df["Điện thương phẩm"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
-    df["Tổn thất (KWh)"] = df["Tổn thất (KWh)"].apply(lambda x: f"{x:,.0f}".replace(",", "."))
-    if nguong != "(All)":
-        df = df[df["Ngưỡng tổn thất"] == nguong]
-    return df
-
 files = generate_filenames(nam, thang_from, thang_to if "Lũy kế" in mode else thang_from)
 df = load_data(files, all_files, "Thực hiện")
 if "cùng kỳ" in mode.lower() and nam_cungkỳ:
@@ -92,9 +80,18 @@ if "cùng kỳ" in mode.lower() and nam_cungkỳ:
     df_ck = load_data(files_ck, all_files, "Cùng kỳ")
     df = pd.concat([df, df_ck])
 
-df = apply_filters_and_metrics(df)
+# ============ TIỀN XỬ LÝ ==========
+if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN nhận đầu nguồn"]):
+    df = df.copy()
+    df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
+    if "Ngưỡng tổn thất" in df.columns and nguong != "(All)":
+        df = df[df["Ngưỡng tổn thất"] == nguong]
 
-# ============ HIỂN THỊ ============
+    for col in ["ĐN nhận đầu nguồn", "Điện thương phẩm", "Tổn thất (KWh)"]:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+
+# ============ HIỂN THỊ ==========
 st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
@@ -105,16 +102,18 @@ if not df.empty:
         fig, ax = plt.subplots()
         width = 0.35
         x = range(len(count_df))
-        bar1 = ax.bar([i - width/2 for i in x], count_df["Thực hiện"], width, label="Thực hiện", color="teal")
-        bar2 = ax.bar([i + width/2 for i in x], count_df["Cùng kỳ"], width, label="Cùng kỳ", color="lightgray")
+        cols = list(count_df.columns)
+        cols.remove("Ngưỡng tổn thất")
+        for i, col in enumerate(cols):
+            offset = (i - (len(cols) - 1)/2) * width
+            bars = ax.bar([xi + offset for xi in x], count_df[col], width, label=col, color=("teal" if "Thực" in col else "lightgray"))
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', fontsize=9, fontweight='bold', color='black')
         ax.set_xticks(x)
         ax.set_xticklabels(count_df["Ngưỡng tổn thất"])
         ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=14, fontweight="bold")
         ax.set_ylabel("Số lượng")
-        for bars in [bar1, bar2]:
-            for bar in bars:
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', fontsize=9, fontweight='bold', color='black')
         ax.legend()
         st.pyplot(fig)
 
