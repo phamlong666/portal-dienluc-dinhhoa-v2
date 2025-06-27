@@ -84,7 +84,13 @@ if "cùng kỳ" in mode.lower() and nam_cungkỳ:
 if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN nhận đầu nguồn"]):
     df = df.copy()
     df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
-    if "Ngưỡng tổn thất" in df.columns and nguong != "(All)":
+    df["Ngưỡng tổn thất"] = pd.cut(
+        df["Tỷ lệ tổn thất"],
+        bins=[0, 2, 3, 4, 5, 7, 100],
+        labels=["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"],
+        right=False
+    )
+    if nguong != "(All)":
         df = df[df["Ngưỡng tổn thất"] == nguong]
 
     for col in ["ĐN nhận đầu nguồn", "Điện thương phẩm", "Tổn thất (KWh)"]:
