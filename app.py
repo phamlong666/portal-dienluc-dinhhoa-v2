@@ -26,12 +26,12 @@ with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
 
 # ================= THIẾT LẬP KẾT NỐI DRIVE =================
-# Corrected path for SERVICE_ACCOUNT_FILE
-SERVICE_ACCOUNT_FILE = 'tonthat-2afb015bec9d.json' # Changed from '/mnt/data/tonthat-2afb015bec9d.json'
+SERVICE_ACCOUNT_FILE = '/mnt/data/tonthat-2afb015bec9d.json'
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
 if not os.path.exists(SERVICE_ACCOUNT_FILE):
     st.error(f"❌ Không tìm thấy file: {SERVICE_ACCOUNT_FILE}. Hãy chắc chắn đã upload đúng file JSON lên.")
+    st.stop()
 
 @st.cache_data
 def get_drive_service():
@@ -54,7 +54,7 @@ def download_excel(file_id):
     fh = io.BytesIO()
     downloader = MediaIoBaseDownload(fh, request)
     done = False
-    while done is False:
+    while not done:
         _, done = downloader.next_chunk()
     fh.seek(0)
     try:
