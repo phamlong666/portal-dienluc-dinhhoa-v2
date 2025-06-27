@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import io
-import os
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -11,7 +10,7 @@ from googleapiclient.http import MediaIoBaseDownload
 st.set_page_config(layout="wide", page_title="Phân tích tổn thất TBA công cộng")
 st.title("📊 Phân tích tổn thất các TBA công cộng")
 
-# ============ CẤU HÌNH PHÂN TÍCH ============
+# ============ CẤU HÌNH ============
 col1, col2, col3 = st.columns(3)
 with col1:
     mode = st.radio("Chế độ phân tích", ["Theo tháng", "Lũy kế", "So sánh cùng kỳ", "Lũy kế cùng kỳ"])
@@ -22,22 +21,12 @@ with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
 
 # ============ KẾT NỐI GOOGLE DRIVE ============
-CANDIDATES = [
-    "/mnt/data/tonthat-2afb015bec9d.json",  # Cloud
-    "tonthat-2afb015bec9d.json"             # Local
-]
-SERVICE_ACCOUNT_FILE = next((f for f in CANDIDATES if os.path.exists(f)), None)
-
-if SERVICE_ACCOUNT_FILE is None:
-    st.error("❌ Google Drive không thể tìm thấy tệp chứng thực JSON. Hãy chắc chắn rằng bạn đã tải lên đúng tệp.")
-    st.stop()
-
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
 @st.cache_data
 def get_drive_service():
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
+    credentials = service_account.Credentials.from_service_account_info(
+        st.secrets["google"],
         scopes=["https://www.googleapis.com/auth/drive"]
     )
     return build('drive', 'v3', credentials=credentials)
@@ -76,7 +65,7 @@ def load_data(file_list, all_files):
                 dfs.append(df)
     return pd.concat(dfs) if dfs else pd.DataFrame()
 
-# ============ PHÂN TÍCH DỮ LIỆU ============
+# ============ PHÂN TÍCH ============
 all_files = list_excel_files()
 
 if mode == "Theo tháng":
