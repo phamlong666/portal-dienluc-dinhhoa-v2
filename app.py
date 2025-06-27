@@ -123,64 +123,37 @@ if not df.empty:
     if "Tỷ lệ tổn thất" in df.columns:
         df["Ngưỡng tổn thất"] = df["Tỷ lệ tổn thất"].apply(classify_nguong)
 
-    # Biểu đồ đúng bố cục: cột + donut song song
     import matplotlib.pyplot as plt
     import numpy as np
 
-    chart_df = df[df["Kỳ"] == "Thực hiện"] if "Kỳ" in df.columns else df
     nguong_order = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
-    count_data = chart_df["Ngưỡng tổn thất"].value_counts().reindex(nguong_order, fill_value=0)
+    group_cols = ["Thực hiện", "Cùng kỳ", "Kế hoạch"]
+    plot_colors = {"Thực hiện": "#2f69bf", "Cùng kỳ": "#d3d3d3", "Kế hoạch": "#e06b6b"}
 
-    # Nếu có cột 'Kỳ' thì vẽ so sánh cả "Cùng kỳ"
     if "Kỳ" in df.columns:
-        count_full = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reindex(nguong_order, fill_value=0)
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[2, 1])
-
-        bar_width = 0.35
-        x = np.arange(len(nguong_order))
-        cols = list(count_full.columns)
-        for i, col in enumerate(cols):
-            offset = (i - (len(cols)-1)/2) * bar_width
-            bars = ax1.bar(x + offset, count_full[col], width=bar_width, label=col,
-                        color="#2f69bf" if "Thực" in col else "#d3d3d3")
-            for bar in bars:
-                height = bar.get_height()
-                ax1.text(bar.get_x() + bar.get_width()/2, height + 1, str(height),
-                         ha='center', fontsize=9, fontweight='bold', color='black')
-
-        ax1.set_xticks(x)
-        ax1.set_xticklabels(nguong_order, fontsize=10, fontweight='bold')
-        ax1.set_ylabel("Số lượng")
-        ax1.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=13, fontweight='bold')
-        ax1.legend()
+        count_df = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reindex(nguong_order, fill_value=0)
     else:
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), width_ratios=[2, 1])
-        bars = ax1.bar(nguong_order, count_data.values, color="#2f69bf")
+        count_df = df["Ngưỡng tổn thất"].value_counts().reindex(nguong_order, fill_value=0).to_frame(name="Thực hiện")
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    width = 0.25
+    x = np.arange(len(nguong_order))
+    keys = [col for col in count_df.columns if col in group_cols]
+
+    for i, col in enumerate(keys):
+        offset = (i - (len(keys)-1)/2) * width
+        bars = ax.bar(x + offset, count_df[col], width=width, label=col, color=plot_colors.get(col, "#999"))
         for bar in bars:
             height = bar.get_height()
-            ax1.text(bar.get_x() + bar.get_width()/2, height + 1, str(height),
-                     ha='center', fontsize=9, fontweight='bold', color='black')
-        ax1.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=13, fontweight='bold')
+            ax.text(bar.get_x() + bar.get_width()/2, height + 1, str(height),
+                    ha='center', fontsize=9, fontweight='bold', color='black')
 
-    # Donut chart
-    total = count_data.sum()
-    colors = ["#2f69bf", "#f28e2b", "#bab0ac", "#59a14f", "#e6b000", "#d62728"]
-    wedges, texts, autotexts = ax2.pie(
-        count_data.values,
-        labels=None,
-        autopct=lambda p: f'{p:.2f}%' if p > 0 else '',
-        startangle=90,
-        colors=colors,
-        wedgeprops={'width': 0.3}
-    )
-    for autotext in autotexts:
-        autotext.set_fontweight('bold')
-        autotext.set_color('black')
-        autotext.set_fontsize(10)
-    ax2.text(0, 0, f'Tổng số TBA\n{total}', ha='center', va='center', fontsize=12, fontweight='bold')
-    ax2.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=12, fontweight='bold')
-
-    plt.tight_layout()
+    ax.set_xticks(x)
+    ax.set_xticklabels(nguong_order, fontsize=11, fontweight='bold')
+    ax.set_yticklabels(ax.get_yticks(), fontsize=11)
+    ax.set_ylabel("Số lượng", fontsize=12)
+    ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=14, fontweight='bold')
+    ax.legend()
     st.pyplot(fig)
 
 
