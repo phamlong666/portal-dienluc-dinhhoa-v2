@@ -26,12 +26,22 @@ with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
 
 # ================= THIẾT LẬP KẾT NỐI DRIVE =================
-SERVICE_ACCOUNT_FILE = '/mnt/data/tonthat-2afb015bec9d.json'
-FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
+CANDIDATES = [
+    "/mnt/data/tonthat-2afb015bec9d.json",  # Dành cho Streamlit Cloud
+    "tonthat-2afb015bec9d.json"             # Dành cho localhost
+]
 
-if not os.path.exists(SERVICE_ACCOUNT_FILE):
-    st.error(f"❌ Không tìm thấy file: {SERVICE_ACCOUNT_FILE}. Hãy chắc chắn đã upload đúng file JSON lên.")
+SERVICE_ACCOUNT_FILE = None
+for path in CANDIDATES:
+    if os.path.exists(path):
+        SERVICE_ACCOUNT_FILE = path
+        break
+
+if SERVICE_ACCOUNT_FILE is None:
+    st.error("❌ Không tìm thấy file JSON chứng thực Google Drive. Hãy chắc chắn đã tải lên đúng tệp tin.")
     st.stop()
+
+FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
 
 @st.cache_data
 def get_drive_service():
