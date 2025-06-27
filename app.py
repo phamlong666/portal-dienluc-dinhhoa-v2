@@ -99,7 +99,7 @@ if not df.empty:
     # Biểu đồ cột theo kỳ và ngưỡng tổn thất
     if "Ngưỡng tổn thất" in df.columns and "Kỳ" in df.columns:
         count_df = df.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().unstack(fill_value=0).reset_index()
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(10, 5))
         width = 0.35
         x = range(len(count_df))
         cols = list(count_df.columns)
@@ -111,21 +111,11 @@ if not df.empty:
                 height = bar.get_height()
                 ax.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', fontsize=9, fontweight='bold', color='black')
         ax.set_xticks(x)
-        ax.set_xticklabels(count_df["Ngưỡng tổn thất"])
+        ax.set_xticklabels(count_df["Ngưỡng tổn thất"], fontsize=10, fontweight='bold')
         ax.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=14, fontweight="bold")
         ax.set_ylabel("Số lượng")
         ax.legend()
         st.pyplot(fig)
 
-    # Biểu đồ tròn tỷ trọng
-    if "Ngưỡng tổn thất" in df.columns:
-        pie_df = df["Ngưỡng tổn thất"].value_counts().sort_index()
-        labels = pie_df.index
-        sizes = pie_df.values
-        fig1, ax1 = plt.subplots()
-        ax1.pie(sizes, labels=labels, autopct='%1.2f%%', startangle=90)
-        ax1.axis('equal')
-        ax1.set_title("Tỷ trọng TBA theo ngưỡng tổn thất")
-        st.pyplot(fig1)
 else:
     st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong thư mục Drive.")
