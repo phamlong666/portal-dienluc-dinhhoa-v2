@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import io
 import os
-import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
@@ -12,33 +11,25 @@ from googleapiclient.http import MediaIoBaseDownload
 st.set_page_config(layout="wide", page_title="Phân tích tổn thất TBA công cộng")
 st.title("📊 Phân tích tổn thất các TBA công cộng")
 
-# ================= CẤU HÌNH PHÂN TÍCH =================
+# ============ CẤU HÌNH PHÂN TÍCH ============
 col1, col2, col3 = st.columns(3)
 with col1:
     mode = st.radio("Chế độ phân tích", ["Theo tháng", "Lũy kế", "So sánh cùng kỳ", "Lũy kế cùng kỳ"])
 with col2:
     thang_from = st.selectbox("Từ tháng", list(range(1, 13)), index=0)
-    if "Lũy kế" in mode:
-        thang_to = st.selectbox("Đến tháng", list(range(thang_from, 13)), index=4)
-    else:
-        thang_to = thang_from
+    thang_to = st.selectbox("Đến tháng", list(range(thang_from, 13)), index=4) if "Lũy kế" in mode else thang_from
 with col3:
     nam = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0)
 
-# ================= THIẾT LẬP KẾT NỐI DRIVE =================
+# ============ KẾT NỐI GOOGLE DRIVE ============
 CANDIDATES = [
-    "/mnt/data/tonthat-2afb015bec9d.json",  # Dành cho Streamlit Cloud
-    "tonthat-2afb015bec9d.json"             # Dành cho localhost
+    "/mnt/data/tonthat-2afb015bec9d.json",  # Cloud
+    "tonthat-2afb015bec9d.json"             # Local
 ]
-
-SERVICE_ACCOUNT_FILE = None
-for path in CANDIDATES:
-    if os.path.exists(path):
-        SERVICE_ACCOUNT_FILE = path
-        break
+SERVICE_ACCOUNT_FILE = next((f for f in CANDIDATES if os.path.exists(f)), None)
 
 if SERVICE_ACCOUNT_FILE is None:
-    st.error("❌ Không tìm thấy file JSON chứng thực Google Drive. Hãy chắc chắn đã tải lên đúng tệp tin.")
+    st.error("❌ Google Drive không thể tìm thấy tệp chứng thực JSON. Hãy chắc chắn rằng bạn đã tải lên đúng tệp.")
     st.stop()
 
 FOLDER_ID = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq'
@@ -85,7 +76,7 @@ def load_data(file_list, all_files):
                 dfs.append(df)
     return pd.concat(dfs) if dfs else pd.DataFrame()
 
-# ================= PHÂN TÍCH DỮ LIỆU =================
+# ============ PHÂN TÍCH DỮ LIỆU ============
 all_files = list_excel_files()
 
 if mode == "Theo tháng":
@@ -122,7 +113,7 @@ elif mode == "Lũy kế cùng kỳ":
     else:
         df = pd.DataFrame()
 
-# ================= HIỂN THỊ =================
+# ============ HIỂN THỊ ============
 st.markdown("---")
 if not df.empty:
     st.dataframe(df, use_container_width=True)
