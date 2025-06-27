@@ -84,6 +84,15 @@ if "cùng kỳ" in mode.lower() and nam_cungkỳ:
 if not df.empty and all(col in df.columns for col in ["Tổn thất (KWh)", "ĐN nhận đầu nguồn"]):
     df = df.copy()
     df["Tỷ lệ tổn thất"] = round((df["Tổn thất (KWh)"] / df["ĐN nhận đầu nguồn"]) * 100, 2)
+    # Định dạng số liệu cột điện nhận, điện thương phẩm, tổn thất
+    for col in ["ĐN nhận đầu nguồn", "Điện thương phẩm", "Tổn thất (KWh)"]:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: f"{x:,.0f}".replace(",", "."))
+
+    for col in ["Tỷ lệ tổn thất", "So sánh"]:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: round(x, 2))
+
     if "Ngưỡng tổn thất" in df.columns and nguong != "(All)":
         df = df[df["Ngưỡng tổn thất"] == nguong]
 
@@ -116,6 +125,28 @@ if not df.empty:
         ax.set_ylabel("Số lượng")
         ax.legend()
         st.pyplot(fig)
+
+        # Biểu đồ donut tỷ trọng TBA theo ngưỡng
+        count_pie = df["Ngưỡng tổn thất"].value_counts().reindex([
+            "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"
+        ], fill_value=0)
+        fig2, ax2 = plt.subplots(figsize=(5, 5))
+        colors_pie = ["#2f69bf", "#f28e2b", "#bab0ac", "#59a14f", "#e6b000", "#d62728"]
+        wedges, texts, autotexts = ax2.pie(
+            count_pie,
+            labels=None,
+            autopct=lambda p: f'{p:.2f}%' if p > 0 else '',
+            startangle=90,
+            colors=colors_pie,
+            wedgeprops={'width': 0.3}
+        )
+        for autotext in autotexts:
+            autotext.set_fontweight('bold')
+            autotext.set_color('black')
+            autotext.set_fontsize(10)
+        ax2.text(0, 0, f"Tổng số TBA\n{count_pie.sum()}", ha='center', va='center', fontsize=12, fontweight='bold')
+        st.pyplot(fig2)
+
 
 else:
     st.warning("Không có dữ liệu phù hợp hoặc thiếu file Excel trong thư mục Drive.")
