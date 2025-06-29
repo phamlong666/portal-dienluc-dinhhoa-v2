@@ -611,7 +611,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 st.success("✔️ Đã lưu vụ sự cố!")
                 # Lưu lại file ngay sau khi thêm sự cố để duy trì sau khi refresh
                 pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
-                st.rerun() # Trigger rerun to refresh display after saving new data
+                # Removed st.rerun() here as Streamlit forms usually trigger a rerun automatically on submit
             else:
                 st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên máy cắt, Dòng sự cố, Vị trí).")
 
@@ -634,7 +634,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
                 # Save to file after update button is clicked
                 pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
-                st.rerun() # Rerun to reflect saved changes and reload from file system
+                # Removed st.rerun() here as updating session_state should trigger re-render
             
             def convert_df_to_excel(df):
                 output = io.BytesIO()
@@ -1060,7 +1060,7 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         all_files_trung = list_excel_files_from_folder(FOLDER_ID_TRUNG)
         nam_trung = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0, key="trung_nam")
-        loai_bc_trung = st.radio("Loại báo cáo", ["Tháng", "Lũy kế"], horizontal=True, key="trung_loai_bc")
+        loai_bc_trung = st.radio("Loai báo cáo", ["Tháng", "Lũy kế"], horizontal=True, key="trung_loai_bc")
         thang_trung = st.selectbox("Chọn tháng", list(range(1, 13)), index=0, key="trung_thang")
 
         months_trung = list(range(1, 13))
