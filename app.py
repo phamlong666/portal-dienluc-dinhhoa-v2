@@ -212,7 +212,21 @@ if 'df_trung_ck_dy' not in st.session_state: st.session_state.df_trung_ck_dy = N
 if 'df_dv_thang' not in st.session_state: st.session_state.df_dv_thang = None
 if 'df_dv_luyke' not in st.session_state: st.session_state.df_dv_luyke = None
 if 'df_dv_ck' not in st.session_state: st.session_state.df_dv_ck = None
-if "suco_data" not in st.session_state: st.session_state.suco_data = [] # For Dự báo điểm sự cố
+# Khởi tạo st.session_state.suco_data ở cấp cao nhất để đảm bảo luôn có sẵn
+if "suco_data" not in st.session_state:
+    st.session_state.suco_data = [] # Luôn khởi tạo là danh sách rỗng
+    STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
+    if os.path.exists(STORAGE_FILE_SUCO):
+        try:
+            df_loaded_suco = pd.read_excel(STORAGE_FILE_SUCO)
+            st.session_state.suco_data = df_loaded_suco.to_dict(orient="records")
+        except Exception as e:
+            st.warning(f"⚠️ Không thể đọc dữ liệu sự cố từ file đã lưu: {e}. Đang sử dụng dữ liệu trống.")
+            st.session_state.suco_data = [] # Đảm bảo reset nếu lỗi
+
+# Cờ để kiểm soát việc tải lại file upload cho module sự cố
+if 'file_uploaded_flag_suco' not in st.session_state:
+    st.session_state.file_uploaded_flag_suco = False
 
 # ================== BIẾN VÀ HÀM HỖ TRỢ TẢI DỮ LIỆU TỪ GOOGLE DRIVE ==================
 # Anh cần tạo file .streamlit/secrets.toml với thông tin tài khoản dịch vụ Google Cloud
@@ -520,38 +534,32 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     st.title("📍 Dự báo điểm sự cố")
 
     # ===== QUẢN LÝ DỮ LIỆU SỰ CỐ TỪ FILE EXCEL CỤC BỘ =====
-    STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
+    STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx" # Đã định nghĩa ở trên, nhưng giữ lại để rõ ràng
 
-    # Bước 1: Luôn khởi tạo session_state.suco_data và tải dữ liệu từ file nếu có
-    if 'suco_data' not in st.session_state:
-        st.session_state.suco_data = [] # Luôn khởi tạo là danh sách rỗng
-        if os.path.exists(STORAGE_FILE_SUCO):
-            try:
-                df_loaded_suco = pd.read_excel(STORAGE_FILE_SUCO)
-                st.session_state.suco_data = df_loaded_suco.to_dict(orient="records")
-            except Exception as e:
-                st.warning(f"⚠️ Không thể đọc dữ liệu sự cố từ file đã lưu: {e}. Đang sử dụng dữ liệu trống.")
-                st.session_state.suco_data = [] # Đảm bảo reset nếu lỗi
-
-    # Bước 2: Cho phép người dùng tải lên file Excel mới (ghi đè hoặc cập nhật)
     uploaded_excel_suco = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx", key="upload_suco_data")
-    if uploaded_excel_suco:
+
+    # Chỉ xử lý file nếu có file mới được tải lên và chưa được xử lý trong lần chạy này
+    if uploaded_excel_suco is not None and not st.session_state.file_uploaded_flag_suco:
         try:
-            # Đọc dữ liệu từ file upload
             df_uploaded_suco = pd.read_excel(uploaded_excel_suco)
-            # Cập nhật session_state với dữ liệu mới
             st.session_state.suco_data = df_uploaded_suco.to_dict(orient="records")
             # Ghi dữ liệu mới vào file lưu trữ để duy trì
             pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
             st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công. Ứng dụng sẽ tải lại để áp dụng.")
+            st.session_state.file_uploaded_flag_suco = True # Đặt cờ để ngăn xử lý lại ngay lập tức
             st.rerun() # GỌI st.rerun() TẠI ĐÂY để đảm bảo trạng thái nhất quán sau khi upload
         except Exception as e:
             st.warning(f"⚠️ Không thể xử lý file đã tải lên: {e}. Vui lòng kiểm tra định dạng file.")
             st.session_state.suco_data = [] # Reset về danh sách trống nếu quá trình upload/xử lý lỗi
+            st.session_state.file_uploaded_flag_suco = False # Reset cờ để cho phép thử lại
+    # Nếu file uploader rỗng (ví dụ: sau khi rerun, hoặc người dùng đã xóa file), đặt lại cờ
+    elif uploaded_excel_suco is None:
+        st.session_state.file_uploaded_flag_suco = False
+
 
     # Đảm bảo file KMZ luôn được xử lý độc lập
     marker_locations = {}
-    kmz_file = st.file_uploader("📁 Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
+    kmz_file = st.file_uploader("  Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
     if kmz_file is not None:
         try:
             with zipfile.ZipFile(kmz_file, 'r') as z:
@@ -1309,3 +1317,4 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         else:
             st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
+ 
