@@ -542,7 +542,11 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 st.session_state.suco_data = df_uploaded_suco.to_dict(orient="records")
             except Exception as e:
                 st.warning(f"⚠️ Không thể đọc dữ liệu sự cố từ file đã lưu: {e}. Có thể file bị lỗi hoặc trống.")
-                st.session_state.suco_data = [] # Reset nếu lỗi
+                st.session_state.suco_data = [] # Reset if error
+        # Ensure an empty Excel file is written if it doesn't exist, to prevent read errors on next load
+        if not os.path.exists(STORAGE_FILE_SUCO):
+            pd.DataFrame().to_excel(STORAGE_FILE_SUCO, index=False)
+
 
     marker_locations = {}
     kmz_file = st.file_uploader("📁 Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
@@ -572,9 +576,9 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     with st.form(key="suco_entry_form"): # Added a key for the form itself
         col1_suco, col2_suco = st.columns(2)
         with col1_suco:
-            ten_mc = st.text_input("Tên máy cắt", key="suco_ten_mc")
-            ngay = st.date_input("Ngày xảy ra sự cố", format="DD/MM/YYYY", key="suco_ngay")
-            dong_suco = st.text_input("Dòng sự cố (Ia, Ib, Ic, Io, 3Uo...)", key="suco_dong_suco")
+            ten_mc = st.text_input("Tên máy cắt", key="form_suco_ten_mc") # Renamed key
+            ngay = st.date_input("Ngày xảy ra sự cố", format="DD/MM/YYYY", key="form_suco_ngay") # Renamed key
+            dong_suco = st.text_input("Dòng sự cố (Ia, Ib, Ic, Io, 3Uo...)", key="form_suco_dong_suco") # Renamed key
             loai_suco = st.selectbox("Loại sự cố", [
                 "1 pha chạm đất (Io)",
                 "2 pha chạm đất (Ia+Ib)",
@@ -586,11 +590,11 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 "Ngắn mạch 1 pha có Io (Ia+Io)",
                 "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
                 "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
-            ], key="suco_loai_suco")
+            ], key="form_suco_loai_suco") # Renamed key
         with col2_suco:
-            vi_tri = st.text_input("Vị trí sự cố", key="suco_vi_tri")
-            nguyen_nhan = st.text_input("Nguyên nhân", key="suco_nguyen_nhan")
-            thoi_tiet = st.text_input("Thời tiết", key="suco_thoi_tiet")
+            vi_tri = st.text_input("Vị trí sự cố", key="form_suco_vi_tri") # Renamed key
+            nguyen_nhan = st.text_input("Nguyên nhân", key="form_suco_nguyen_nhan") # Renamed key
+            thoi_tiet = st.text_input("Thời tiết", key="form_suco_thoi_tiet") # Renamed key
 
         submitted_suco = st.form_submit_button("Lưu vụ sự cố", key="suco_submit_button")
         if submitted_suco:
@@ -605,21 +609,33 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                     "Thời tiết": thoi_tiet
                 })
                 st.success("✔️ Đã lưu vụ sự cố!")
-                # No st.rerun() here, as Streamlit forms usually trigger a rerun automatically on submit
+                # Lưu lại file ngay sau khi thêm sự cố để duy trì sau khi refresh
+                pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
+                st.rerun() # Trigger rerun to refresh display after saving new data
             else:
                 st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên máy cắt, Dòng sự cố, Vị trí).")
 
-    # Always render the expander for data display, even if suco_data is empty
-    with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
-        if st.session_state.suco_data:
-            df_suco_display = pd.DataFrame(st.session_state.suco_data)
-            edited_df_suco = st.data_editor(df_suco_display, num_rows="dynamic", use_container_width=True, key="suco_data_editor")
+    # Always create a DataFrame for the data_editor, even if session_state.suco_data is empty
+    df_for_editor = pd.DataFrame(st.session_state.suco_data)
 
+    with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
+        # Always render data_editor. It will show an empty editable table if df_for_editor is empty.
+        edited_df_suco = st.data_editor(
+            df_for_editor,
+            num_rows="dynamic", # Allow adding/deleting rows
+            use_container_width=True,
+            key="suco_data_editor"
+        )
+
+        # Check if there's any data to update/download (from the edited DataFrame)
+        if not edited_df_suco.empty:
             if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
                 st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
                 st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
-                # Removed st.rerun() here, as updating session_state should trigger re-render
-
+                # Save to file after update button is clicked
+                pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
+                st.rerun() # Rerun to reflect saved changes and reload from file system
+            
             def convert_df_to_excel(df):
                 output = io.BytesIO()
                 with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
@@ -629,13 +645,11 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
 
             st.download_button(
                 label="📤 Xuất báo cáo Excel",
-                data=convert_df_to_excel(df_suco_display),
+                data=convert_df_to_excel(edited_df_suco), # Download the edited data
                 file_name="bao_cao_su_co.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 key="download_suco_excel"
             )
-            # Lưu lại file vào storage_bao_cao_su_co.xlsx để duy trì sau khi refresh
-            df_suco_display.to_excel(STORAGE_FILE_SUCO, index=False)
         else:
             st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
 
