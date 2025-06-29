@@ -572,9 +572,9 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     with st.form("suco_form"):
         col1_suco, col2_suco = st.columns(2)
         with col1_suco:
-            ten_mc = st.text_input("Tên máy cắt")
-            ngay = st.date_input("Ngày xảy ra sự cố", format="DD/MM/YYYY")
-            dong_suco = st.text_input("Dòng sự cố (Ia, Ib, Ic, Io, 3Uo...)")
+            ten_mc = st.text_input("Tên máy cắt", key="suco_ten_mc") # Added key
+            ngay = st.date_input("Ngày xảy ra sự cố", format="DD/MM/YYYY", key="suco_ngay") # Added key
+            dong_suco = st.text_input("Dòng sự cố (Ia, Ib, Ic, Io, 3Uo...)", key="suco_dong_suco") # Added key
             loai_suco = st.selectbox("Loại sự cố", [
                 "1 pha chạm đất (Io)",
                 "2 pha chạm đất (Ia+Ib)",
@@ -586,13 +586,13 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 "Ngắn mạch 1 pha có Io (Ia+Io)",
                 "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
                 "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
-            ])
+            ], key="suco_loai_suco") # Added key
         with col2_suco:
-            vi_tri = st.text_input("Vị trí sự cố")
-            nguyen_nhan = st.text_input("Nguyên nhân")
-            thoi_tiet = st.text_input("Thời tiết")
+            vi_tri = st.text_input("Vị trí sự cố", key="suco_vi_tri") # Added key
+            nguyen_nhan = st.text_input("Nguyên nhân", key="suco_nguyen_nhan") # Added key
+            thoi_tiet = st.text_input("Thời tiết", key="suco_thoi_tiet") # Added key
 
-        submitted_suco = st.form_submit_button("Lưu vụ sự cố")
+        submitted_suco = st.form_submit_button("Lưu vụ sự cố", key="suco_submit_button") # Added key
         if submitted_suco:
             if ten_mc and dong_suco and vi_tri:
                 st.session_state.suco_data.append({
@@ -605,6 +605,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                     "Thời tiết": thoi_tiet
                 })
                 st.success("✔️ Đã lưu vụ sự cố!")
+                # No st.rerun() here, as Streamlit forms usually trigger a rerun automatically on submit
             else:
                 st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên máy cắt, Dòng sự cố, Vị trí).")
 
@@ -617,6 +618,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
             st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
             st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
+            # Removed st.rerun() here, as updating session_state should trigger re-render
 
         def convert_df_to_excel(df):
             output = io.BytesIO()
