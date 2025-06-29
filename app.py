@@ -544,7 +544,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             # Ghi dữ liệu mới vào file lưu trữ để duy trì
             pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
             st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công. Ứng dụng sẽ tải lại để áp dụng.")
-            # st.rerun() # Đã loại bỏ lệnh rerun() không cần thiết ở đây
+            st.rerun() # GỌI st.rerun() TẠI ĐÂY để đảm bảo trạng thái nhất quán sau khi upload
         except Exception as e:
             st.warning(f"⚠️ Không thể xử lý file đã tải lên: {e}. Vui lòng kiểm tra định dạng file.")
             st.session_state.suco_data = [] # Reset về danh sách trống nếu quá trình upload/xử lý lỗi
@@ -613,7 +613,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
                 })
                 st.success("✔️ Đã lưu vụ sự cố!")
                 pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
-                # Đã loại bỏ st.rerun() ở đây. Streamlit form tự động re-run khi submit.
+                # Đã loại bỏ st.rerun() ở đây vì Streamlit form tự động re-run khi submit.
             else:
                 st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên máy cắt, Dòng sự cố, Vị trí).")
 
@@ -632,7 +632,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
             st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
             pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
-            # Đã loại bỏ st.rerun() ở đây. Streamlit data_editor tự động re-run khi có thay đổi.
+            # Đã loại bỏ st.rerun() ở đây vì Streamlit data_editor tự động re-run khi có thay đổi.
 
         def convert_df_to_excel(df):
             output = io.BytesIO()
