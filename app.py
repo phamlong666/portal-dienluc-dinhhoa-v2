@@ -522,18 +522,16 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     # ===== QUẢN LÝ DỮ LIỆU SỰ CỐ TỪ FILE EXCEL CỤC BỘ =====
     STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
 
-    # Bước 1: Luôn tải dữ liệu từ file khi ứng dụng khởi chạy hoặc re-run
-    # Khởi tạo st.session_state.suco_data nếu chưa tồn tại
+    # Bước 1: Luôn khởi tạo session_state.suco_data và tải dữ liệu từ file nếu có
     if 'suco_data' not in st.session_state:
+        st.session_state.suco_data = [] # Luôn khởi tạo là danh sách rỗng
         if os.path.exists(STORAGE_FILE_SUCO):
             try:
                 df_loaded_suco = pd.read_excel(STORAGE_FILE_SUCO)
                 st.session_state.suco_data = df_loaded_suco.to_dict(orient="records")
             except Exception as e:
-                st.warning(f"⚠️ Không thể đọc dữ liệu sự cố từ file đã lưu: {e}. Đang khởi tạo dữ liệu trống.")
-                st.session_state.suco_data = []
-        else:
-            st.session_state.suco_data = [] # Khởi tạo rỗng nếu file không tồn tại
+                st.warning(f"⚠️ Không thể đọc dữ liệu sự cố từ file đã lưu: {e}. Đang sử dụng dữ liệu trống.")
+                st.session_state.suco_data = [] # Đảm bảo reset nếu lỗi
 
     # Bước 2: Cho phép người dùng tải lên file Excel mới (ghi đè hoặc cập nhật)
     uploaded_excel_suco = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx", key="upload_suco_data")
@@ -546,9 +544,10 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             # Ghi dữ liệu mới vào file lưu trữ để duy trì
             pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
             st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công. Ứng dụng sẽ tải lại để áp dụng.")
-            st.rerun() # Bắt buộc tải lại ứng dụng để đảm bảo trạng thái ổn định
+            # st.rerun() # Đã loại bỏ lệnh rerun() không cần thiết ở đây
         except Exception as e:
             st.warning(f"⚠️ Không thể xử lý file đã tải lên: {e}. Vui lòng kiểm tra định dạng file.")
+            st.session_state.suco_data = [] # Reset về danh sách trống nếu quá trình upload/xử lý lỗi
 
     # Đảm bảo file KMZ luôn được xử lý độc lập
     marker_locations = {}
@@ -1082,7 +1081,7 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                         thuong_pham_trung = float(str(df_curr_trung.iloc[0, 1]).replace(",", "."))
 
                         if loai_bc_trung == "Lũy kế":
-                            tong_ton_that_trung += ton_ton_that_trung
+                            tong_ton_that_trung += ton_that_trung
                             tong_thuong_pham_trung += thuong_pham_trung
                             ty_le_lk_trung = (tong_ton_that_trung / tong_thuong_pham_trung) * 100 if tong_thuong_pham_trung > 0 else 0
                             df_th_trung.loc[df_th_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_lk_trung
