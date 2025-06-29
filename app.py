@@ -611,7 +611,8 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
 
 
     if st.session_state.suco_data:
-        with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
+        # Added a key for the expander to help with rendering stability
+        with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
             df_suco_display = pd.DataFrame(st.session_state.suco_data)
             edited_df_suco = st.data_editor(df_suco_display, num_rows="dynamic", use_container_width=True, key="suco_data_editor")
 
