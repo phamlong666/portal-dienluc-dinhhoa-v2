@@ -609,34 +609,35 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             else:
                 st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên máy cắt, Dòng sự cố, Vị trí).")
 
-
-    if st.session_state.suco_data:
-        # Added a key for the expander to help with rendering stability
-        with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
+    # Always render the expander for data display, even if suco_data is empty
+    with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
+        if st.session_state.suco_data:
             df_suco_display = pd.DataFrame(st.session_state.suco_data)
             edited_df_suco = st.data_editor(df_suco_display, num_rows="dynamic", use_container_width=True, key="suco_data_editor")
 
-        if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
-            st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
-            st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
-            # Removed st.rerun() here, as updating session_state should trigger re-render
+            if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
+                st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
+                st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
+                # Removed st.rerun() here, as updating session_state should trigger re-render
 
-        def convert_df_to_excel(df):
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='SuCo', index=False)
-            writer.close()
-            return output.getvalue()
+            def convert_df_to_excel(df):
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='SuCo', index=False)
+                writer.close()
+                return output.getvalue()
 
-        st.download_button(
-            label="📤 Xuất báo cáo Excel",
-            data=convert_df_to_excel(df_suco_display),
-            file_name="bao_cao_su_co.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="download_suco_excel"
-        )
-        # Lưu lại file vào storage_bao_cao_su_co.xlsx để duy trì sau khi refresh
-        df_suco_display.to_excel(STORAGE_FILE_SUCO, index=False)
+            st.download_button(
+                label="📤 Xuất báo cáo Excel",
+                data=convert_df_to_excel(df_suco_display),
+                file_name="bao_cao_su_co.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="download_suco_excel"
+            )
+            # Lưu lại file vào storage_bao_cao_su_co.xlsx để duy trì sau khi refresh
+            df_suco_display.to_excel(STORAGE_FILE_SUCO, index=False)
+        else:
+            st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
 
 
     # ============================
