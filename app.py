@@ -186,7 +186,7 @@ st.markdown("""
     <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
     <a href="https://chat.openai.com/c/2d132e26-7b53-46b3-bbd3-8a5229e77973" target="_blank" class="main-button">🤖 AI. PHẠM HỒNG LONG</a>
     <a href="https://www.youtube.com" target="_blank" class="main-button">🎬 video tuyên truyền</a>
-    <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5NwbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
+    <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5N5wbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
 
@@ -584,39 +584,37 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     st.subheader("📝 Nhập các vụ sự cố lịch sử")
 
     # Form nhập sự cố mới
-    import streamlit as st
+    # Để khắc phục lỗi "Missing Submit Button", bạn cần đảm bảo st.form_submit_button được đặt bên trong st.form
 
-# Để khắc phục lỗi "Missing Submit Button", bạn cần đảm bảo st.form_submit_button được đặt bên trong st.form
+    with st.form(key="my_form"):
+        ten_mc = st.text_input("Tên máy cắt")
+        ngay = st.date_input("Ngày xảy ra sự cố")
+        dong_suco = st.text_input("Dòng sự cố")
+        loai_suco = st.selectbox("Loại sự cố", [
+            "1 pha chạm đất (Io)",
+            "2 pha chạm đất (Ia+Ib)",
+            "3 pha chạm đất (Ia+Ib+Ic)",
+            "Ngắn mạch 2 pha (Ia+Ib)",
+            "Ngắn mạch 3 pha (Ia+Ib+Ic)",
+            "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
+            "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
+            "Ngắn mạch 1 pha có Io (Ia+Io)",
+            "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
+            "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
+        ])
+        vi_tri = st.text_input("Vị trí sự cố")
+        nguyen_nhan = st.text_input("Nguyên nhân")
+        thoi_tiet = st.text_input("Thời tiết")
 
-with st.form(key="my_form"):
-    ten_mc = st.text_input("Tên máy cắt")
-    ngay = st.date_input("Ngày xảy ra sự cố")
-    dong_suco = st.text_input("Dòng sự cố")
-    loai_suco = st.selectbox("Loại sự cố", [
-        "1 pha chạm đất (Io)",
-        "2 pha chạm đất (Ia+Ib)",
-        "3 pha chạm đất (Ia+Ib+Ic)",
-        "Ngắn mạch 2 pha (Ia+Ib)",
-        "Ngắn mạch 3 pha (Ia+Ib+Ic)",
-        "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
-        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
-        "Ngắn mạch 1 pha có Io (Ia+Io)",
-        "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
-        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
-    ])
-    vi_tri = st.text_input("Vị trí sự cố")
-    nguyen_nhan = st.text_input("Nguyên nhân")
-    thoi_tiet = st.text_input("Thời tiết")
+        submitted = st.form_submit_button("Lưu vụ sự cố")
 
-    submitted = st.form_submit_button("Lưu vụ sự cố")
+    if submitted:
+        if ten_mc and dong_suco and vi_tri:
+            st.success("✔️ Đã lưu vụ sự cố!")
+        else:
+            st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc.")
 
-if submitted:
-    if ten_mc and dong_suco and vi_tri:
-        st.success("✔️ Đã lưu vụ sự cố!")
-    else:
-        st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc.")
-
-    # Luôn tạo DataFrame cho data_editor, ngay cả khi st.session_state.suco_data trống
+        # Luôn tạo DataFrame cho data_editor, ngay cả khi st.session_state.suco_data trống
     df_for_editor = pd.DataFrame(st.session_state.suco_data)
 
     with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
@@ -757,69 +755,69 @@ if submitted:
     st.markdown("---")
     st.subheader("📈 Dự báo điểm sự cố theo điều kiện chọn")
 
-DATA_FILE_PATH_TRA_CUU = "du_bao_su_co_day_du_voi_3uo.xlsx"
-TEMP_UPLOAD_PATH_TRA_CUU = "uploaded_tra_cuu.xlsx"
+    DATA_FILE_PATH_TRA_CUU = "du_bao_su_co_day_du_voi_3uo.xlsx"
+    TEMP_UPLOAD_PATH_TRA_CUU = "uploaded_tra_cuu.xlsx"
 
-df_tra_cuu = None
-uploaded_file_tra_cuu = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
+    df_tra_cuu = None
+    uploaded_file_tra_cuu = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
 
-if uploaded_file_tra_cuu:
-    with open(TEMP_UPLOAD_PATH_TRA_CUU, "wb") as f:
-        f.write(uploaded_file_tra_cuu.read())
-    df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH_TRA_CUU)
-    st.success("✅ Đã ghi và nạp dữ liệu tra cứu từ file thành công.")
-    st.dataframe(df_tra_cuu, use_container_width=True)
-elif os.path.exists(TEMP_UPLOAD_PATH_TRA_CUU):
-    df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH_TRA_CUU)
-    st.dataframe(df_tra_cuu, use_container_width=True)
-else:
-    try:
-        df_tra_cuu = pd.read_excel(DATA_FILE_PATH_TRA_CUU)
+    if uploaded_file_tra_cuu:
+        with open(TEMP_UPLOAD_PATH_TRA_CUU, "wb") as f:
+            f.write(uploaded_file_tra_cuu.read())
+        df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH_TRA_CUU)
+        st.success("✅ Đã ghi và nạp dữ liệu tra cứu từ file thành công.")
         st.dataframe(df_tra_cuu, use_container_width=True)
-    except FileNotFoundError:
-        st.warning(f"❌ Không tìm thấy file mẫu '{DATA_FILE_PATH_TRA_CUU}'.")
+    elif os.path.exists(TEMP_UPLOAD_PATH_TRA_CUU):
+        df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH_TRA_CUU)
+        st.dataframe(df_tra_cuu, use_container_width=True)
+    else:
+        try:
+            df_tra_cuu = pd.read_excel(DATA_FILE_PATH_TRA_CUU)
+            st.dataframe(df_tra_cuu, use_container_width=True)
+        except FileNotFoundError:
+            st.warning(f"❌ Không tìm thấy file mẫu '{DATA_FILE_PATH_TRA_CUU}'.")
 
-if df_tra_cuu is not None and not df_tra_cuu.empty:
-    with st.expander("🔍 Tra cứu theo điều kiện chọn"):
-        col1, col2 = st.columns(2)
+    if df_tra_cuu is not None and not df_tra_cuu.empty:
+        with st.expander("🔍 Tra cứu theo điều kiện chọn"):
+            col1, col2 = st.columns(2)
 
-        with col1:
-            selected_line = st.selectbox("🔌 Chọn đường dây", sorted(df_tra_cuu["Đường dây"].unique()))
-            selected_fault = st.selectbox("⚡ Chọn loại sự cố", sorted(df_tra_cuu["Loại sự cố"].unique()))
+            with col1:
+                selected_line = st.selectbox("🔌 Chọn đường dây", sorted(df_tra_cuu["Đường dây"].unique()))
+                selected_fault = st.selectbox("⚡ Chọn loại sự cố", sorted(df_tra_cuu["Loại sự cố"].unique()))
 
-        with col2:
-            Ia = st.number_input("Ia (A)", min_value=0)
-            Ib = st.number_input("Ib (A)", min_value=0)
-            Ic = st.number_input("Ic (A)", min_value=0)
-            Io = st.number_input("Io (A)", min_value=0)
-            Uo3 = st.number_input("3Uo (A)", min_value=0)
+            with col2:
+                Ia = st.number_input("Ia (A)", min_value=0)
+                Ib = st.number_input("Ib (A)", min_value=0)
+                Ic = st.number_input("Ic (A)", min_value=0)
+                Io = st.number_input("Io (A)", min_value=0)
+                Uo3 = st.number_input("3Uo (A)", min_value=0)
 
-        if st.button("🔍 Tra cứu"):
-            input_sum = sum([v for v in [Ia, Ib, Ic, Io, Uo3] if v > 0])
+            if st.button("🔍 Tra cứu"):
+                input_sum = sum([v for v in [Ia, Ib, Ic, Io, Uo3] if v > 0])
 
-            if input_sum == 0:
-                st.warning("⚠️ Vui lòng nhập ít nhất một dòng sự cố để tra cứu.")
-            else:
-                df_tra_cuu["Dòng tổng (A)"] = pd.to_numeric(df_tra_cuu["Dòng tổng (A)"], errors='coerce')
-                df_temp = df_tra_cuu.dropna(subset=["Dòng tổng (A)"])
-
-                if not df_temp.empty:
-                    closest_idx = df_temp["Dòng tổng (A)"].sub(input_sum).abs().idxmin()
-                    dong_co_so_found = df_temp.loc[closest_idx, "Dòng cơ sở (A)"]
-
-                    ket_qua = df_tra_cuu[
-                        (df_tra_cuu["Đường dây"] == selected_line) &
-                        (df_tra_cuu["Loại sự cố"] == selected_fault) &
-                        (df_tra_cuu["Dòng cơ sở (A)"] == dong_co_so_found)
-                    ]
-
-                    if not ket_qua.empty:
-                        st.success(f"✅ Dòng gần nhất: {int(input_sum)} A → Dòng cơ sở: {int(dong_co_so_found)} A")
-                        st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
-                    else:
-                        st.warning("⚠️ Không tìm thấy kết quả phù hợp với các điều kiện đã chọn.")
+                if input_sum == 0:
+                    st.warning("⚠️ Vui lòng nhập ít nhất một dòng sự cố để tra cứu.")
                 else:
-                    st.warning("⚠️ Không có dữ liệu hợp lệ để tra cứu.")
+                    df_tra_cuu["Dòng tổng (A)"] = pd.to_numeric(df_tra_cuu["Dòng tổng (A)"], errors='coerce')
+                    df_temp = df_tra_cuu.dropna(subset=["Dòng tổng (A)"])
+
+                    if not df_temp.empty:
+                        closest_idx = df_temp["Dòng tổng (A)"].sub(input_sum).abs().idxmin()
+                        dong_co_so_found = df_temp.loc[closest_idx, "Dòng cơ sở (A)"]
+
+                        ket_qua = df_tra_cuu[
+                            (df_tra_cuu["Đường dây"] == selected_line) &
+                            (df_tra_cuu["Loại sự cố"] == selected_fault) &
+                            (df_tra_cuu["Dòng cơ sở (A)"] == dong_co_so_found)
+                        ]
+
+                        if not ket_qua.empty:
+                            st.success(f"✅ Dòng gần nhất: {int(input_sum)} A → Dòng cơ sở: {int(dong_co_so_found)} A")
+                            st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
+                        else:
+                            st.warning("⚠️ Không tìm thấy kết quả phù hợp với các điều kiện đã chọn.")
+                    else:
+                        st.warning("⚠️ Không có dữ liệu hợp lệ để tra cứu.")
 
 # ================== MODULE AI TRỢ LÝ TỔN THẤT ==================
 elif chon_modul == '⚡ AI Trợ lý tổn thất':
@@ -1275,4 +1273,3 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         else:
             st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
- 
