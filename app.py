@@ -189,7 +189,7 @@ st.markdown("""
     <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
     <a href="https://chat.openai.com/c/2d132e26-7b53-46b3-bbd3-8a5229e77973" target="_blank" class="main-button">🤖 AI. PHẠM HỒNG LONG</a>
     <a href="https://www.youtube.com" target="_blank" class="main-button">🎬 video tuyên truyền</a>
-    <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5N5wbIDtTzUiuKo?dl=0" target="_blank" class="main-button">📄 Báo cáo CMIS</a>
+    <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5N5wbIDtTzUiuKo?dl=0" target="_blank" class="main-button">  Báo cáo CMIS</a>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1164,7 +1164,8 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     else:
                         df_dd_filtered["Tổn thất (%)"] = (df_dd_filtered["Điện tổn thất"] / df_dd_filtered["Thương phẩm"] * 100).round(2)
 
-                    pivot_df_dy = df_dd_filtered.pivot(index="Tháng", columns="Kỳ", values="Tổn thất (%)").reindex(range(1, 13)).fillna(0)
+                    # Removed .fillna(0) here to prevent plotting spurious zeros
+                    pivot_df_dy = df_dd_filtered.pivot(index="Tháng", columns="Kỳ", values="Tổn thất (%)").reindex(range(1, 13))
 
                     st.write(f"### Biểu đồ tỷ lệ tổn thất - Đường dây {dd}")
 
@@ -1181,10 +1182,12 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                                     ax_dy.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}", ha='center', fontsize=7)
                     else:
                         for col in pivot_df_dy.columns:
-                            valid_data_dy = pivot_df_dy[col].replace(0, pd.NA).dropna()
-                            ax_dy.plot(valid_data_dy.index, valid_data_dy.values, marker='o', label=col)
-                            for x, y in zip(valid_data_dy.index, valid_data_dy.values):
-                                ax_dy.text(x, y + 0.2, f"{y:.2f}", ha='center', fontsize=7)
+                            # Only plot non-NaN values, keeping legitimate zeros
+                            valid_data_dy = pivot_df_dy[col].dropna()
+                            if not valid_data_dy.empty: # Check if there's any valid data to plot
+                                ax_dy.plot(valid_data_dy.index, valid_data_dy.values, marker='o', label=col)
+                                for x, y in zip(valid_data_dy.index, valid_data_dy.values):
+                                    ax_dy.text(x, y + 0.2, f"{y:.2f}", ha='center', fontsize=7)
                         ax_dy.set_xticks(range(1, 13))
                         ax_dy.set_xticklabels(range(1, 13), rotation=0, ha='center')
                         ax_dy.tick_params(axis='y', labelrotation=0)
@@ -1277,3 +1280,4 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         else:
             st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
+ 
