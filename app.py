@@ -617,7 +617,8 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
         # Luôn tạo DataFrame cho data_editor, ngay cả khi st.session_state.suco_data trống
     df_for_editor = pd.DataFrame(st.session_state.suco_data)
 
-    with st.expander("📋 Danh sách sự cố đã nhập", expanded=True, key="suco_list_expander"):
+    with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
+    if not df_for_editor.empty:
         edited_df_suco = st.data_editor(
             df_for_editor,
             num_rows="dynamic",
@@ -629,7 +630,6 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
             st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
             pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
-            # Đã loại bỏ st.rerun() ở đây vì Streamlit data_editor tự động re-run khi có thay đổi.
 
         def convert_df_to_excel(df):
             output = io.BytesIO()
@@ -640,13 +640,13 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
 
         st.download_button(
             label="📤 Xuất báo cáo Excel",
-            data=convert_df_to_excel(edited_df_suco), # Tải xuống dữ liệu đã chỉnh sửa
+            data=convert_df_to_excel(edited_df_suco),
             file_name="bao_cao_su_co.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             key="download_suco_excel"
         )
-        if edited_df_suco.empty and not st.session_state.suco_data:
-             st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
+    else:
+        st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
 
 
     # ============================
