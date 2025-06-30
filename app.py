@@ -38,7 +38,10 @@ def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
 
         Đây là nhắc việc tự động từ hệ thống:
 
-        📌 Việc: {viec}\n        📅 Ngày: {ngay}\n        ⏰ Giờ: {gio}\n
+        📌 Việc: {viec}
+        📅 Ngày: {ngay}
+        ⏰ Giờ: {gio}
+
         Hệ thống điều hành số - Đội quản lý Điện lực khu vực Định Hóa.
         """
         # Gửi email tới người nhận với tiêu đề và nội dung đã cho
@@ -618,34 +621,36 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     df_for_editor = pd.DataFrame(st.session_state.suco_data)
 
     with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
-    if not df_for_editor.empty:
-        edited_df_suco = st.data_editor(
-            df_for_editor,
-            num_rows="dynamic",
-            use_container_width=True,
-            key="suco_data_editor"
-        )
+        # BEGIN FIX FOR INDENTATION ERROR
+        if not df_for_editor.empty:
+            edited_df_suco = st.data_editor(
+                df_for_editor,
+                num_rows="dynamic",
+                use_container_width=True,
+                key="suco_data_editor"
+            )
 
-        if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
-            st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
-            st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
-            pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
+            if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
+                st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
+                st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
+                pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
 
-        def convert_df_to_excel(df):
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, sheet_name='SuCo', index=False)
-            return output.getvalue()
+            def convert_df_to_excel(df):
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='SuCo', index=False)
+                return output.getvalue()
 
-        st.download_button(
-            label="📤 Xuất báo cáo Excel",
-            data=convert_df_to_excel(edited_df_suco),
-            file_name="bao_cao_su_co.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            key="download_suco_excel"
-        )
-    else:
-        st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
+            st.download_button(
+                label="📤 Xuất báo cáo Excel",
+                data=convert_df_to_excel(edited_df_suco),
+                file_name="bao_cao_su_co.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="download_suco_excel"
+            )
+        else:
+            st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
+        # END FIX FOR INDENTATION ERROR
 
 
     # ============================
