@@ -635,7 +635,6 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
             output = io.BytesIO()
             with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                 df.to_excel(writer, sheet_name='SuCo', index=False)
-            writer.close()
             return output.getvalue()
 
         st.download_button(
