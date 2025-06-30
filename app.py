@@ -584,46 +584,37 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     st.subheader("📝 Nhập các vụ sự cố lịch sử")
 
     # Form nhập sự cố mới
-    with st.form(key="suco_entry_form"):
-        col1_suco, col2_suco = st.columns(2)
-        with col1_suco:
-            ten_mc = st.text_input("Tên máy cắt", key="form_suco_ten_mc")
-            ngay = st.date_input("Ngày xảy ra sự cố", format="DD/MM/YYYY", key="form_suco_ngay")
-            dong_suco = st.text_input("Dòng sự cố (Ia, Ib, Ic, Io, 3Uo...)", key="form_suco_dong_suco")
-            loai_suco = st.selectbox("Loại sự cố", [
-                "1 pha chạm đất (Io)",
-                "2 pha chạm đất (Ia+Ib)",
-                "3 pha chạm đất (Ia+Ib+Ic)",
-                "Ngắn mạch 2 pha (Ia+Ib)",
-                "Ngắn mạch 3 pha (Ia+Ib+Ic)",
-                "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
-                "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
-                "Ngắn mạch 1 pha có Io (Ia+Io)",
-                "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
-                "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
-            ], key="form_suco_loai_suco")
-        with col2_suco:
-            vi_tri = st.text_input("Vị trí sự cố", key="form_suco_vi_tri")
-            nguyen_nhan = st.text_input("Nguyên nhân", key="form_suco_nguyen_nhan")
-            thoi_tiet = st.text_input("Thời tiết", key="form_suco_thoi_tiet")
+    import streamlit as st
 
-        submitted_suco = st.form_submit_button("Lưu vụ sự cố", key="suco_submit_button")
-        if submitted_suco:
-            if ten_mc and dong_suco and vi_tri:
-                st.session_state.suco_data.append({
-                    "Tên máy cắt": ten_mc,
-                    "Ngày": ngay.strftime("%d/%m/%Y"),
-                    "Dòng sự cố": dong_suco,
-                    "Loại sự cố": loai_suco,
-                    "Vị trí": vi_tri,
-                    "Nguyên nhân": nguyen_nhan,
-                    "Thời tiết": thoi_tiet
-                })
-                st.success("✔️ Đã lưu vụ sự cố!")
-                pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
-                # Đã loại bỏ st.rerun() ở đây vì Streamlit form tự động re-run khi submit.
-            else:
-                st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên máy cắt, Dòng sự cố, Vị trí).")
+# Để khắc phục lỗi "Missing Submit Button", bạn cần đảm bảo st.form_submit_button được đặt bên trong st.form
+
+with st.form(key="my_form"):
+    ten_mc = st.text_input("Tên máy cắt")
+    ngay = st.date_input("Ngày xảy ra sự cố")
+    dong_suco = st.text_input("Dòng sự cố")
+    loai_suco = st.selectbox("Loại sự cố", [
+        "1 pha chạm đất (Io)",
+        "2 pha chạm đất (Ia+Ib)",
+        "3 pha chạm đất (Ia+Ib+Ic)",
+        "Ngắn mạch 2 pha (Ia+Ib)",
+        "Ngắn mạch 3 pha (Ia+Ib+Ic)",
+        "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
+        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
+        "Ngắn mạch 1 pha có Io (Ia+Io)",
+        "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
+        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
+    ])
+    vi_tri = st.text_input("Vị trí sự cố")
+    nguyen_nhan = st.text_input("Nguyên nhân")
+    thoi_tiet = st.text_input("Thời tiết")
+
+    submitted = st.form_submit_button("Lưu vụ sự cố")
+
+if submitted:
+    if ten_mc and dong_suco and vi_tri:
+        st.success("✔️ Đã lưu vụ sự cố!")
+    else:
+        st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc.")
 
     # Luôn tạo DataFrame cho data_editor, ngay cả khi st.session_state.suco_data trống
     df_for_editor = pd.DataFrame(st.session_state.suco_data)
