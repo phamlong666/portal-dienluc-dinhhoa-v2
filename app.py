@@ -325,6 +325,7 @@ def classify_nguong(x):
     if x < 2: return "<2%"
     elif 2 <= x < 3: return ">=2 và <3%"
     elif 3 <= x < 4: return ">=3 và <4%"
+    elif 3 <= x < 4: return ">=3 và <4%"
     elif 4 <= x < 5: return ">=4 và <5%"
     elif 5 <= x < 7: return ">=5 và <7%"
     else: return ">=7%"
@@ -880,7 +881,8 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
             pivot_df_tba = count_df_tba.pivot(index="Ngưỡng tổn thất", columns="Kỳ", values="Số lượng").fillna(0).astype(int)
             pivot_df_tba = pivot_df_tba.reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"])
 
-            fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(10, 4), dpi=600)
+            # Tăng DPI và điều chỉnh fontsize
+            fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(12, 5), dpi=1200) # Tăng figsize và DPI
 
             x_tba = range(len(pivot_df_tba))
             width_tba = 0.35
@@ -891,14 +893,14 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                 for bar in bars_tba:
                     height = bar.get_height()
                     if height > 0:
-                        ax_bar_tba.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', va='bottom', fontsize=7, fontweight='bold', color='black')
+                        ax_bar_tba.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', va='bottom', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
 
-            ax_bar_tba.set_ylabel("Số lượng", fontsize=8)
-            ax_bar_tba.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=10, weight='bold')
+            ax_bar_tba.set_ylabel("Số lượng", fontsize=9) # Tăng fontsize
+            ax_bar_tba.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
             ax_bar_tba.set_xticks(list(x_tba))
-            ax_bar_tba.set_xticklabels(pivot_df_tba.index, fontsize=7)
-            ax_bar_tba.tick_params(axis='y', labelsize=7)
-            ax_bar_tba.legend(title="Kỳ", fontsize=7)
+            ax_bar_tba.set_xticklabels(pivot_df_tba.index, fontsize=8) # Tăng fontsize
+            ax_bar_tba.tick_params(axis='y', labelsize=8) # Tăng labelsize
+            ax_bar_tba.legend(title="Kỳ", fontsize=8) # Tăng fontsize
             ax_bar_tba.grid(axis='y', linestyle='--', linewidth=0.7, alpha=0.6)
 
             pie_data_tba = pd.Series(0, index=pivot_df_tba.index)
@@ -920,13 +922,13 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     pctdistance=0.75,
                     wedgeprops={'width': 0.3, 'edgecolor': 'w'}
                 )
-                for text in texts: text.set_fontsize(6); text.set_fontweight('bold')
-                for autotext in autotexts: autotext.set_color('black'); autotext.set_fontsize(6); autotext.set_fontweight('bold')
-                ax_pie_tba.text(0, 0, f"Tổng số TBA\\n{pie_data_tba.sum()}", ha='center', va='center', fontsize=7, fontweight='bold', color='black')
-                ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=10, weight='bold')
+                for text in texts: text.set_fontsize(7); text.set_fontweight('bold') # Tăng fontsize
+                for autotext in autotexts: autotext.set_color('black'); autotext.set_fontsize(7); autotext.set_fontweight('bold') # Tăng fontsize
+                ax_pie_tba.text(0, 0, f"Tổng số TBA\\n{pie_data_tba.sum()}", ha='center', va='center', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
+                ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
             else:
-                ax_pie_tba.text(0.5, 0.5, "Không có dữ liệu tỷ trọng phù hợp", horizontalalignment='center', verticalalignment='center', transform=ax_pie_tba.transAxes, fontsize=8)
-                ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=10, weight='bold')
+                ax_pie_tba.text(0.5, 0.5, "Không có dữ liệu tỷ trọng phù hợp", horizontalalignment='center', verticalalignment='center', transform=ax_pie_tba.transAxes, fontsize=9) # Tăng fontsize
+                ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
 
             st.pyplot(fig_tba)
 
@@ -1036,7 +1038,12 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
         tong_ton_that_trung = 0
         tong_thuong_pham_trung = 0
 
+        # Khởi tạo tổng lũy kế cho dữ liệu "Cùng kỳ" (năm trước)
+        tong_ton_that_ck_trung = 0
+        tong_thuong_pham_ck_trung = 0
+
         for i in range(1, 13):
+            # --- Xử lý dữ liệu năm hiện tại (Thực hiện) ---
             fname_trung = f"TA_{nam_trung}_{i:02}.xlsx"
             file_id_trung = all_files_trung.get(fname_trung)
 
@@ -1058,17 +1065,31 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     except Exception as e:
                         st.warning(f"Lỗi đọc dữ liệu từ file trung thế: {fname_trung}. Lỗi: {e}")
 
+            # --- Xử lý dữ liệu "Cùng kỳ" (năm trước) ---
             fname_ck_trung = f"TA_{nam_trung - 1}_{i:02}.xlsx"
             file_id_ck_trung = all_files_trung.get(fname_ck_trung)
-            if file_id_ck_trung:
+            # Đảm bảo chỉ xử lý đến tháng được chọn và file tồn tại
+            if file_id_ck_trung and i <= thang_trung:
                 df_ck_file_trung = download_excel_from_drive(file_id_ck_trung)
                 if not df_ck_file_trung.empty and df_ck_file_trung.shape[0] >= 1:
                     try:
-                        ty_le_ck_trung = float(str(df_ck_file_trung.iloc[0, 4]).replace(",", "."))
-                        df_ck_trung.loc[df_ck_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_ck_trung
+                        # Đọc các giá trị tổn thất và thương phẩm của năm trước
+                        ty_le_ck_trung_thang = float(str(df_ck_file_trung.iloc[0, 4]).replace(",", ".")) # Tỷ lệ tháng năm trước
+                        ton_that_ck_trung = float(str(df_ck_file_trung.iloc[0, 3]).replace(",", ".")) # Tổn thất tháng năm trước
+                        thuong_pham_ck_trung = float(str(df_ck_file_trung.iloc[0, 1]).replace(",", ".")) # Thương phẩm tháng năm trước
+
+                        if loai_bc_trung == "Lũy kế":
+                            # Tính lũy kế cho dữ liệu năm trước
+                            tong_ton_that_ck_trung += ton_that_ck_trung
+                            tong_thuong_pham_ck_trung += thuong_pham_ck_trung
+                            ty_le_lk_ck_trung = (tong_ton_that_ck_trung / tong_thuong_pham_ck_trung) * 100 if tong_thuong_pham_ck_trung > 0 else 0
+                            df_ck_trung.loc[df_ck_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_lk_ck_trung
+                        else:
+                            # Nếu không phải lũy kế, dùng tỷ lệ tháng của năm trước
+                            df_ck_trung.loc[df_ck_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_ck_trung_thang
                     except Exception as e:
-                        # st.warning(f"Lỗi đọc dữ liệu cùng kỳ file trung thế: {fname_ck_trung}. Lỗi: {e}") # Bỏ bớt thông báo lỗi nhỏ
-                        pass
+                        # st.warning(f"Lỗi đọc dữ liệu cùng kỳ file trung thế: {fname_ck_trung}. Lỗi: {e}")
+                        pass # Suppress minor warnings for cleaner output
 
         if df_th_trung["Tỷ lệ"].notna().any():
             fig_trung, ax_trung = plt.subplots(figsize=(6, 3), dpi=600)
@@ -1183,7 +1204,7 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     else:
                         for col in pivot_df_dy.columns:
                             # Only plot non-NaN values, keeping legitimate zeros
-                            valid_data_dy = pivot_df_dy[col].dropna()
+                            valid_data_dy = pivot_df_dy[col].dropna() # Changed from pivot_dy to pivot_df_dy
                             if not valid_data_dy.empty: # Check if there's any valid data to plot
                                 ax_dy.plot(valid_data_dy.index, valid_data_dy.values, marker='o', label=col)
                                 for x, y in zip(valid_data_dy.index, valid_data_dy.values):
@@ -1280,4 +1301,3 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         else:
             st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
- 
