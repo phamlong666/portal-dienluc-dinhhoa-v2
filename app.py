@@ -343,7 +343,7 @@ chon_modul = st.selectbox(
     key="main_module_selector" # Đảm bảo key duy nhất
 )
 
-# ================== LOGIC HIỂN THỊ TỪNG MODULE ==================
+# ================== LOGIC HIỂN THỊ TỪNG MODULE = ==================
 
 if chon_modul == '⏰ Nhắc việc':
     st.header("⏰ Nhắc việc")
@@ -1068,8 +1068,8 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
             # --- Xử lý dữ liệu "Cùng kỳ" (năm trước) ---
             fname_ck_trung = f"TA_{nam_trung - 1}_{i:02}.xlsx"
             file_id_ck_trung = all_files_trung.get(fname_ck_trung)
-            # Đảm bảo chỉ xử lý đến tháng được chọn và file tồn tại
-            if file_id_ck_trung and i <= thang_trung:
+            # **Đã bỏ điều kiện `and i <= thang_trung` ở đây để vẽ cả năm cùng kỳ**
+            if file_id_ck_trung:
                 df_ck_file_trung = download_excel_from_drive(file_id_ck_trung)
                 if not df_ck_file_trung.empty and df_ck_file_trung.shape[0] >= 1:
                     try:
