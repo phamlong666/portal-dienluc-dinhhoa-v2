@@ -520,7 +520,7 @@ elif chon_modul == '📑 Phục vụ họp':
             with pd.ExcelWriter(towrite_hop, engine='xlsxwriter') as writer:
                 df_export_hop.to_excel(writer, index=False, sheet_name='CuocHop')
             towrite_hop.seek(0)
-            st.download_button("📥 Tải Excel cuộc họp", data=towrite_hop, file_name="phuc_vu_hop.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("  Tải Excel cuộc họp", data=towrite_hop, file_name="phuc_vu_hop.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     with col_import_hop:
         file_hop = st.file_uploader("📁 Nhập từ Excel (Phục vụ họp)", type=["xlsx"], key="upload_hop")
@@ -587,7 +587,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     st.subheader("📝 Nhập các vụ sự cố lịch sử")
 
     # Form nhập sự cố mới
-    # Để khắc phục lỗi "Missing Submit Button", bạn cần đảm bảo st.form_submit_button được đặt bên trong st.form
+    # Để khắc phục lỗi "Missing Submit Button", bạn bạn cần đảm bảo st.form_submit_button được đặt bên trong st.form
 
     with st.form(key="my_form"):
         ten_mc = st.text_input("Tên máy cắt")
@@ -763,7 +763,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     TEMP_UPLOAD_PATH_TRA_CUU = "uploaded_tra_cuu.xlsx"
 
     df_tra_cuu = None
-    uploaded_file_tra_cuu = st.file_uploader("  Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
+    uploaded_file_tra_cuu = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
 
     if uploaded_file_tra_cuu:
         with open(TEMP_UPLOAD_PATH_TRA_CUU, "wb") as f:
@@ -870,24 +870,42 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
             if file_id:
                 df_monthly = download_excel_from_drive(file_id)
                 if not df_monthly.empty:
-                    # Assuming column indices based on the image:
-                    # Tên TBA: column B (index 1)
-                    # Điện nhận: column E (index 4)
-                    # Điện tổn thất: column G (index 6)
-                    # Tỷ lệ tổn thất: column H (index 7)
                     try:
+                        # Ensure the DataFrame has enough columns before attempting iloc
+                        # We need index 7 (column H) for 'Tỷ lệ tổn thất_Tháng', so at least 8 columns (0-7)
+                        if df_monthly.shape[1] < 8:
+                            st.warning(f"File {fname} có ít hơn 8 cột ({df_monthly.shape[1]} cột). Không thể trích xuất dữ liệu. Vui lòng kiểm tra định dạng file Excel.")
+                            continue
+
                         df_monthly_processed = df_monthly.iloc[:, [1, 4, 6, 7]].copy() # Select relevant columns by index
                         df_monthly_processed.columns = ['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']
+
+                        # Check if columns exist after renaming (should always be true if iloc succeeded and columns were assigned)
+                        # This check is more for internal consistency/debugging if column assignment somehow fails
+                        if not all(col in df_monthly_processed.columns for col in ['Điện nhận', 'Điện tổn thất']):
+                            st.warning(f"Lỗi nội bộ: Cột 'Điện nhận' hoặc 'Điện tổn thất' không tồn tại sau khi đổi tên trong file {fname}. Vui lòng báo cáo lỗi này.")
+                            continue
+
                         df_monthly_processed['Điện nhận'] = pd.to_numeric(df_monthly_processed['Điện nhận'].astype(str).str.replace(',', '.'), errors='coerce')
                         df_monthly_processed['Điện tổn thất'] = pd.to_numeric(df_monthly_processed['Điện tổn thất'].astype(str).str.replace(',', '.'), errors='coerce')
+                        
+                        # Add a check for all NaNs after to_numeric, which would make dropna remove all rows
+                        if df_monthly_processed['Điện nhận'].isnull().all() or df_monthly_processed['Điện tổn thất'].isnull().all():
+                            st.warning(f"File {fname} có dữ liệu 'Điện nhận' hoặc 'Điện tổn thất' không hợp lệ (tất cả là NaN sau khi chuyển đổi). File này sẽ bị bỏ qua.")
+                            continue
+
                         df_monthly_processed['Tháng'] = month_num
                         df_monthly_processed['Năm'] = nam_tba
                         df_monthly_processed['Kỳ'] = "Thực hiện"
                         data_for_tba_analysis.append(df_monthly_processed)
                     except IndexError:
-                        st.warning(f"Cấu trúc file Excel TBA_{nam_tba}_{month_num:02}.xlsx không đúng. Đảm bảo có đủ các cột dữ liệu cần thiết (Tên TBA, Điện nhận, Điện tổn thất, Tỷ lệ tổn thất).")
+                        st.warning(f"Cấu trúc file Excel {fname} không đúng (IndexError: chỉ số cột không hợp lệ). Đảm bảo có đủ các cột dữ liệu cần thiết (Tên TBA, Điện nhận, Điện tổn thất, Tỷ lệ tổn thất) và chúng nằm ở vị trí đúng.")
                     except Exception as e:
-                        st.warning(f"Lỗi xử lý dữ liệu từ file TBA_{nam_tba}_{month_num:02}.xlsx: {e}")
+                        st.warning(f"Lỗi xử lý dữ liệu tổng quát từ file {fname}: {e}. Vui lòng kiểm tra định dạng dữ liệu.")
+                else:
+                    st.info(f"File {fname} trống hoặc không thể tải xuống từ Google Drive. Bỏ qua file này.")
+            else:
+                st.info(f"Không tìm thấy file: {fname} trên Google Drive. Bỏ qua file này.")
 
         # Load "Cùng kỳ" data if selected
         if "cùng kỳ" in mode_tba.lower() and nam_cungkỳ_tba:
@@ -898,21 +916,51 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     df_monthly_ck = download_excel_from_drive(file_id_ck)
                     if not df_monthly_ck.empty:
                         try:
-                            df_monthly_ck_processed = df_monthly_ck.iloc[:, [1, 4, 6, 7]].copy() # Select relevant columns by index
+                            if df_monthly_ck.shape[1] < 8:
+                                st.warning(f"File {fname_ck} (Cùng kỳ) có ít hơn 8 cột ({df_monthly_ck.shape[1]} cột). Không thể trích xuất dữ liệu. Vui lòng kiểm tra định dạng file Excel.")
+                                continue
+
+                            df_monthly_ck_processed = df_monthly_ck.iloc[:, [1, 4, 6, 7]].copy()
                             df_monthly_ck_processed.columns = ['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']
+
+                            if not all(col in df_monthly_ck_processed.columns for col in ['Điện nhận', 'Điện tổn thất']):
+                                st.warning(f"Lỗi nội bộ: Cột 'Điện nhận' hoặc 'Điện tổn thất' không tồn tại sau khi đổi tên trong file {fname_ck} (Cùng kỳ). Vui lòng báo cáo lỗi này.")
+                                continue
+
                             df_monthly_ck_processed['Điện nhận'] = pd.to_numeric(df_monthly_ck_processed['Điện nhận'].astype(str).str.replace(',', '.'), errors='coerce')
                             df_monthly_ck_processed['Điện tổn thất'] = pd.to_numeric(df_monthly_ck_processed['Điện tổn thất'].astype(str).str.replace(',', '.'), errors='coerce')
+
+                            if df_monthly_ck_processed['Điện nhận'].isnull().all() or df_monthly_ck_processed['Điện tổn thất'].isnull().all():
+                                st.warning(f"File {fname_ck} (Cùng kỳ) có dữ liệu 'Điện nhận' hoặc 'Điện tổn thất' không hợp lệ (tất cả là NaN sau khi chuyển đổi). File này sẽ bị bỏ qua.")
+                                continue
+
                             df_monthly_ck_processed['Tháng'] = month_num
                             df_monthly_ck_processed['Năm'] = nam_cungkỳ_tba
                             df_monthly_ck_processed['Kỳ'] = "Cùng kỳ"
                             data_for_tba_analysis.append(df_monthly_ck_processed)
                         except IndexError:
-                            st.warning(f"Cấu trúc file Excel TBA_{nam_cungkỳ_tba}_{month_num:02}.xlsx không đúng. Đảm bảo có đủ các cột dữ liệu cần thiết (Tên TBA, Điện nhận, Điện tổn thất, Tỷ lệ tổn thất).")
+                            st.warning(f"Cấu trúc file Excel {fname_ck} (Cùng kỳ) không đúng (IndexError: chỉ số cột không hợp lệ). Đảm bảo có đủ các cột dữ liệu cần thiết và chúng nằm ở vị trí đúng.")
                         except Exception as e:
-                            st.warning(f"Lỗi xử lý dữ liệu từ file TBA_{nam_cungkỳ_tba}_{month_num:02}.xlsx: {e}")
+                            st.warning(f"Lỗi xử lý dữ liệu tổng quát từ file {fname_ck} (Cùng kỳ): {e}. Vui lòng kiểm tra định dạng dữ liệu.")
+                    else:
+                        st.info(f"File {fname_ck} (Cùng kỳ) trống hoặc không thể tải xuống từ Google Drive. Bỏ qua file này.")
+                else:
+                    st.info(f"Không tìm thấy file: {fname_ck} (Cùng kỳ) trên Google Drive. Bỏ qua file này.")
 
         df_tba_combined = pd.concat(data_for_tba_analysis, ignore_index=True) if data_for_tba_analysis else pd.DataFrame()
-        df_tba_combined.dropna(subset=['Điện nhận', 'Điện tổn thất'], inplace=True) # Drop rows where essential numeric data is missing
+        
+        # Only attempt dropna if df_tba_combined is not empty and has the expected columns
+        if not df_tba_combined.empty and 'Điện nhận' in df_tba_combined.columns and 'Điện tổn thất' in df_tba_combined.columns:
+            df_tba_combined.dropna(subset=['Điện nhận', 'Điện tổn thất'], inplace=True)
+        elif df_tba_combined.empty:
+            st.warning("Không có dữ liệu nào được tải hoặc xử lý thành công cho TBA. Vui lòng kiểm tra các file Excel và thông báo lỗi chi tiết ở trên.")
+            # Set df_tba_combined to an empty DataFrame with expected columns to avoid further KeyErrors
+            df_tba_combined = pd.DataFrame(columns=['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng', 'Tháng', 'Năm', 'Kỳ'])
+        else:
+            st.warning("Dữ liệu TBA được tải nhưng thiếu cột 'Điện nhận' hoặc 'Điện tổn thất'. Vui lòng kiểm tra lại định dạng file Excel.")
+            # Set df_tba_combined to an empty DataFrame with expected columns to avoid further KeyErrors
+            df_tba_combined = pd.DataFrame(columns=['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng', 'Tháng', 'Năm', 'Kỳ'])
+
 
         if not df_tba_combined.empty:
             if "Lũy kế" in mode_tba:
