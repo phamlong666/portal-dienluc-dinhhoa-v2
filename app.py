@@ -860,33 +860,87 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         all_files_tba = list_excel_files_from_folder(FOLDER_ID_TBA)
 
-        files_tba = generate_filenames(nam_tba, thang_from_tba, thang_to_tba, "TBA")
-        df_tba = load_data_from_drive(files_tba, all_files_tba, "Thực hiện")
+        # --- Custom data loading and processing for TBA to handle cumulative sums ---
+        data_for_tba_analysis = []
 
+        # Load "Thực hiện" data
+        for month_num in range(thang_from_tba, thang_to_tba + 1):
+            fname = f"TBA_{nam_tba}_{month_num:02}.xlsx"
+            file_id = all_files_tba.get(fname)
+            if file_id:
+                df_monthly = download_excel_from_drive(file_id)
+                if not df_monthly.empty:
+                    # Assuming column indices: 0=Tên TBA, 1=Điện nhận, 3=Điện tổn thất, 4=Tỷ lệ tổn thất (monthly)
+                    try:
+                        df_monthly_processed = df_monthly.iloc[:, [0, 1, 3, 4]].copy() # Select relevant columns
+                        df_monthly_processed.columns = ['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']
+                        df_monthly_processed['Điện nhận'] = pd.to_numeric(df_monthly_processed['Điện nhận'].astype(str).str.replace(',', '.'), errors='coerce')
+                        df_monthly_processed['Điện tổn thất'] = pd.to_numeric(df_monthly_processed['Điện tổn thất'].astype(str).str.replace(',', '.'), errors='coerce')
+                        df_monthly_processed['Tháng'] = month_num
+                        df_monthly_processed['Năm'] = nam_tba
+                        df_monthly_processed['Kỳ'] = "Thực hiện"
+                        data_for_tba_analysis.append(df_monthly_processed)
+                    except IndexError:
+                        st.warning(f"Cấu trúc file Excel TBA_{nam_tba}_{month_num:02}.xlsx không đúng. Đảm bảo có đủ 5 cột dữ liệu (0,1,2,3,4).")
+                    except Exception as e:
+                        st.warning(f"Lỗi xử lý dữ liệu từ file TBA_{nam_tba}_{month_num:02}.xlsx: {e}")
+
+        # Load "Cùng kỳ" data if selected
         if "cùng kỳ" in mode_tba.lower() and nam_cungkỳ_tba:
-            files_ck_tba = generate_filenames(nam_cungkỳ_tba, thang_from_tba, thang_to_tba, "TBA")
-            df_ck_tba = load_data_from_drive(files_ck_tba, all_files_tba, "Cùng kỳ")
-            if not df_ck_tba.empty:
-                df_ck_tba["Kỳ"] = "Cùng kỳ"
-                df_tba = pd.concat([df_tba, df_ck_tba])
+            for month_num in range(thang_from_tba, thang_to_tba + 1):
+                fname_ck = f"TBA_{nam_cungkỳ_tba}_{month_num:02}.xlsx"
+                file_id_ck = all_files_tba.get(fname_ck)
+                if file_id_ck:
+                    df_monthly_ck = download_excel_from_drive(file_id_ck)
+                    if not df_monthly_ck.empty:
+                        try:
+                            df_monthly_ck_processed = df_monthly_ck.iloc[:, [0, 1, 3, 4]].copy()
+                            df_monthly_ck_processed.columns = ['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']
+                            df_monthly_ck_processed['Điện nhận'] = pd.to_numeric(df_monthly_ck_processed['Điện nhận'].astype(str).str.replace(',', '.'), errors='coerce')
+                            df_monthly_ck_processed['Điện tổn thất'] = pd.to_numeric(df_monthly_ck_processed['Điện tổn thất'].astype(str).str.replace(',', '.'), errors='coerce')
+                            df_monthly_ck_processed['Tháng'] = month_num
+                            df_monthly_ck_processed['Năm'] = nam_cungkỳ_tba
+                            df_monthly_ck_processed['Kỳ'] = "Cùng kỳ"
+                            data_for_tba_analysis.append(df_monthly_ck_processed)
+                        except IndexError:
+                            st.warning(f"Cấu trúc file Excel TBA_{nam_cungkỳ_tba}_{month_num:02}.xlsx không đúng. Đảm bảo có đủ 5 cột dữ liệu (0,1,2,3,4).")
+                        except Exception as e:
+                            st.warning(f"Lỗi xử lý dữ liệu từ file TBA_{nam_cungkỳ_tba}_{month_num:02}.xlsx: {e}")
 
-        if not df_tba.empty and "Tỷ lệ tổn thất" in df_tba.columns:
-            df_tba["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
-            
-            # Define all possible categories for 'Ngưỡng tổn thất'
+        df_tba_combined = pd.concat(data_for_tba_analysis, ignore_index=True) if data_for_tba_analysis else pd.DataFrame()
+        df_tba_combined.dropna(subset=['Điện nhận', 'Điện tổn thất'], inplace=True) # Drop rows where essential numeric data is missing
+
+        if not df_tba_combined.empty:
+            if "Lũy kế" in mode_tba:
+                # Calculate cumulative loss for each TBA and Kỳ
+                # Filter to the selected period for cumulative calculation
+                df_filtered_period = df_tba_combined[
+                    (df_tba_combined['Tháng'] >= thang_from_tba) &
+                    (df_tba_combined['Tháng'] <= thang_to_tba)
+                ].copy()
+
+                df_tba_final = df_filtered_period.groupby(['Tên TBA', 'Kỳ']).agg(
+                    Dien_nhan_LuyKe=('Điện nhận', 'sum'),
+                    Dien_ton_that_LuyKe=('Điện tổn thất', 'sum')
+                ).reset_index()
+
+                df_tba_final['Tỷ lệ tổn thất'] = (df_tba_final['Dien_ton_that_LuyKe'] / df_tba_final['Dien_nhan_LuyKe'] * 100).fillna(0)
+            else: # "Theo tháng" or "So sánh cùng kỳ" (monthly comparison)
+                # For "Theo tháng", we only need data for thang_to_tba
+                df_tba_final = df_tba_combined[df_tba_combined['Tháng'] == thang_to_tba].copy()
+                df_tba_final['Tỷ lệ tổn thất'] = df_tba_final['Tỷ lệ tổn thất_Tháng'] # Use the monthly percentage
+
+            # Now, df_tba_final contains the 'Tỷ lệ tổn thất' calculated correctly based on mode
+            # Proceed with classification and plotting using df_tba_final
+            df_tba_final["Ngưỡng tổn thất"] = df_tba_final["Tỷ lệ tổn thất"].apply(classify_nguong)
             loss_categories = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
-            # Convert 'Ngưỡng tổn thất' to a Categorical type with all defined categories
-            df_tba["Ngưỡng tổn thất"] = df_tba["Tỷ lệ tổn thất"].apply(classify_nguong)
-            df_tba["Ngưỡng tổn thất"] = pd.Categorical(df_tba["Ngưỡng tổn thất"], categories=loss_categories, ordered=True)
+            df_tba_final["Ngưỡng tổn thất"] = pd.Categorical(df_tba_final["Ngưỡng tổn thất"], categories=loss_categories, ordered=True)
 
-            df_unique_tba = df_tba.drop_duplicates(subset=["Tên TBA", "Kỳ"])
+            df_unique_tba = df_tba_final.drop_duplicates(subset=["Tên TBA", "Kỳ"])
 
-            # Group by and pivot. The categorical type will ensure all categories are present.
             count_df_tba = df_unique_tba.groupby(["Ngưỡng tổn thất", "Kỳ"], observed=False).size().reset_index(name="Số lượng")
             pivot_df_tba = count_df_tba.pivot(index="Ngưỡng tổn thất", columns="Kỳ", values="Số lượng").fillna(0).astype(int)
-            # The reindex is no longer strictly necessary here if the categorical type is handled correctly,
-            # but keeping it ensures the order.
-            pivot_df_tba = pivot_df_tba.reindex(loss_categories) # Reindex to ensure all categories are present, even if 0
+            pivot_df_tba = pivot_df_tba.reindex(loss_categories)
 
             # Tăng DPI và điều chỉnh fontsize
             fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(12, 5), dpi=1200) # Tăng figsize và DPI
@@ -912,8 +966,8 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
             pie_data_tba = pd.Series(0, index=pivot_df_tba.index)
             if 'Thực hiện' in df_unique_tba['Kỳ'].unique():
-                df_latest_tba = df_unique_tba[df_unique_tba['Kỳ'] == 'Thực hiện']
-                pie_data_tba = df_latest_tba["Ngưỡng tổn thất"].value_counts().reindex(pivot_df_tba.index, fill_value=0)
+                df_latest_tba_for_pie = df_unique_tba[df_unique_tba['Kỳ'] == 'Thực hiện']
+                pie_data_tba = df_latest_tba_for_pie["Ngưỡng tổn thất"].value_counts().reindex(pivot_df_tba.index, fill_value=0)
             elif not df_unique_tba.empty and not pivot_df_tba.empty:
                 first_col_data_tba = pivot_df_tba.iloc[:, 0]
                 if first_col_data_tba.sum() > 0:
@@ -939,17 +993,17 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
             st.pyplot(fig_tba)
 
-            nguong_filter_tba = st.selectbox("Chọn ngưỡng để lọc danh sách TBA", ["(All)", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], key="tba_detail_filter")
+            nguong_filter_tba = st.selectbox("Chọn ngưỡng để lọc danh sách TBA", ["(All)"] + loss_categories, key="tba_detail_filter")
             if nguong_filter_tba != "(All)":
-                df_filtered_tba = df_tba[df_tba["Ngưỡng tổn thất"] == nguong_filter_tba]
+                df_filtered_tba_display = df_tba_final[df_tba_final["Ngưỡng tổn thất"] == nguong_filter_tba]
             else:
-                df_filtered_tba = df_tba
+                df_filtered_tba_display = df_tba_final
 
             st.markdown("### 📋 Danh sách chi tiết TBA")
-            st.dataframe(df_filtered_tba.reset_index(drop=True), use_container_width=True)
+            st.dataframe(df_filtered_tba_display.reset_index(drop=True), use_container_width=True)
 
         else:
-            st.warning("Không có dữ liệu phù hợp để hiển thị biểu đồ. Vui lòng kiểm tra các file Excel trên Google Drive và định dạng của chúng (cần cột 'Tỷ lệ tổn thất').")
+            st.warning("Không có dữ liệu phù hợp để hiển thị biểu đồ. Vui lòng kiểm tra các file Excel trên Google Drive và định dạng của chúng (cần cột 'Tỷ lệ tổn thất', 'Điện nhận', 'Điện tổn thất').")
 
     with st.expander("⚡ Tổn thất hạ thế"):
         st.header("Phân tích dữ liệu tổn thất hạ thế")
