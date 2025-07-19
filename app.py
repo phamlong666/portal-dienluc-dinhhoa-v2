@@ -156,7 +156,7 @@ try:
 
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
     for group_name, group_data in grouped_menu:
-        with st.sidebar.expander(f"📁 {group_name}", expanded=False):
+        with st.sidebar.expander(f"  {group_name}", expanded=False):
             for _, row in group_data.iterrows():
                 label = row['Tên ứng dụng']
                 link = row['Liên kết']
@@ -861,18 +861,72 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
         all_files_tba = list_excel_files_from_folder(FOLDER_ID_TBA)
 
         files_tba = generate_filenames(nam_tba, thang_from_tba, thang_to_tba, "TBA")
-        df_tba = load_data_from_drive(files_tba, all_files_tba, "Thực hiện")
+        df_tba_raw = load_data_from_drive(files_tba, all_files_tba, "Thực hiện")
 
+        df_tba = pd.DataFrame() # Initialize df_tba as an empty DataFrame
+        if not df_tba_raw.empty:
+            # Check for required columns for 'Thực hiện' data
+            required_cols_raw = ["Tên TBA", "Điện nhận", "Điện tổn thất"]
+            if all(col in df_tba_raw.columns for col in required_cols_raw):
+                df_tba_raw["Điện nhận"] = pd.to_numeric(df_tba_raw["Điện nhận"].astype(str).str.replace(',', '.'), errors='coerce')
+                df_tba_raw["Điện tổn thất"] = pd.to_numeric(df_tba_raw["Điện tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                df_tba_raw.dropna(subset=["Điện nhận", "Điện tổn thất"], inplace=True)
+
+                if mode_tba == "Lũy kế":
+                    # Calculate cumulative sum for 'Điện nhận' and 'Điện tổn thất'
+                    df_tba_raw_agg = df_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
+                        Tong_Dien_Nhan=('Điện nhận', 'sum'),
+                        Tong_Dien_Ton_That=('Điện tổn thất', 'sum')
+                    ).reset_index()
+                    df_tba_raw_agg["Tỷ lệ tổn thất"] = (df_tba_raw_agg["Tong_Dien_Ton_That"] / df_tba_raw_agg["Tong_Dien_Nhan"] * 100).round(2)
+                    df_tba = df_tba_raw_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
+                else: # Theo tháng, So sánh cùng kỳ, Lũy kế cùng kỳ
+                    # For monthly or other comparisons, use existing 'Tỷ lệ tổn thất' if available, or calculate if not
+                    if "Tỷ lệ tổn thất" in df_tba_raw.columns:
+                        df_tba_raw["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba_raw["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                    else: # Fallback calculation if 'Tỷ lệ tổn thất' is missing
+                        df_tba_raw["Tỷ lệ tổn thất"] = (df_tba_raw["Điện tổn thất"] / df_tba_raw["Điện nhận"] * 100).round(2)
+                    df_tba = df_tba_raw
+            else:
+                missing_cols = [col for col in required_cols_raw if col not in df_tba_raw.columns]
+                st.error(f"Lỗi: Dữ liệu TBA 'Thực hiện' thiếu các cột cần thiết ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel.")
+                df_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"]) # Ensure df_tba has expected columns
+
+        df_ck_tba = pd.DataFrame() # Initialize df_ck_tba as an empty DataFrame
         if "cùng kỳ" in mode_tba.lower() and nam_cungkỳ_tba:
             files_ck_tba = generate_filenames(nam_cungkỳ_tba, thang_from_tba, thang_to_tba, "TBA")
-            df_ck_tba = load_data_from_drive(files_ck_tba, all_files_tba, "Cùng kỳ")
-            if not df_ck_tba.empty:
-                df_ck_tba["Kỳ"] = "Cùng kỳ"
-                df_tba = pd.concat([df_tba, df_ck_tba])
+            df_ck_tba_raw = load_data_from_drive(files_ck_tba, all_files_tba, "Cùng kỳ")
+            if not df_ck_tba_raw.empty:
+                required_cols_ck = ["Tên TBA", "Điện nhận", "Điện tổn thất"]
+                if all(col in df_ck_tba_raw.columns for col in required_cols_ck):
+                    df_ck_tba_raw["Điện nhận"] = pd.to_numeric(df_ck_tba_raw["Điện nhận"].astype(str).str.replace(',', '.'), errors='coerce')
+                    df_ck_tba_raw["Điện tổn thất"] = pd.to_numeric(df_ck_tba_raw["Điện tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                    df_ck_tba_raw.dropna(subset=["Điện nhận", "Điện tổn thất"], inplace=True)
 
-        # Bắt đầu sửa lỗi KeyError: Thêm kiểm tra cột trước khi drop_duplicates
-        required_tba_columns = ["Tên TBA", "Kỳ", "Tỷ lệ tổn thất"] # Thêm "Tỷ lệ tổn thất" để đảm bảo các bước tiếp theo
-        if not df_tba.empty and all(col in df_tba.columns for col in required_tba_columns):
+                    if "Lũy kế" in mode_tba: # If 'Lũy kế cùng kỳ'
+                        df_ck_tba_agg = df_ck_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
+                            Tong_Dien_Nhan=('Điện nhận', 'sum'),
+                            Tong_Dien_Ton_That=('Điện tổn thất', 'sum')
+                        ).reset_index()
+                        df_ck_tba_agg["Tỷ lệ tổn thất"] = (df_ck_tba_agg["Tong_Dien_Ton_That"] / df_ck_tba_agg["Tong_Dien_Nhan"] * 100).round(2)
+                        df_ck_tba = df_ck_tba_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
+                    else: # If 'So sánh cùng kỳ' (monthly)
+                        if "Tỷ lệ tổn thất" in df_ck_tba_raw.columns:
+                            df_ck_tba_raw["Tỷ lệ tổn thất"] = pd.to_numeric(df_ck_tba_raw["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                        else: # Fallback calculation if 'Tỷ lệ tổn thất' is missing
+                            df_ck_tba_raw["Tỷ lệ tổn thất"] = (df_ck_tba_raw["Điện tổn thất"] / df_ck_tba_raw["Điện nhận"] * 100).round(2)
+                        df_ck_tba = df_ck_tba_raw
+                else:
+                    missing_cols = [col for col in required_cols_ck if col not in df_ck_tba_raw.columns]
+                    st.error(f"Lỗi: Dữ liệu TBA 'Cùng kỳ' thiếu các cột cần thiết ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel.")
+                    df_ck_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"]) # Ensure df_ck_tba has expected columns
+            
+        # Concatenate df_tba and df_ck_tba if df_ck_tba has data
+        if not df_ck_tba.empty:
+            df_tba = pd.concat([df_tba, df_ck_tba])
+
+        # Ensure 'Tỷ lệ tổn thất' is numeric and handle missing values
+        if not df_tba.empty and "Tỷ lệ tổn thất" in df_tba.columns:
             df_tba["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
             
             # Define all possible categories for 'Ngưỡng tổn thất'
@@ -881,77 +935,84 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
             df_tba["Ngưỡng tổn thất"] = df_tba["Tỷ lệ tổn thất"].apply(classify_nguong)
             df_tba["Ngưỡng tổn thất"] = pd.Categorical(df_tba["Ngưỡng tổn thất"], categories=loss_categories, ordered=True)
 
-            df_unique_tba = df_tba.drop_duplicates(subset=["Tên TBA", "Kỳ"])
-
-            # Group by and pivot. The categorical type will ensure all categories are present.
-            count_df_tba = df_unique_tba.groupby(["Ngưỡng tổn thất", "Kỳ"], observed=False).size().reset_index(name="Số lượng")
-            pivot_df_tba = count_df_tba.pivot(index="Ngưỡng tổn thất", columns="Kỳ", values="Số lượng").fillna(0).astype(int)
-            # The reindex is no longer strictly necessary here if the categorical type is handled correctly,
-            # but keeping it ensures the order.
-            pivot_df_tba = pivot_df_tba.reindex(loss_categories) # Reindex to ensure all categories are present, even if 0
-
-            # Tăng DPI và điều chỉnh fontsize
-            fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(12, 5), dpi=1200) # Tăng figsize và DPI
-
-            x_tba = range(len(pivot_df_tba))
-            width_tba = 0.35
-            colors_tba = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
-            for i, col in enumerate(pivot_df_tba.columns):
-                offset_tba = (i - (len(pivot_df_tba.columns)-1)/2) * width_tba
-                bars_tba = ax_bar_tba.bar([xi + offset_tba for xi in x_tba], pivot_df_tba[col], width_tba, label=col, color=colors_tba[i % len(colors_tba)])
-                for bar in bars_tba:
-                    height = bar.get_height()
-                    if height > 0:
-                        ax_bar_tba.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', va='bottom', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
-
-            ax_bar_tba.set_ylabel("Số lượng", fontsize=9) # Tăng fontsize
-            ax_bar_tba.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
-            ax_bar_tba.set_xticks(list(x_tba))
-            ax_bar_tba.set_xticklabels(pivot_df_tba.index, fontsize=8) # Tăng fontsize
-            ax_bar_tba.tick_params(axis='y', labelsize=8) # Tăng labelsize
-            ax_bar_tba.legend(title="Kỳ", fontsize=8) # Tăng fontsize
-            ax_bar_tba.grid(axis='y', linestyle='--', linewidth=0.7, alpha=0.6)
-
-            pie_data_tba = pd.Series(0, index=pivot_df_tba.index)
-            if 'Thực hiện' in df_unique_tba['Kỳ'].unique():
-                df_latest_tba = df_unique_tba[df_unique_tba['Kỳ'] == 'Thực hiện']
-                pie_data_tba = df_latest_tba["Ngưỡng tổn thất"].value_counts().reindex(pivot_df_tba.index, fill_value=0)
-            elif not df_unique_tba.empty and not pivot_df_tba.empty:
-                first_col_data_tba = pivot_df_tba.iloc[:, 0]
-                if first_col_data_tba.sum() > 0:
-                    pie_data_tba = first_col_data_tba
-
-            if pie_data_tba.sum() > 0:
-                wedges, texts, autotexts = ax_pie_tba.pie(
-                    pie_data_tba,
-                    labels=pivot_df_tba.index,
-                    autopct='%1.1f%%',
-                    startangle=90,
-                    colors=colors_tba,
-                    pctdistance=0.75,
-                    wedgeprops={'width': 0.3, 'edgecolor': 'w'}
-                )
-                for text in texts: text.set_fontsize(7); text.set_fontweight('bold') # Tăng fontsize
-                for autotext in autotexts: autotext.set_color('black'); autotext.set_fontsize(7); autotext.set_fontweight('bold') # Tăng fontsize
-                ax_pie_tba.text(0, 0, f"Tổng số TBA\\n{pie_data_tba.sum()}", ha='center', va='center', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
-                ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+            # Ensure "Tên TBA" and "Kỳ" exist before dropping duplicates
+            required_tba_columns_for_unique = ["Tên TBA", "Kỳ"]
+            if all(col in df_tba.columns for col in required_tba_columns_for_unique):
+                df_unique_tba = df_tba.drop_duplicates(subset=["Tên TBA", "Kỳ"])
             else:
-                ax_pie_tba.text(0.5, 0.5, "Không có dữ liệu tỷ trọng phù hợp", horizontalalignment='center', verticalalignment='center', transform=ax_pie_tba.transAxes, fontsize=9) # Tăng fontsize
-                ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+                st.error(f"Lỗi: Dữ liệu TBA thiếu các cột cần thiết để xác định TBA duy nhất ({', '.join(required_tba_columns_for_unique)}).")
+                df_unique_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"]) # Provide a fallback empty DataFrame
 
-            st.pyplot(fig_tba)
+            if not df_unique_tba.empty:
+                # Group by and pivot. The categorical type will ensure all categories are present.
+                count_df_tba = df_unique_tba.groupby(["Ngưỡng tổn thất", "Kỳ"], observed=False).size().reset_index(name="Số lượng")
+                pivot_df_tba = count_df_tba.pivot(index="Ngưỡng tổn thất", columns="Kỳ", values="Số lượng").fillna(0).astype(int)
+                # The reindex is no longer strictly necessary here if the categorical type is handled correctly,
+                # but keeping it ensures the order.
+                pivot_df_tba = pivot_df_tba.reindex(loss_categories) # Reindex to ensure all categories are present, even if 0
 
-            nguong_filter_tba = st.selectbox("Chọn ngưỡng để lọc danh sách TBA", ["(All)", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], key="tba_detail_filter")
-            if nguong_filter_tba != "(All)":
-                df_filtered_tba = df_tba[df_tba["Ngưỡng tổn thất"] == nguong_filter_tba]
+                # Tăng DPI và điều chỉnh fontsize
+                fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(12, 5), dpi=1200) # Tăng figsize và DPI
+
+                x_tba = range(len(pivot_df_tba))
+                width_tba = 0.35
+                colors_tba = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+                for i, col in enumerate(pivot_df_tba.columns):
+                    offset_tba = (i - (len(pivot_df_tba.columns)-1)/2) * width_tba
+                    bars_tba = ax_bar_tba.bar([xi + offset_tba for xi in x_tba], pivot_df_tba[col], width_tba, label=col, color=colors_tba[i % len(colors_tba)])
+                    for bar in bars_tba:
+                        height = bar.get_height()
+                        if height > 0:
+                            ax_bar_tba.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', va='bottom', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
+
+                ax_bar_tba.set_ylabel("Số lượng", fontsize=9) # Tăng fontsize
+                ax_bar_tba.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+                ax_bar_tba.set_xticks(list(x_tba))
+                ax_bar_tba.set_xticklabels(pivot_df_tba.index, fontsize=8) # Tăng fontsize
+                ax_bar_tba.tick_params(axis='y', labelsize=8) # Tăng labelsize
+                ax_bar_tba.legend(title="Kỳ", fontsize=8) # Tăng fontsize
+                ax_bar_tba.grid(axis='y', linestyle='--', linewidth=0.7, alpha=0.6)
+
+                pie_data_tba = pd.Series(0, index=pivot_df_tba.index)
+                if 'Thực hiện' in df_unique_tba['Kỳ'].unique():
+                    df_latest_tba = df_unique_tba[df_unique_tba['Kỳ'] == 'Thực hiện']
+                    pie_data_tba = df_latest_tba["Ngưỡng tổn thất"].value_counts().reindex(pivot_df_tba.index, fill_value=0)
+                elif not df_unique_tba.empty and not pivot_df_tba.empty:
+                    first_col_data_tba = pivot_df_tba.iloc[:, 0]
+                    if first_col_data_tba.sum() > 0:
+                        pie_data_tba = first_col_data_tba
+
+                if pie_data_tba.sum() > 0:
+                    wedges, texts, autotexts = ax_pie_tba.pie(
+                        pie_data_tba,
+                        labels=pivot_df_tba.index,
+                        autopct='%1.1f%%',
+                        startangle=90,
+                        colors=colors_tba,
+                        pctdistance=0.75,
+                        wedgeprops={'width': 0.3, 'edgecolor': 'w'}
+                    )
+                    for text in texts: text.set_fontsize(7); text.set_fontweight('bold') # Tăng fontsize
+                    for autotext in autotexts: autotext.set_color('black'); autotext.set_fontsize(7); autotext.set_fontweight('bold') # Tăng fontsize
+                    ax_pie_tba.text(0, 0, f"Tổng số TBA\\n{pie_data_tba.sum()}", ha='center', va='center', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
+                    ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+                else:
+                    ax_pie_tba.text(0.5, 0.5, "Không có dữ liệu tỷ trọng phù hợp", horizontalalignment='center', verticalalignment='center', transform=ax_pie_tba.transAxes, fontsize=9) # Tăng fontsize
+                    ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+
+                st.pyplot(fig_tba)
+
+                nguong_filter_tba = st.selectbox("Chọn ngưỡng để lọc danh sách TBA", ["(All)", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], key="tba_detail_filter")
+                if nguong_filter_tba != "(All)":
+                    df_filtered_tba = df_tba[df_tba["Ngưỡng tổn thất"] == nguong_filter_tba]
+                else:
+                    df_filtered_tba = df_tba
+
+                st.markdown("### 📋 Danh sách chi tiết TBA")
+                st.dataframe(df_filtered_tba.reset_index(drop=True), use_container_width=True)
             else:
-                df_filtered_tba = df_tba
-
-            st.markdown("### 📋 Danh sách chi tiết TBA")
-            st.dataframe(df_filtered_tba.reset_index(drop=True), use_container_width=True)
-
+                st.warning("Không có dữ liệu TBA duy nhất để hiển thị biểu đồ. Vui lòng kiểm tra dữ liệu đầu vào.")
         else:
-            # Thông báo lỗi cụ thể hơn nếu các cột cần thiết bị thiếu
             if df_tba.empty:
                 st.warning("Không có dữ liệu TBA được tải về. Vui lòng kiểm tra các file Excel trên Google Drive và ID thư mục.")
             else:
@@ -1315,3 +1376,4 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         else:
             st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
+ 
