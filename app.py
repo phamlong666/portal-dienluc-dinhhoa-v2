@@ -870,7 +870,9 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                 df_ck_tba["Kỳ"] = "Cùng kỳ"
                 df_tba = pd.concat([df_tba, df_ck_tba])
 
-        if not df_tba.empty and "Tỷ lệ tổn thất" in df_tba.columns:
+        # Bắt đầu sửa lỗi KeyError: Thêm kiểm tra cột trước khi drop_duplicates
+        required_tba_columns = ["Tên TBA", "Kỳ", "Tỷ lệ tổn thất"] # Thêm "Tỷ lệ tổn thất" để đảm bảo các bước tiếp theo
+        if not df_tba.empty and all(col in df_tba.columns for col in required_tba_columns):
             df_tba["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
             
             # Define all possible categories for 'Ngưỡng tổn thất'
@@ -949,7 +951,12 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
             st.dataframe(df_filtered_tba.reset_index(drop=True), use_container_width=True)
 
         else:
-            st.warning("Không có dữ liệu phù hợp để hiển thị biểu đồ. Vui lòng kiểm tra các file Excel trên Google Drive và định dạng của chúng (cần cột 'Tỷ lệ tổn thất').")
+            # Thông báo lỗi cụ thể hơn nếu các cột cần thiết bị thiếu
+            if df_tba.empty:
+                st.warning("Không có dữ liệu TBA được tải về. Vui lòng kiểm tra các file Excel trên Google Drive và ID thư mục.")
+            else:
+                missing_cols = [col for col in required_tba_columns if col not in df_tba.columns]
+                st.error(f"Lỗi: Dữ liệu TBA không có đủ các cột cần thiết để phân tích ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel cho tháng {thang_to_tba} năm {nam_tba}. Cần có các cột: {', '.join(required_tba_columns)}.")
 
     with st.expander("⚡ Tổn thất hạ thế"):
         st.header("Phân tích dữ liệu tổn thất hạ thế")
