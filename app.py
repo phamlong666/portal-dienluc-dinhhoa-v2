@@ -325,7 +325,6 @@ def classify_nguong(x):
     if x < 2: return "<2%"
     elif 2 <= x < 3: return ">=2 và <3%"
     elif 3 <= x < 4: return ">=3 và <4%"
-    elif 3 <= x < 4: return ">=3 và <4%"
     elif 4 <= x < 5: return ">=4 và <5%"
     elif 5 <= x < 7: return ">=5 và <7%"
     else: return ">=7%"
@@ -848,7 +847,7 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                 elif len(thang_to_options_tba) > 4:
                      default_index_thang_to_tba = 4
                 else:
-                     default_index_thang_to_tba = len(thang_to_options_tba) - 1 if thang_to_options_tba else None
+                     default_index_thang_to_tba = len(thang_to_options_tba) - 1 if thang_to_options_tba else 0 # Ensure default_index is not None
                 thang_to_tba = st.selectbox("Đến tháng", thang_to_options_tba, index=default_index_thang_to_tba, key="tba_thang_to")
             else:
                 thang_to_tba = thang_from_tba
@@ -873,13 +872,21 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         if not df_tba.empty and "Tỷ lệ tổn thất" in df_tba.columns:
             df_tba["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+            
+            # Define all possible categories for 'Ngưỡng tổn thất'
+            loss_categories = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
+            # Convert 'Ngưỡng tổn thất' to a Categorical type with all defined categories
             df_tba["Ngưỡng tổn thất"] = df_tba["Tỷ lệ tổn thất"].apply(classify_nguong)
+            df_tba["Ngưỡng tổn thất"] = pd.Categorical(df_tba["Ngưỡng tổn thất"], categories=loss_categories, ordered=True)
 
             df_unique_tba = df_tba.drop_duplicates(subset=["Tên TBA", "Kỳ"])
 
-            count_df_tba = df_unique_tba.groupby(["Ngưỡng tổn thất", "Kỳ"]).size().reset_index(name="Số lượng")
+            # Group by and pivot. The categorical type will ensure all categories are present.
+            count_df_tba = df_unique_tba.groupby(["Ngưỡng tổn thất", "Kỳ"], observed=False).size().reset_index(name="Số lượng")
             pivot_df_tba = count_df_tba.pivot(index="Ngưỡng tổn thất", columns="Kỳ", values="Số lượng").fillna(0).astype(int)
-            pivot_df_tba = pivot_df_tba.reindex(["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"])
+            # The reindex is no longer strictly necessary here if the categorical type is handled correctly,
+            # but keeping it ensures the order.
+            pivot_df_tba = pivot_df_tba.reindex(loss_categories) # Reindex to ensure all categories are present, even if 0
 
             # Tăng DPI và điều chỉnh fontsize
             fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(12, 5), dpi=1200) # Tăng figsize và DPI
