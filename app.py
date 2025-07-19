@@ -48,7 +48,7 @@ def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
         yag.send(to=nguoinhan, subject=subject, contents=body)
         st.success("📧 Đã gửi email nhắc việc thành công.")
     except Exception as e:
-        st.warning(f⚠️ Không gửi được email: {e}. Vui lòng kiểm tra lại thông tin tài khoản và mật khẩu ứng dụng Gmail.")
+        st.warning(f"Không gửi được email: {e}. Vui lòng kiểm tra lại thông tin tài khoản và mật khẩu ứng dụng Gmail.")
 
 # ================== CẤU HÌNH CHUNG CỦA ỨNG DỤNG STREAMLIT ==================
 st.set_page_config(
@@ -763,7 +763,7 @@ elif chon_modul == '📍 Dự báo điểm sự cố':
     TEMP_UPLOAD_PATH_TRA_CUU = "uploaded_tra_cuu.xlsx"
 
     df_tra_cuu = None
-    uploaded_file_tra_cuu = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
+    uploaded_file_tra_cuu = st.file_uploader("  Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
 
     if uploaded_file_tra_cuu:
         with open(TEMP_UPLOAD_PATH_TRA_CUU, "wb") as f:
@@ -1367,3 +1367,4 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         else:
             st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
+ 
