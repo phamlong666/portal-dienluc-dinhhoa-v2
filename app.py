@@ -873,21 +873,26 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     try:
                         # Ensure the DataFrame has enough columns before attempting iloc
                         # We need index 7 (column H) for 'Tỷ lệ tổn thất_Tháng', so at least 8 columns (0-7)
-                        if df_monthly.shape[1] < 8:
+                        if df_monthly.shape[1] < 8: # Updated to 8 columns
                             st.warning(f"File {fname} có ít hơn 8 cột ({df_monthly.shape[1]} cột). Không thể trích xuất dữ liệu. Vui lòng kiểm tra định dạng file Excel.")
                             continue
 
-                        df_monthly_processed = df_monthly.iloc[:, [1, 4, 6, 7]].copy() # Select relevant columns by index
+                        # Corrected indices based on image_ddf0bd.png:
+                        # Tên TBA: index 1 (Column B)
+                        # Điện nhận: index 4 (Column E)
+                        # Điện tổn thất: index 6 (Column G)
+                        # Tỷ lệ tổn thất: index 7 (Column H)
+                        df_monthly_processed = df_monthly.iloc[:, [1, 4, 6, 7]].copy() # Corrected indices
                         df_monthly_processed.columns = ['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']
 
                         # Check if columns exist after renaming (should always be true if iloc succeeded and columns were assigned)
-                        # This check is more for internal consistency/debugging if column assignment somehow fails
-                        if not all(col in df_monthly_processed.columns for col in ['Điện nhận', 'Điện tổn thất']):
-                            st.warning(f"Lỗi nội bộ: Cột 'Điện nhận' hoặc 'Điện tổn thất' không tồn tại sau khi đổi tên trong file {fname}. Vui lòng báo cáo lỗi này.")
+                        if not all(col in df_monthly_processed.columns for col in ['Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']):
+                            st.warning(f"Lỗi nội bộ: Cột 'Điện nhận', 'Điện tổn thất' hoặc 'Tỷ lệ tổn thất_Tháng' không tồn tại sau khi đổi tên trong file {fname}. Vui lòng báo cáo lỗi này.")
                             continue
 
                         df_monthly_processed['Điện nhận'] = pd.to_numeric(df_monthly_processed['Điện nhận'].astype(str).str.replace(',', '.'), errors='coerce')
                         df_monthly_processed['Điện tổn thất'] = pd.to_numeric(df_monthly_processed['Điện tổn thất'].astype(str).str.replace(',', '.'), errors='coerce')
+                        df_monthly_processed['Tỷ lệ tổn thất_Tháng'] = pd.to_numeric(df_monthly_processed['Tỷ lệ tổn thất_Tháng'].astype(str).str.replace(',', '.'), errors='coerce')
                         
                         # Add a check for all NaNs after to_numeric, which would make dropna remove all rows
                         if df_monthly_processed['Điện nhận'].isnull().all() or df_monthly_processed['Điện tổn thất'].isnull().all():
@@ -916,19 +921,20 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     df_monthly_ck = download_excel_from_drive(file_id_ck)
                     if not df_monthly_ck.empty:
                         try:
-                            if df_monthly_ck.shape[1] < 8:
+                            if df_monthly_ck.shape[1] < 8: # Updated to 8 columns
                                 st.warning(f"File {fname_ck} (Cùng kỳ) có ít hơn 8 cột ({df_monthly_ck.shape[1]} cột). Không thể trích xuất dữ liệu. Vui lòng kiểm tra định dạng file Excel.")
                                 continue
 
-                            df_monthly_ck_processed = df_monthly_ck.iloc[:, [1, 4, 6, 7]].copy()
+                            df_monthly_ck_processed = df_monthly_ck.iloc[:, [1, 4, 6, 7]].copy() # Corrected indices
                             df_monthly_ck_processed.columns = ['Tên TBA', 'Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']
 
-                            if not all(col in df_monthly_ck_processed.columns for col in ['Điện nhận', 'Điện tổn thất']):
-                                st.warning(f"Lỗi nội bộ: Cột 'Điện nhận' hoặc 'Điện tổn thất' không tồn tại sau khi đổi tên trong file {fname_ck} (Cùng kỳ). Vui lòng báo cáo lỗi này.")
+                            if not all(col in df_monthly_ck_processed.columns for col in ['Điện nhận', 'Điện tổn thất', 'Tỷ lệ tổn thất_Tháng']):
+                                st.warning(f"Lỗi nội bộ: Cột 'Điện nhận', 'Điện tổn thất' hoặc 'Tỷ lệ tổn thất_Tháng' không tồn tại sau khi đổi tên trong file {fname_ck} (Cùng kỳ). Vui lòng báo cáo lỗi này.")
                                 continue
 
                             df_monthly_ck_processed['Điện nhận'] = pd.to_numeric(df_monthly_ck_processed['Điện nhận'].astype(str).str.replace(',', '.'), errors='coerce')
                             df_monthly_ck_processed['Điện tổn thất'] = pd.to_numeric(df_monthly_ck_processed['Điện tổn thất'].astype(str).str.replace(',', '.'), errors='coerce')
+                            df_monthly_ck_processed['Tỷ lệ tổn thất_Tháng'] = pd.to_numeric(df_monthly_ck_processed['Tỷ lệ tổn thất_Tháng'].astype(str).str.replace(',', '.'), errors='coerce')
 
                             if df_monthly_ck_processed['Điện nhận'].isnull().all() or df_monthly_ck_processed['Điện tổn thất'].isnull().all():
                                 st.warning(f"File {fname_ck} (Cùng kỳ) có dữ liệu 'Điện nhận' hoặc 'Điện tổn thất' không hợp lệ (tất cả là NaN sau khi chuyển đổi). File này sẽ bị bỏ qua.")
