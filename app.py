@@ -1,1231 +1,1386 @@
+from pathlib import Path
 import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
-from openai import OpenAI
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm # Thêm thư viện cm để tạo màu sắc
-import re # Thêm thư thư viện regex để trích xuất tên sheet
-import os # Import os for path handling
-from pathlib import Path # Import Path for robust path handling
-from fuzzywuzzy import fuzz # Import fuzzywuzzy để so sánh chuỗi
-import datetime # Import datetime để lấy năm hiện tại
-import easyocr # Import easyocr cho chức năng OCR
-import json # Import json để đọc file câu hỏi mẫu
+import os
+import io
+from datetime import date, time, datetime
+from PIL import Image
+import math
+import folium
+from folium.plugins import MarkerCluster
+from streamlit_folium import st_folium
+import zipfile
+import xml.etree.ElementTree as ET
+import json
+import re
+import matplotlib.pyplot as plt # Import for plotting in loss analysis
+from google.oauth2 import service_account # Import for Google Drive
+from googleapiclient.discovery import build # Import for Google Drive
+from googleapiclient.http import MediaIoBaseDownload # Import for Google Drive
 
-# Cấu hình Streamlit page để sử dụng layout rộng
-st.set_page_config(layout="wide")
+# ================== CẤU HÌNH EMAIL GỬI NHẮC VIỆC ==================
+# Anh cần đảm bảo thông tin email và mật khẩu ứng dụng là chính xác
+# và đã cho phép ứng dụng kém an toàn truy cập (hoặc sử dụng mật khẩu ứng dụng của Google)
+# Lưu ý: yagmail cần được cài đặt: pip install yagmail
+import yagmail
 
-# Cấu hình Matplotlib để hiển thị tiếng Việt
-plt.rcParams['font.family'] = 'DejaVu Sans' # Hoặc 'Arial', 'Times New Roman' nếu có
-plt.rcParams['font.size'] = 10
-plt.rcParams['axes.labelsize'] = 12
-plt.rcParams['axes.titlesize'] = 14
-plt.rcParams['xtick.labelsize'] = 10
-plt.rcParams['ytick.labelsize'] = 10
-plt.rcParams['figure.titlesize'] = 16
+EMAIL_TAI_KHOAN = "phamlong666@gmail.com"
+EMAIL_MAT_KHAU = "zaacuxxvznflqavt"  # Mật khẩu ứng dụng Gmail (KHÔNG PHẢI MẬT KHẨU TÀI KHOẢN CHÍNH)
 
-# Kết nối Google Sheets
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
-
-if "google_service_account" in st.secrets:
-    info = st.secrets["google_service_account"]
-    creds = Credentials.from_service_account_info(info, scopes=SCOPES)
-    client = gspread.authorize(creds)
-else:
-    st.error("❌ Không tìm thấy google_service_account trong secrets. Vui lòng cấu hình.")
-    st.stop() # Dừng ứng dụng nếu không có secrets
-
-# Lấy API key OpenAI từ secrets
-if "openai_api_key" in st.secrets:
-    openai_api_key = st.secrets["openai_api_key"]
-    client_ai = OpenAI(api_key=openai_api_key)
-    st.success("✅ Đã kết nối OpenAI API key.")
-else:
-    client_ai = None
-    st.warning("Chưa cấu hình API key OpenAI. Vui lòng thêm 'openai_api_key' vào st.secrets để sử dụng chatbot cho các câu hỏi tổng quát.")
-
-# Hàm để lấy dữ liệu từ một sheet cụ thể
-def get_sheet_data(sheet_name):
+def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
+    """Gửi email nhắc việc."""
     try:
-        spreadsheet_url = "https://docs.google.com/spreadsheets/d/13MqQzvV3Mf9bLOAXwICXclYVQ-8WnvBDPAR8VJfOGJg/edit"
-        sheet = client.open_by_url(spreadsheet_url).worksheet(sheet_name)
-        
-        if sheet_name == "KPI":
-            all_values = sheet.get_all_values()
-            if all_values:
-                # Đảm bảo tiêu đề là duy nhất trước khi tạo DataFrame
-                headers = all_values[0]
-                # Tạo danh sách tiêu đề duy nhất bằng cách thêm số nếu có trùng lặp
-                seen_headers = {}
-                unique_headers = []
-                for h in headers:
-                    original_h = h
-                    count = seen_headers.get(h, 0)
-                    while h in seen_headers and seen_headers[h] > 0:
-                        h = f"{original_h}_{count}"
-                        count += 1
-                    seen_headers[original_h] = seen_headers.get(original_h, 0) + 1
-                    unique_headers.append(h)
+        # Khởi tạo đối tượng SMTP của yagmail
+        yag = yagmail.SMTP(EMAIL_TAI_KHOAN, EMAIL_MAT_KHAU)
+        subject = "⏰ Nhắc việc từ Trung tâm điều hành số"
+        body = f"""
+        Xin chào,
 
-                data = all_values[1:]
-                
-                df_temp = pd.DataFrame(data, columns=unique_headers)
-                return df_temp.to_dict('records') # Return as list of dictionaries
-            else:
-                return [] # Return empty list if no values
-        else:
-            return sheet.get_all_records()
-    except gspread.exceptions.WorksheetNotFound:
-        st.error(f"❌ Không tìm thấy sheet '{sheet_name}'. Vui lòng kiểm tra tên sheet.")
+        Đây là nhắc việc tự động từ hệ thống:
+
+        📌 Việc: {viec}
+        📅 Ngày: {ngay}
+        ⏰ Giờ: {gio}
+
+        Hệ thống điều hành số - Đội quản lý Điện lực khu vực Định Hóa.
+        """
+        # Gửi email tới người nhận với tiêu đề và nội dung đã cho
+        yag.send(to=nguoinhan, subject=subject, contents=body)
+        st.success("📧 Đã gửi email nhắc việc thành công.")
+    except Exception as e:
+        st.warning(f"⚠️ Không gửi được email: {e}. Vui lòng kiểm tra lại thông tin tài khoản và mật khẩu ứng dụng Gmail.")
+
+# ================== CẤU HÌNH CHUNG CỦA ỨNG DỤNG STREAMLIT ==================
+st.set_page_config(
+    page_title="Cổng điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa",
+    layout="wide",
+    initial_sidebar_state="auto" # Giúp sidebar luôn mở theo mặc định
+)
+
+# ================== CUSTOM CSS CHO GIAO DIỆN ==================
+st.markdown('''
+<style>
+    /* Điều chỉnh kích thước font chữ tổng thể */
+    html, body, [class*="css"] {
+        font-size: 1.1em !important; /* Giảm font nhẹ để phù hợp hơn với nhiều module */
+    }
+    /* Tiêu đề sidebar */
+    section[data-testid="stSidebar"] h3 {
+        font-size: 1.4em !important;
+        font-weight: bold;
+        margin-top: 1em;
+    }
+    /* Nút trong sidebar */
+    .sidebar-button {
+        display: block;
+        background-color: #42A5F5;
+        color: #ffffff !important;
+        padding: 10px 15px; /* Điều chỉnh padding */
+        border-radius: 8px; /* Điều chỉnh bo góc */
+        margin: 6px 0; /* Điều chỉnh margin */
+        font-weight: bold;
+        font-size: 1.1em; /* Điều chỉnh font size */
+        text-shadow: 0px 0px 2px rgba(0,0,0,0.5); /* Điều chỉnh shadow */
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.25); /* Điều chỉnh shadow */
+        transition: all 0.2s ease-in-out;
+        text-decoration: none;
+    }
+    .sidebar-button:hover {
+        background-color: #1E88E5 !important;
+        transform: translateY(-1px);
+        box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+    }
+    /* Tiêu đề chính trong nội dung */
+    h2, h3, h4 {
+        font-weight: bold !important;
+        color: #1a237e;
+    }
+    /* Padding cho khối nội dung chính */
+    .block-container {
+        padding: 2rem 2rem 4rem 2rem;
+    }
+    /* Nút chính */
+    .main-button {
+        display: inline-block;
+        background-color: #FFCC80;
+        color: white;
+        text-align: center;
+        padding: 20px 28px; /* Điều chỉnh padding */
+        border-radius: 12px; /* Điều chỉnh bo góc */
+        font-weight: bold;
+        text-decoration: none;
+        margin: 12px;
+        transition: 0.3s;
+        font-size: 22px; /* Điều chỉnh font size */
+        box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+    }
+    .main-button:hover {
+        transform: scale(1.03); /* Giảm hiệu ứng scale nhẹ hơn */
+        box-shadow: 3px 3px 10px rgba(0,0,0,0.25);
+    }
+    /* Cuộn sidebar nếu nội dung quá dài */
+    section[data-testid="stSidebar"] > div:first-child {
+        max-height: 95vh;
+        overflow-y: auto;
+    }
+</style>
+''', unsafe_allow_html=True)
+
+# ================== HEADER ỨNG DỤNG ==================
+col1, col2 = st.columns([1, 10])
+with col1:
+    try:
+        # Đảm bảo file logo.png nằm trong thư mục 'assets' cùng cấp với app.py
+        logo = Image.open("assets/logo_hinh_tron_hoan_chinh.png")
+        st.image(logo, width=70)
+    except FileNotFoundError:
+        st.warning("⚠️ Không tìm thấy logo. Vui lòng đặt file 'logo_hinh_tron_hoan_chinh.png' vào thư mục 'assets'.")
+    except Exception as e:
+        st.warning(f"⚠️ Lỗi khi tải logo: {e}")
+
+with col2:
+    st.markdown("""
+        <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
+        Trung tâm điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa
+        </h1>
+        <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
+    """, unsafe_allow_html=True)
+
+# ================== MENU TỪ GOOGLE SHEET (SIDEBAR) ==================
+# URL tới Google Sheet chứa danh mục ứng dụng
+SHEET_URL_MENU = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
+try:
+    df_menu = pd.read_csv(SHEET_URL_MENU)
+    df_menu = df_menu[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
+    grouped_menu = df_menu.groupby('Nhóm chức năng')
+
+    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    for group_name, group_data in grouped_menu:
+        with st.sidebar.expander(f"📁 {group_name}", expanded=False):
+            for _, row in group_data.iterrows():
+                label = row['Tên ứng dụng']
+                link = row['Liên kết']
+                st.markdown(f"""
+                    <a href="{link}" target="_blank" class="sidebar-button">
+                        🚀 {label}
+                    </a>
+                """, unsafe_allow_html=True)
+except Exception as e:
+    st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}. Vui lòng kiểm tra URL hoặc quyền truy cập.")
+
+# ================== GIỚI THIỆU CHUNG ==================
+st.info("""
+👋 Chào mừng đến với Trung tâm điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa
+
+📌 **Các tính năng nổi bật:**
+- Quản lý nhắc việc và lịch sử họp
+- Dự báo điểm sự cố từ dữ liệu dòng điện và lịch sử
+- Phân tích và quản lý tổn thất điện năng (TBA, Hạ thế, Trung thế, Toàn đơn vị)
+- Kết nối tới Dropbox, Terabox và AI cá nhân
+- Truy cập hệ thống nhanh chóng qua Sidebar
+
+✅ Mọi bản cập nhật chỉ cần chỉnh sửa Google Sheet đều tự động hiển thị!
+""")
+
+# ================== NÚT CHỨC NĂNG CHÍNH TRÊN TRANG ==================
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("""
+<div style="display: flex; justify-content: center; flex-wrap: wrap;">
+    <a href="https://terabox.com/s/1cegqu7nP7rd0BdL_MIyrtA" target="_blank" class="main-button">📦 Bigdata_Terabox</a>
+    <a href="https://chat.openai.com/c/2d132e26-7b53-46b3-bbd3-8a5229e77973" target="_blank" class="main-button">🤖 AI. PHẠM HỒNG LONG</a>
+    <a href="https://www.youtube.com" target="_blank" class="main-button">🎬 video tuyên truyền</a>
+    <a href="https://www.dropbox.com/scl/fo/yppcs3fy1sxrilyzjbvxa/APan4-c_N5N5wbIDtTzUiuKo?dl=0" target="_blank" class="main-button">  Báo cáo CMIS</a>
+</div>
+""", unsafe_allow_html=True)
+
+# ================== CẤU HÌNH FILE LƯU TRỮ DỮ LIỆU CỤC BỘ ==================
+REMINDERS_FILE = "nhac_viec.csv"
+MEETINGS_FILE = "lich_su_cuoc_hop.csv"
+UPLOAD_FOLDER = "uploaded_files"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True) # Đảm bảo thư mục tồn tại
+
+# ================== KHỞI TẠO SESSION STATE (QUAN TRỌNG ĐỂ DUY TRÌ DỮ LIỆU) ==================
+# Khởi tạo session state cho module "AI Trợ lý tổn thất"
+if 'df_tba_thang' not in st.session_state: st.session_state.df_tba_thang = None
+if 'df_tba_luyke' not in st.session_state: st.session_state.df_tba_luyke = None
+if 'df_tba_ck' not in st.session_state: st.session_state.df_tba_ck = None
+if 'df_ha_thang' not in st.session_state: st.session_state.df_ha_thang = None
+if 'df_ha_luyke' not in st.session_state: st.session_state.df_ha_luyke = None
+if 'df_ha_ck' not in st.session_state: st.session_state.df_ha_ck = None
+if 'df_trung_thang_tt' not in st.session_state: st.session_state.df_trung_thang_tt = None
+if 'df_trung_luyke_tt' not in st.session_state: st.session_state.df_trung_ck_tt = None # Lỗi chính tả ở đây, giữ nguyên theo code gốc nếu có thể.
+if 'df_trung_thang_dy' not in st.session_state: st.session_state.df_trung_thang_dy = None
+if 'df_trung_luyke_dy' not in st.session_state: st.session_state.df_trung_luyke_dy = None
+if 'df_trung_ck_dy' not in st.session_state: st.session_state.df_trung_ck_dy = None
+if 'df_dv_thang' not in st.session_state: st.session_state.df_dv_thang = None
+if 'df_dv_luyke' not in st.session_state: st.session_state.df_dv_luyke = None
+if 'df_dv_ck' not in st.session_state: st.session_state.df_dv_ck = None
+# Khởi tạo st.session_state.suco_data ở cấp cao nhất để đảm bảo luôn có sẵn
+if "suco_data" not in st.session_state:
+    st.session_state.suco_data = [] # Luôn khởi tạo là danh sách rỗng
+    STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx"
+    if os.path.exists(STORAGE_FILE_SUCO):
+        try:
+            df_loaded_suco = pd.read_excel(STORAGE_FILE_SUCO)
+            st.session_state.suco_data = df_loaded_suco.to_dict(orient="records")
+        except Exception as e:
+            st.warning(f"⚠️ Không thể đọc dữ liệu sự cố từ file đã lưu: {e}. Đang sử dụng dữ liệu trống.")
+            st.session_state.suco_data = [] # Đảm bảo reset nếu lỗi
+
+# Cờ để kiểm soát việc tải lại file upload cho module sự cố
+if 'file_uploaded_flag_suco' not in st.session_state:
+    st.session_state.file_uploaded_flag_suco = False
+
+# ================== BIẾN VÀ HÀM HỖ TRỢ TẢI DỮ LIỆU TỪ GOOGLE DRIVE ==================
+# Anh cần tạo file .streamlit/secrets.toml với thông tin tài khoản dịch vụ Google Cloud
+# Ví dụ:
+# [google]
+# type = "service_account"
+# project_id = "your-gcp-project-id"
+# private_key_id = "..."
+# private_key = "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# client_email = "your-service-account-email@your-gcp-project-id.iam.gserviceaccount.com"
+# client_id = "..."
+# auth_uri = "https://accounts.google.com/o/oauth2/auth"
+# token_uri = "https://oauth2.googleapis.com/token"
+# auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+# client_x509_cert_url = "https://www.googleapis.com/robot/v1/metadata/x509/your-service-account-email%40your-gcp-project-id.iam.gserviceaccount.com"
+# universe_domain = "googleapis.com"
+
+@st.cache_resource # Sử dụng st.cache_resource cho dịch vụ để tránh khởi tạo lại không cần thiết
+def get_drive_service():
+    """Khởi tạo và trả về đối tượng dịch vụ Google Drive."""
+    try:
+        credentials = service_account.Credentials.from_service_account_info(
+            st.secrets["google"],
+            scopes=["https://www.googleapis.com/auth/drive.readonly"] # Chỉ cần quyền đọc
+        )
+        return build('drive', 'v3', credentials=credentials)
+    except KeyError:
+        st.error("Lỗi: Không tìm thấy cấu hình Google Drive trong `secrets.toml`. Vui lòng tham khảo hướng dẫn để tạo file này.")
         return None
     except Exception as e:
-        st.error(f"❌ Lỗi khi mở Google Sheet '{sheet_name}': {e}. Vui lòng kiểm tra định dạng tiêu đề của sheet. Nếu có tiêu đề trùng lặp, hãy đảm bảo chúng là duy nhất.")
+        st.error(f"Lỗi khi xác thực Google Drive: {e}. Vui lòng kiểm tra cấu hình `secrets.toml`.")
         return None
 
-# Hàm chuẩn hóa chuỗi để so sánh chính xác hơn (loại bỏ dấu cách thừa, chuyển về chữ thường)
-def normalize_text(text):
-    if isinstance(text, str):
-        # Chuyển về chữ thường, loại bỏ dấu cách thừa ở đầu/cuối và thay thế nhiều dấu cách bằng một dấu cách
-        return re.sub(r'\s+', ' ', text).strip().lower()
-    return ""
-
-# Tải dữ liệu từ sheet "Hỏi-Trả lời" một lần khi ứng dụng khởi động
-qa_data = get_sheet_data("Hỏi-Trả lời")
-qa_df = pd.DataFrame(qa_data) if qa_data else pd.DataFrame()
-
-# Hàm để đọc câu hỏi từ file JSON
-def load_sample_questions(file_path="sample_questions.json"):
+@st.cache_data # Sử dụng st.cache_data cho các kết quả tải về để tăng tốc độ
+def list_excel_files_from_folder(folder_id):
+    """Liệt kê các file Excel trong thư mục Google Drive đã cho."""
+    service = get_drive_service()
+    if not service:
+        return {}
+    query = f"'{folder_id}' in parents and mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'"
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            questions_data = json.load(f)
-        # Nếu định dạng là list of strings
-        if isinstance(questions_data, list) and all(isinstance(q, str) for q in questions_data):
-            return questions_data
-        # Nếu định dạng là list of dictionaries (nếu sau này bạn muốn thêm id hoặc mô tả)
-        elif isinstance(questions_data, list) and all(isinstance(q, dict) and "text" in q for q in questions_data):
-            return [q["text"] for q in questions_data]
-        else:
-            st.error("Định dạng file sample_questions.json không hợp lệ. Vui lòng đảm bảo nó là một danh sách các chuỗi hoặc đối tượng có khóa 'text'.")
-            return []
-    except FileNotFoundError:
-        st.warning(f"⚠️ Không tìm thấy file: {file_path}. Vui lòng tạo file chứa các câu hỏi mẫu để sử dụng chức năng này.")
-        return []
-    except json.JSONDecodeError:
-        st.error(f"❌ Lỗi đọc file JSON: {file_path}. Vui lòng kiểm tra cú pháp JSON của file.")
-        return []
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        return {f['name']: f['id'] for f in results.get('files', [])}
+    except Exception as e:
+        st.error(f"Lỗi khi liệt kê file từ Google Drive (thư mục {folder_id}): {e}. Vui lòng kiểm tra ID thư mục và quyền truy cập.")
+        return {}
 
-# Tải các câu hỏi mẫu khi ứng dụng khởi động
-sample_questions = load_sample_questions()
-
-# --- Bắt đầu bố cục mới: Logo ở trái, phần còn lại của chatbot căn giữa ---
-
-# Phần header: Logo và tiêu đề, được đặt ở đầu trang và logo căn trái
-header_col1, header_col2 = st.columns([1, 8]) # Tỷ lệ cho logo và tiêu đề
-
-with header_col1:
-    public_logo_url = "https://raw.githubusercontent.com/phamlong666/Chatbot/main/logo_hinh_tron.png"
+@st.cache_data # Sử dụng st.cache_data cho các kết quả tải về để tăng tốc độ
+def download_excel_from_drive(file_id):
+    """Tải xuống file Excel từ Google Drive bằng ID file."""
+    service = get_drive_service()
+    if not service:
+        return pd.DataFrame()
     try:
-        st.image(public_logo_url, width=100) # Kích thước 100px
-    except Exception as e_public_url:
-        st.error(f"❌ Lỗi khi hiển thị logo từ URL: {e_public_url}. Vui lòng đảm bảo URL là liên kết TRỰC TIẾP đến file ảnh (kết thúc bằng .jpg, .png, v.v.) và kiểm tra kết nối internet.")
-        logo_path = Path(__file__).parent / "logo_hinh_tron.jpg"
+        request = service.files().get_media(fileId=file_id)
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+            # Có thể thêm thanh tiến trình ở đây: st.progress(status.progress())
+        fh.seek(0)
+        return pd.read_excel(fh, sheet_name=0) # Đọc sheet đầu tiên
+    except Exception as e:
+        st.warning(f"Không thể tải xuống hoặc đọc file với ID {file_id}. Lỗi: {e}. Có thể file không tồn tại hoặc không đúng định dạng sheet 'dữ liệu'.")
+        return pd.DataFrame()
+
+def generate_filenames(year, start_month, end_month, prefix):
+    """Tạo danh sách tên file dự kiến dựa trên năm, tháng và tiền tố."""
+    return [f"{prefix}_{year}_{str(m).zfill(2)}.xlsx" for m in range(start_month, end_month + 1)]
+
+def load_data_from_drive(file_list, all_files_in_folder, nhan="Thực hiện"):
+    """Tải và nối các DataFrame từ danh sách file Google Drive."""
+    dfs = []
+    for fname in file_list:
+        file_id = all_files_in_folder.get(fname)
+        if file_id:
+            df = download_excel_from_drive(file_id)
+            if not df.empty:
+                df["Kỳ"] = nhan
+                dfs.append(df)
+        # else: # Gỡ bỏ thông báo này để tránh làm quá tải giao diện nếu có nhiều file thiếu
+            # st.info(f"Không tìm thấy file: {fname}")
+    return pd.concat(dfs) if dfs else pd.DataFrame()
+
+def classify_nguong(x):
+    """Phân loại tỷ lệ tổn thất vào các ngưỡng."""
+    try:
+        x = float(str(x).replace(",", "."))
+    except (ValueError, TypeError):
+        return "Không rõ"
+
+    if x < 2: return "<2%"
+    elif 2 <= x < 3: return ">=2 và <3%"
+    elif 3 <= x < 4: return ">=3 và <4%"
+    elif 4 <= x < 5: return ">=4 và <5%"
+    elif 5 <= x < 7: return ">=5 và <7%"
+    else: return ">=7%"
+
+# ================== CHỌN MODULE LÀM VIỆC ==================
+# Đã thêm các lựa chọn mới cho module "AI Trợ lý tổn thất"
+chon_modul = st.selectbox(
+    '📌 Chọn chức năng làm việc',
+    [
+        '⏰ Nhắc việc',
+        '📑 Phục vụ họp',
+        '📍 Dự báo điểm sự cố',
+        '⚡ AI Trợ lý tổn thất' # Module mới được thêm vào
+    ],
+    key="main_module_selector" # Đảm bảo key duy nhất
+)
+
+# ================== LOGIC HIỂN THỊ TỪNG MODULE = ==================
+
+if chon_modul == '⏰ Nhắc việc':
+    st.header("⏰ Nhắc việc")
+
+    # Tạo mới danh sách nhắc việc
+    if st.button("🆕 Tạo mới danh sách nhắc việc"):
+        df_nhac_viec = pd.DataFrame(columns=["Việc", "Ngày", "Giờ", "Email"])
+        df_nhac_viec.to_csv(REMINDERS_FILE, index=False)
+        st.success("✅ Đã khởi tạo danh sách nhắc việc.")
+
+    # Thêm việc cần nhắc
+    with st.expander("➕ Thêm việc cần nhắc"):
+        with st.form("form_nhac"):
+            viec = st.text_input("🔔 Việc cần nhắc")
+            ngay = st.date_input("📅 Ngày", date.today(), format="DD/MM/YYYY")
+            gio = st.time_input("⏰ Giờ", time(7, 30))
+            email = st.text_input("📧 Gửi tới", value=EMAIL_TAI_KHOAN) # Sử dụng EMAIL_TAI_KHOAN làm mặc định
+            submit = st.form_submit_button("📌 Tạo nhắc việc")
+        if submit:
+            if viec and email:
+                new_row = {
+                    "Việc": viec,
+                    "Ngày": ngay.strftime("%d/%m/%y"),
+                    "Giờ": gio.strftime("%H:%M"),
+                    "Email": email
+                }
+                # Kiểm tra nếu file tồn tại, nếu không thì tạo DataFrame rỗng
+                df_nhac_viec_current = pd.read_csv(REMINDERS_FILE) if os.path.exists(REMINDERS_FILE) else pd.DataFrame(columns=["Việc", "Ngày", "Giờ", "Email"])
+                df_nhac_viec_current = pd.concat([df_nhac_viec_current, pd.DataFrame([new_row])], ignore_index=True)
+                df_nhac_viec_current.to_csv(REMINDERS_FILE, index=False)
+                st.success("✅ Đã tạo nhắc việc.")
+                gui_email_nhac_viec(
+                    viec,
+                    ngay.strftime("%d/%m/%y"),
+                    gio.strftime("%H:%M"),
+                    email
+                )
+                st.rerun() # Refresh để cập nhật danh sách
+            else:
+                st.warning("⚠️ Vui lòng nhập 'Việc cần nhắc' và 'Email'.")
+
+    # Hiển thị & xóa nhắc việc
+    if os.path.exists(REMINDERS_FILE):
+        st.subheader("📋 Danh sách nhắc việc")
         try:
-            if logo_path.exists():
-                st.image(str(logo_path), width=100)
+            df_nhac_viec_display = pd.read_csv(REMINDERS_FILE, dtype=str)
+            if not df_nhac_viec_display.empty:
+                for idx, row in df_nhac_viec_display.iterrows():
+                    col1, col2 = st.columns([6,1])
+                    with col1:
+                        st.write(f"📌 **{row['Việc']}** lúc {row['Giờ']} ngày {row['Ngày']} → {row['Email']}")
+                    with col2:
+                        if st.button("❌", key=f"xoa_nhac_{idx}"):
+                            df_nhac_viec_display.drop(index=idx, inplace=True)
+                            df_nhac_viec_display.to_csv(REMINDERS_FILE, index=False)
+                            st.success("🗑️ Đã xoá nhắc việc.")
+                            st.rerun()
             else:
-                st.error(f"❌ Không tìm thấy file ảnh logo tại: {logo_path}. Vui lòng đảm bảo file 'logo_hinh_tron.jpg' nằm cùng thư mục với file app.py của bạn khi triển khai.")
-        except Exception as e_local_file:
-            st.error(f"❌ Lỗi khi hiển thị ảnh logo từ file cục bộ: {e_local_file}.")
+                st.info("Chưa có nhắc việc nào được tạo.")
+        except pd.errors.EmptyDataError:
+            st.info("File nhắc việc trống. Hãy tạo một nhắc việc mới.")
+        except Exception as e:
+            st.error(f"❌ Lỗi khi hiển thị nhắc việc: {e}")
 
-with header_col2:
-    # Đã thay đổi st.title thành st.markdown để tùy chỉnh cỡ chữ
-    st.markdown("<h1 style='font-size: 30px;'>🤖 Chatbot Đội QLĐLKV Định Hóa</h1>", unsafe_allow_html=True)
+    # Xuất / Nhập Excel (Nhắc việc)
+    st.markdown("### 📤 Xuất / Nhập Excel (Nhắc việc)")
+    col_export_nhac, col_import_nhac = st.columns(2)
 
-# Phần nội dung chính của chatbot (ô nhập liệu, nút, kết quả) sẽ được căn giữa
-# Tạo 3 cột: cột trái rỗng (để tạo khoảng trống), cột giữa chứa nội dung chatbot, cột phải rỗng
-# Đã thay đổi tỷ lệ từ [1, 3, 1] sang [1, 5, 1] để mở rộng không gian chat
-col_left_spacer, col_main_content, col_right_spacer = st.columns([1, 5, 1])
+    with col_export_nhac:
+        if os.path.exists(REMINDERS_FILE):
+            df_export_nhac = pd.read_csv(REMINDERS_FILE)
+            towrite_nhac = io.BytesIO()
+            with pd.ExcelWriter(towrite_nhac, engine='xlsxwriter') as writer:
+                df_export_nhac.to_excel(writer, index=False, sheet_name='NhacViec')
+            towrite_nhac.seek(0)
+            st.download_button("📥 Tải Excel nhắc việc", data=towrite_nhac, file_name="nhac_viec.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
-with col_main_content: # Tất cả nội dung chatbot sẽ nằm trong cột này
-    # Khởi tạo session state để lưu trữ tin nhắn cuối cùng đã xử lý
-    if 'last_processed_user_msg' not in st.session_state:
-        st.session_state.last_processed_user_msg = ""
-    if 'qa_results' not in st.session_state:
-        st.session_state.qa_results = []
-    if 'qa_index' not in st.session_state:
-        st.session_state.qa_index = 0
-    if 'user_input_value' not in st.session_state:
-        st.session_state.user_input_value = ""
-    if 'current_qa_display' not in st.session_state: # NEW: To hold the currently displayed QA answer
-        st.session_state.current_qa_display = ""
-    # Khởi tạo key động cho text_area
-    if 'text_area_key' not in st.session_state:
-        st.session_state.text_area_key = 0
+    with col_import_nhac:
+        file_nhac = st.file_uploader("📁 Nhập từ Excel (Nhắc việc)", type=["xlsx"], key="upload_nhacviec")
+        if file_nhac:
+            try:
+                df_import_nhac = pd.read_excel(file_nhac, dtype=str)
+                # Chuẩn hoá ngày giờ nếu có thể
+                if "Ngày" in df_import_nhac.columns:
+                    df_import_nhac["Ngày"] = pd.to_datetime(df_import_nhac["Ngày"], errors="coerce").dt.strftime("%d/%m/%y").fillna("")
+                if "Giờ" in df_import_nhac.columns:
+                    # Chuyển đổi sang định dạng HH:MM, xử lý trường hợp giờ là float (Excel chuyển đổi)
+                    df_import_nhac["Giờ"] = df_import_nhac["Giờ"].apply(
+                        lambda x: pd.to_datetime(str(x), format='%H:%M', errors='coerce').strftime('%H:%M') if ':' in str(x) else \
+                                   pd.to_datetime(f"{int(float(x)*24)}:{(float(x)*24 - int(float(x)*24))*60:02.0f}", format='%H:%M', errors='coerce').strftime('%H:%M') if pd.notna(x) else ""
+                    ).fillna("00:00")
 
-    # Sử dụng st.form để cho phép nhấn Enter gửi câu hỏi
-    with st.form(key='chat_form'):
-        # Tạo ô nhập liệu và nút Gửi/Xóa trong một hàng
-        input_col, send_button_col, clear_button_col = st.columns([10, 1, 1])
+                df_import_nhac.to_csv(REMINDERS_FILE, index=False)
+                st.success("✅ Đã nhập lại danh sách nhắc việc.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Lỗi khi nhập file Excel nhắc việc: {e}")
 
-        with input_col:
-            # Sử dụng key động cho text_input để cho phép nhấn Enter gửi lệnh
-            user_msg = st.text_input("Bạn muốn hỏi gì?", key=f"user_input_form_{st.session_state.text_area_key}", value=st.session_state.user_input_value)
+elif chon_modul == '📑 Phục vụ họp':
+    st.header("📑 Phục vụ họp")
 
-        with send_button_col:
-            send_button_pressed = st.form_submit_button("Gửi")
-
-        with clear_button_col:
-            clear_button_pressed = st.form_submit_button("Xóa")
-
-    # Thêm dropdown lựa chọn câu hỏi mẫu
-    if sample_questions:
-        st.markdown("### 📝 Hoặc chọn câu hỏi mẫu:")
-        selected_sample_question = st.selectbox(
-            "Chọn câu hỏi từ danh sách:",
-            [""] + sample_questions, # Thêm lựa chọn trống ở đầu
-            key="sample_question_selector"
-        )
-        # Sửa lỗi: So sánh với giá trị hiện tại của user_msg thay vì một key cố định
-        if selected_sample_question and selected_sample_question != user_msg:
-            st.session_state.user_input_value = selected_sample_question
-            st.session_state.text_area_key += 1 # Force re-render of the text_input
-            st.rerun() # Rerun to update the input box immediately
-
-    if clear_button_pressed:
-        st.session_state.user_input_value = ""
-        st.session_state.qa_results = []
-        st.session_state.qa_index = 0
-        st.session_state.last_processed_user_msg = ""
-        st.session_state.current_qa_display = "" # Clear displayed QA as well
-        st.session_state.text_area_key += 1 # Tăng key để buộc text_input re-render
-        st.rerun() # Rerun để xóa nội dung input ngay lập tức
-
-    # Kiểm tra nếu nút "Gửi" được nhấn HOẶC người dùng đã nhập tin nhắn mới và nhấn Enter
-    if send_button_pressed:
-        if user_msg: # Chỉ xử lý nếu có nội dung nhập vào
-            st.session_state.last_processed_user_msg = user_msg # Cập nhật tin nhắn cuối cùng đã xử lý
-            st.session_state.user_input_value = "" # Reset input value to clear the box for next input
-            user_msg_lower = user_msg.lower()
-
-            # Reset QA results and display for a new query
-            st.session_state.qa_results = []
-            st.session_state.qa_index = 0
-            st.session_state.current_qa_display = "" # Clear previous display
-
-            # --- Bổ sung logic tìm kiếm câu trả lời trong sheet "Hỏi-Trả lời" ---
-            found_qa_answer = False
-
-            # NEW LOGIC: Kiểm tra cú pháp "An toàn:..." để yêu cầu khớp chính xác 100% sau khi chuẩn hóa
-            if user_msg_lower.startswith("an toàn:"):
-                # Trích xuất và chuẩn hóa phần câu hỏi thực tế sau "An toàn:"
-                specific_question_for_safety = normalize_text(user_msg_lower.replace("an toàn:", "").strip())
-
-                if not qa_df.empty and 'Câu hỏi' in qa_df.columns and 'Câu trả lời' in qa_df.columns:
-                    exact_match_found_for_safety = False
-                    for index, row in qa_df.iterrows():
-                        question_from_sheet_normalized = normalize_text(str(row['Câu hỏi']))
-
-                        # So sánh chính xác 100% sau khi đã chuẩn hóa
-                        if specific_question_for_safety == question_from_sheet_normalized:
-                            st.session_state.qa_results.append(str(row['Câu trả lời']))
-                            exact_match_found_for_safety = True
-                            found_qa_answer = True
-                            # Không break để vẫn có thể tìm các câu trả lời khác nếu có nhiều bản ghi giống hệt
-
-                    if not exact_match_found_for_safety:
-                        st.warning("⚠️ Không tìm thấy câu trả lời chính xác 100% cho yêu cầu 'An toàn:' của bạn. Vui lòng đảm bảo câu hỏi khớp hoàn toàn (có thể bỏ qua dấu cách thừa).")
-                        found_qa_answer = True # Đánh dấu là đã xử lý nhánh này, dù không tìm thấy khớp đủ cao
-
-            # Logic hiện có cho các câu hỏi chung (khớp tương đối)
-            # Chỉ chạy nếu chưa tìm thấy câu trả lời từ nhánh "An toàn:"
-            if not found_qa_answer and not qa_df.empty and 'Câu hỏi' in qa_df.columns and 'Câu trả lời' in qa_df.columns:
-
-                # Collect all relevant answers with their scores
-                all_matches = []
-                for index, row in qa_df.iterrows():
-                    question_from_sheet = str(row['Câu hỏi']).lower()
-                    score = fuzz.ratio(user_msg_lower, question_from_sheet)
-
-                    if score >= 60: # Threshold for similarity
-                        all_matches.append({'question': str(row['Câu hỏi']), 'answer': str(row['Câu trả lời']), 'score': score})
-
-                # Sort matches by score in descending order
-                all_matches.sort(key=lambda x: x['score'], reverse=True)
-
-                if all_matches:
-                    # Store only the answers in session state for "Tìm tiếp" functionality
-                    st.session_state.qa_results = [match['answer'] for match in all_matches]
-                    st.session_state.qa_index = 0 # Start with the first result
-                    found_qa_answer = True
-                else:
-                    found_qa_answer = False # No matches found
-
-            if found_qa_answer:
-                # Set the initial display content
-                if st.session_state.qa_results:
-                    st.session_state.current_qa_display = st.session_state.qa_results[st.session_state.qa_index]
-                    if len(st.session_state.qa_results) > 1:
-                        st.session_state.qa_index += 1 # Move to the next index for "Tìm tiếp"
-                pass # Đã tìm thấy câu trả lời từ QA sheet, không làm gì thêm
+    with st.expander("➕ Thêm cuộc họp mới"):
+        with st.form("form_hop"):
+            ten_hop = st.text_input("📌 Tên cuộc họp")
+            ngay_hop = st.date_input("📅 Ngày họp", format="DD/MM/YYYY")
+            gio_hop = st.time_input("⏰ Giờ họp", time(8, 0))
+            noidung_hop = st.text_area("📝 Nội dung")
+            files_hop = st.file_uploader("📎 Đính kèm", accept_multiple_files=True, key="files_hop_uploader")
+            submit_hop = st.form_submit_button("💾 Lưu cuộc họp")
+        if submit_hop:
+            if ten_hop and noidung_hop:
+                try:
+                    file_names = []
+                    for f in files_hop:
+                        file_path = os.path.join(UPLOAD_FOLDER, f.name)
+                        with open(file_path, "wb") as out:
+                            out.write(f.read())
+                        file_names.append(f.name)
+                    new_row_hop = {
+                        "Ngày": ngay_hop.strftime("%d/%m/%y"),
+                        "Giờ": gio_hop.strftime("%H:%M"),
+                        "Tên cuộc họp": ten_hop,
+                        "Nội dung": noidung_hop,
+                        "Tệp": ";".join(file_names)
+                    }
+                    df_lich_su_hop = pd.read_csv(MEETINGS_FILE) if os.path.exists(MEETINGS_FILE) else pd.DataFrame(columns=["Ngày", "Giờ", "Tên cuộc họp", "Nội dung", "Tệp"])
+                    df_lich_su_hop = pd.concat([df_lich_su_hop, pd.DataFrame([new_row_hop])], ignore_index=True)
+                    df_lich_su_hop.to_csv(MEETINGS_FILE, index=False)
+                    st.success("✅ Đã lưu cuộc họp.")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ Lỗi khi lưu cuộc họp: {e}")
             else:
-                # Xử lý truy vấn để lấy dữ liệu từ BẤT KỲ sheet nào (ƯU TIÊN HÀNG ĐẦU)
-                if "lấy dữ liệu sheet" in user_msg_lower:
-                    match = re.search(r"lấy dữ liệu sheet\s+['\"]?([^'\"]+)['\"]?", user_msg_lower)
-                    if match:
-                        sheet_name_from_query = match.group(1).strip()
-                        st.info(f"Đang cố gắng lấy dữ liệu từ sheet: **{sheet_name_from_query}**")
-                        records = get_sheet_data(sheet_name_from_query)
-                        if records:
-                            df_any_sheet = pd.DataFrame(records)
-                            if not df_any_sheet.empty:
-                                st.subheader(f"Dữ liệu từ sheet '{sheet_name_from_query}':")
-                                st.dataframe(df_any_sheet)
-                                st.success(f"✅ Đã hiển thị dữ liệu từ sheet '{sheet_name_from_query}'.")
-                            else:
-                                st.warning(f"⚠️ Sheet '{sheet_name_from_query}' không có dữ liệu.")
-                        else:
-                            st.warning("⚠️ Vui lòng cung cấp tên sheet rõ ràng. Ví dụ: 'lấy dữ liệu sheet DoanhThu'.")
-
-                # Xử lý truy vấn liên quan đến KPI (sheet "KPI")
-                elif "kpi" in user_msg_lower or "chỉ số hiệu suất" in user_msg_lower or "kết quả hoạt động" in user_msg_lower:
-                    records = get_sheet_data("KPI") # Tên sheet KPI
-                    if records:
-                        df_kpi = pd.DataFrame(records)
-                        
-                        # Cải thiện: Trích xuất năm từ chuỗi "Năm YYYY" trước khi chuyển đổi sang số
-                        if 'Năm' in df_kpi.columns:
-                            # Đảm bảo cột 'Năm' là chuỗi và xử lý các giá trị không phải chuỗi
-                            df_kpi['Năm'] = df_kpi['Năm'].astype(str).str.extract(r'(\d{4})')[0]
-                            df_kpi['Năm'] = pd.to_numeric(df_kpi['Năm'], errors='coerce').dropna().astype(int)
-                        else:
-                            st.warning("⚠️ Không tìm thấy cột 'Năm' trong sheet 'KPI'. Một số chức năng KPI có thể không hoạt động.")
-                            df_kpi = pd.DataFrame() # Đảm bảo df_kpi rỗng nếu không có cột Năm
-
-                        # NEW: Chuyển đổi cột 'Tháng' sang kiểu số nguyên một cách vững chắc
-                        if 'Tháng' in df_kpi.columns:
-                            df_kpi['Tháng'] = pd.to_numeric(df_kpi['Tháng'], errors='coerce').dropna().astype(int)
-                        else:
-                            st.warning("⚠️ Không tìm thấy cột 'Tháng' trong sheet 'KPI'. Một số chức năng KPI có thể không hoạt động.")
-                            df_kpi = pd.DataFrame() # Đảm bảo df_kpi rỗng nếu không có cột Tháng
-
-
-                        if not df_kpi.empty:
-                            st.subheader("Dữ liệu KPI")
-                            st.dataframe(df_kpi)
-
-                            target_year_kpi = None
-                            kpi_year_match = re.search(r"năm\s+(\d{4})", user_msg_lower)
-                            if kpi_year_match:
-                                target_year_kpi = kpi_year_match.group(1)
-
-                            unit_name_from_query = None
-                            # Ánh xạ tên đơn vị trong câu hỏi với tên cột trong Google Sheet
-                            unit_column_mapping = {
-                                "định hóa": "Định Hóa",
-                                "đồng hỷ": "Đồng Hỷ",
-                                "đại từ": "Đại Từ",
-                                "phú bình": "Phú Bình",
-                                "phú lương": "Phú Lương",
-                                "phổ yên": "Phổ Yên",
-                                "sông công": "Sông Công",
-                                "thái nguyên": "Thái Nguyên",
-                                "võ nhai": "Võ Nhai"
-                            }
-                            
-                            # Cải thiện logic trích xuất unit_name_from_query
-                            # Lặp qua các key trong unit_column_mapping để tìm khớp trong user_msg_lower
-                            for unit_key, unit_col_name in unit_column_mapping.items():
-                                if unit_key in user_msg_lower:
-                                    unit_name_from_query = unit_key
-                                    break # Tìm thấy khớp đầu tiên thì dừng lại
-
-                            # Lấy các cột đơn vị thực sự có trong DataFrame
-                            actual_unit_columns_in_df = [col for col in unit_column_mapping.values() if col in df_kpi.columns]
-
-                            # Lấy thông tin KPI năm X so sánh với các năm trước (biểu đồ line)
-                            if target_year_kpi and "so sánh" in user_msg_lower:
-                                st.subheader(f"Biểu đồ KPI theo tháng cho năm {target_year_kpi} và các năm trước")
-
-                                kpi_value_column = 'Điểm KPI' # Cột giá trị KPI cố định
-                                can_plot_line_chart = True
-
-                                if unit_name_from_query: # Nếu có đơn vị cụ thể trong câu hỏi
-                                    # Lấy tên đơn vị chính xác từ mapping để khớp với cột 'Đơn vị'
-                                    selected_unit = unit_column_mapping.get(unit_name_from_query)
-                                    if selected_unit:
-                                        # Lọc DataFrame cho đơn vị cụ thể
-                                        df_to_plot_line = df_kpi[df_kpi['Đơn vị'].astype(str).str.lower() == selected_unit.lower()].copy()
-                                        
-                                        if df_to_plot_line.empty:
-                                            st.warning(f"⚠️ Không tìm thấy dữ liệu cho đơn vị '{selected_unit}' trong sheet 'KPI'. Vui lòng kiểm tra tên đơn vị.")
-                                            can_plot_line_chart = False
-                                    else:
-                                        st.warning(f"⚠️ Không tìm thấy tên đơn vị hợp lệ trong câu hỏi của bạn. Vui lòng kiểm tra lại.")
-                                        can_plot_line_chart = False
-                                else: # Không có đơn vị cụ thể, không thể vẽ biểu đồ so sánh đường
-                                    st.warning("⚠️ Vui lòng chỉ định đơn vị cụ thể (ví dụ: 'Định Hóa') để vẽ biểu đồ KPI so sánh năm.")
-                                    can_plot_line_chart = False
-
-                                if can_plot_line_chart and target_year_kpi and 'Năm' in df_to_plot_line.columns and 'Tháng' in df_to_plot_line.columns and kpi_value_column in df_to_plot_line.columns:
-                                    try:
-                                        # Cải thiện: Thay thế dấu phẩy bằng dấu chấm trước khi chuyển đổi sang số
-                                        # Sử dụng .loc để tránh SettingWithCopyWarning
-                                        df_to_plot_line.loc[:, kpi_value_column] = df_to_plot_line[kpi_value_column].astype(str).str.replace(',', '.', regex=False)
-                                        df_to_plot_line.loc[:, kpi_value_column] = pd.to_numeric(df_to_plot_line[kpi_value_column], errors='coerce')
-                                        
-                                        # CHỈ LOẠI BỎ HÀNG NẾU KPI BỊ THIẾU ĐỂ GIỮ CÁC THÁNG ĐẦY ĐỦ
-                                        df_to_plot_line = df_to_plot_line.dropna(subset=[kpi_value_column]) # Chỉ loại bỏ nếu KPI thiếu
-
-                                        fig, ax = plt.subplots(figsize=(14, 8))
-                                        
-                                        # Lọc theo năm mục tiêu và các năm trước đó
-                                        years_to_compare = [int(target_year_kpi)]
-                                        # Lấy các năm khác có dữ liệu
-                                        other_years_in_data = [y for y in df_to_plot_line['Năm'].unique() if y != int(target_year_kpi)]
-                                        years_to_compare.extend(sorted(other_years_in_data, reverse=True))
-
-                                        colors = cm.get_cmap('tab10', len(years_to_compare))
-
-                                        for i, year in enumerate(years_to_compare):
-                                            df_year = df_to_plot_line[df_to_plot_line['Năm'] == year].sort_values(by='Tháng')
-                                            
-                                            if str(year) == target_year_kpi:
-                                                # Chỉ vẽ đến tháng có dữ liệu cho năm hiện tại
-                                                last_valid_month = df_year[df_year[kpi_value_column].notna()]['Tháng'].max()
-                                                if last_valid_month is not None:
-                                                    df_year_filtered = df_year[df_year['Tháng'] <= last_valid_month]
-                                                else:
-                                                    df_year_filtered = df_year
-                                                
-                                                ax.plot(df_year_filtered['Tháng'], df_year_filtered[kpi_value_column], 
-                                                        marker='o', label=f'Năm {year}', color=colors(i), linestyle='-') # Ensure solid line
-                                                # Thêm giá trị trên đường cho năm mục tiêu (tùy chọn, có thể gây rối nếu nhiều điểm)
-                                                for x, y in zip(df_year_filtered['Tháng'], df_year_filtered[kpi_value_column]):
-                                                    # Chỉ thêm text nếu giá trị không phải NaN
-                                                    if pd.notna(y):
-                                                        ax.text(x, y + (ax.get_ylim()[1] * 0.01), f'{y:.1f}', ha='center', va='bottom', fontsize=8, color=colors(i))
-                                            else:
-                                                # Vẽ đủ 12 tháng cho các năm trước. ax.plot sẽ tự động bỏ qua NaN
-                                                ax.plot(df_year['Tháng'], df_year[kpi_value_column], 
-                                                        marker='x', linestyle='-', label=f'Năm {year}', color=colors(i), alpha=0.7) # Ensure solid line
-                                                # Thêm giá trị trên đường cho các năm trước (tùy chọn, có thể gây rối nếu nhiều điểm)
-                                                for x, y in zip(df_year['Tháng'], df_year[kpi_value_column]):
-                                                    if pd.notna(y):
-                                                        ax.text(x, y + (ax.get_ylim()[1] * 0.01), f'{y:.1f}', ha='center', va='bottom', fontsize=8, color=colors(i), alpha=0.7)
-
-
-                                        ax.set_xlabel("Tháng")
-                                        ax.set_ylabel("Giá trị KPI")
-                                        chart_title_suffix = f"của {selected_unit}" if selected_unit else "" # Use selected_unit here
-                                        ax.set_title(f"So sánh KPI theo tháng {chart_title_suffix} (Năm {target_year_kpi} vs các năm khác)")
-                                        ax.set_xticks(range(1, 13))
-                                        ax.legend()
-                                        plt.grid(True)
-                                        plt.tight_layout()
-                                        st.pyplot(fig, dpi=400)
-
-                                    except Exception as e:
-                                        st.error(f"❌ Lỗi khi vẽ biểu đồ KPI so sánh năm: {e}. Vui lòng kiểm tra định dạng dữ liệu trong sheet (cột 'Tháng', 'Năm', và '{kpi_value_column}').")
-                                else:
-                                    if can_plot_line_chart: # Chỉ hiển thị cảnh báo nếu việc vẽ biểu đồ được mong đợi nhưng thiếu cột
-                                        st.warning("⚠️ Không tìm thấy các cột cần thiết ('Tháng', 'Năm', hoặc cột giá trị KPI) trong dữ liệu đã lọc để vẽ biểu đồ so sánh.")
-
-                            # Lấy thông tin KPI của các đơn vị năm X (biểu đồ cột)
-                            elif target_year_kpi and ("các đơn vị" in user_msg_lower or unit_name_from_query):
-                                st.subheader(f"Biểu đồ KPI của các đơn vị năm {target_year_kpi}")
-
-                                can_plot_bar_chart = True
-                                
-                                # Lọc DataFrame theo năm mục tiêu
-                                df_kpi_year = df_kpi[df_kpi['Năm'] == int(target_year_kpi)].copy()
-
-                                # NEW: Extract target month and cumulative flag
-                                target_month_kpi = None
-                                month_match = re.search(r"tháng\s+(\d{1,2})", user_msg_lower)
-                                if month_match:
-                                    target_month_kpi = int(month_match.group(1))
-
-                                is_cumulative = "lũy kế" in user_msg_lower
-
-                                if not df_kpi_year.empty:
-                                    # Ensure 'Điểm KPI' is numeric and handle commas
-                                    df_kpi_year.loc[:, 'Điểm KPI'] = df_kpi_year['Điểm KPI'].astype(str).str.replace(',', '.', regex=False)
-                                    df_kpi_year.loc[:, 'Điểm KPI'] = pd.to_numeric(df_kpi_year['Điểm KPI'], errors='coerce')
-                                    
-                                    # Drop rows where 'Điểm KPI' is NaN after conversion
-                                    df_kpi_year = df_kpi_year.dropna(subset=['Điểm KPI'])
-
-                                    unit_kpis_aggregated = {}
-                                    
-                                    if unit_name_from_query: # Nếu có yêu cầu đơn vị cụ thể
-                                        selected_unit = unit_column_mapping.get(unit_name_from_query)
-                                        if selected_unit:
-                                            unit_data = df_kpi_year[df_kpi_year['Đơn vị'].astype(str).str.lower() == selected_unit.lower()]
-                                            
-                                            if not unit_data.empty:
-                                                if target_month_kpi:
-                                                    # Filter for specific month
-                                                    monthly_data = unit_data[unit_data['Tháng'] == target_month_kpi]
-                                                    if not monthly_data.empty:
-                                                        unit_kpis_aggregated[selected_unit] = monthly_data['Điểm KPI'].mean() # Mean for that specific month
-                                                    else:
-                                                        st.warning(f"⚠️ Không có dữ liệu KPI cho đơn vị '{selected_unit}' trong tháng {target_month_kpi} năm {target_year_kpi}.")
-                                                        can_plot_bar_chart = False
-                                                elif is_cumulative:
-                                                    current_month = datetime.datetime.now().month
-                                                    cumulative_data = unit_data[unit_data['Tháng'] <= current_month]
-                                                    if not cumulative_data.empty:
-                                                        unit_kpis_aggregated[selected_unit] = cumulative_data['Điểm KPI'].mean() # Mean for cumulative months
-                                                    else:
-                                                        st.warning(f"⚠️ Không có dữ liệu KPI lũy kế cho đơn vị '{selected_unit}' đến tháng {current_month} năm {target_year_kpi}.")
-                                                        can_plot_bar_chart = False
-                                                else:
-                                                    # Default: mean for the whole year for the specific unit
-                                                    unit_kpis_aggregated[selected_unit] = unit_data['Điểm KPI'].mean()
-                                            else:
-                                                st.warning(f"⚠️ Không có dữ liệu KPI cho đơn vị '{selected_unit}' trong năm {target_year_kpi}.")
-                                                can_plot_bar_chart = False
-                                        else:
-                                            st.warning(f"⚠️ Không tìm thấy tên đơn vị hợp lệ trong câu hỏi của bạn. Vui lòng kiểm tra lại.")
-                                            can_plot_bar_chart = False
-                                    else: # If no specific unit, aggregate for all units
-                                        if 'Đơn vị' in df_kpi_year.columns:
-                                            if target_month_kpi:
-                                                # Filter for specific month for all units
-                                                monthly_data_all_units = df_kpi_year[df_kpi_year['Tháng'] == target_month_kpi]
-                                                if not monthly_data_all_units.empty:
-                                                    unit_kpis_aggregated = monthly_data_all_units.groupby('Đơn vị')['Điểm KPI'].mean().to_dict()
-                                                else:
-                                                    st.warning(f"⚠️ Không có dữ liệu KPI cho tháng {target_month_kpi} năm {target_year_kpi} cho bất kỳ đơn vị nào.")
-                                                    can_plot_bar_chart = False
-                                            elif is_cumulative:
-                                                current_month = datetime.datetime.now().month
-                                                cumulative_data_all_units = df_kpi_year[df_kpi_year['Tháng'] <= current_month]
-                                                if not cumulative_data_all_units.empty:
-                                                    unit_kpis_aggregated = cumulative_data_all_units.groupby('Đơn vị')['Điểm KPI'].mean().to_dict()
-                                                else:
-                                                    st.warning(f"⚠️ Không có dữ liệu KPI lũy kế đến tháng {current_month} năm {target_year_kpi} cho bất kỳ đơn vị nào.")
-                                                    can_plot_bar_chart = False
-                                            else:
-                                                # Default: mean for the whole year for all units
-                                                unit_kpis_aggregated = df_kpi_year.groupby('Đơn vị')['Điểm KPI'].mean().to_dict()
-                                        else:
-                                            st.warning("⚠️ Không tìm thấy cột 'Đơn vị' trong sheet 'KPI' để tổng hợp dữ liệu.")
-                                            can_plot_bar_chart = False
-
-                                    if can_plot_bar_chart and unit_kpis_aggregated:
-                                        unit_kpis_df = pd.DataFrame(list(unit_kpis_aggregated.items()), columns=['Đơn vị', 'Giá trị KPI'])
-                                        unit_kpis_df = unit_kpis_df.sort_values(by='Giá trị KPI', ascending=False)
-
-                                        fig, ax = plt.subplots(figsize=(12, 7))
-                                        colors = cm.get_cmap('tab20', len(unit_kpis_df['Đơn vị']))
-
-                                        bars = ax.bar(unit_kpis_df['Đơn vị'], unit_kpis_df['Giá trị KPI'], color=colors.colors)
-
-                                        for bar in bars:
-                                            yval = bar.get_height()
-                                            ax.text(bar.get_x() + bar.get_width()/2, yval + 0.1, round(yval, 2), ha='center', va='bottom', color='black')
-
-                                        chart_title_prefix = f"KPI của {selected_unit}" if unit_name_from_query and selected_unit else "KPI của các đơn vị"
-                                        
-                                        if target_month_kpi:
-                                            chart_title_suffix = f"tháng {target_month_kpi} năm {target_year_kpi}"
-                                        elif is_cumulative:
-                                            chart_title_suffix = f"lũy kế đến tháng {datetime.datetime.now().month} năm {target_year_kpi}"
-                                        else:
-                                            chart_title_suffix = f"năm {target_year_kpi}"
-
-                                        ax.set_title(f"{chart_title_prefix} {chart_title_suffix}")
-                                        ax.set_xlabel("Đơn vị")
-                                        ax.set_ylabel("Giá trị KPI")
-                                        plt.xticks(rotation=45, ha='right')
-                                        plt.tight_layout()
-                                        st.pyplot(fig, dpi=400)
-                                    elif can_plot_bar_chart:
-                                        st.warning(f"⚠️ Không có dữ liệu KPI tổng hợp để vẽ biểu đồ cho năm {target_year_kpi}.")
-                                else:
-                                    st.warning(f"⚠️ Không có dữ liệu KPI cho năm {target_year_kpi} để vẽ biểu đồ đơn vị.")
-                            elif "biểu đồ" in user_msg_lower and not target_year_kpi:
-                                st.warning("⚠️ Vui lòng chỉ định năm bạn muốn xem biểu đồ KPI (ví dụ: 'biểu đồ KPI năm 2025').")
-
-                        else:
-                            st.warning("⚠️ Dữ liệu KPI rỗng, không thể hiển thị hoặc vẽ biểu đồ.")
-                    else:
-                        st.warning("⚠️ Không thể truy xuất dữ liệu từ sheet KPI. Vui lòng kiểm tra tên sheet và quyền truy cập.")
-
-                # Xử lý truy vấn liên quan đến sheet "Quản lý sự cố"
-                elif "sự cố" in user_msg_lower or "quản lý sự cố" in user_msg_lower:
-                    records = get_sheet_data("Quản lý sự cố") # Tên sheet chính xác từ hình ảnh
-                    if records:
-                        df_suco = pd.DataFrame(records)
-
-                        target_year = None
-                        target_month = None
-                        compare_year = None # Biến mới để lưu năm so sánh
-
-                        # Cố gắng trích xuất "tháng MM/YYYY" hoặc "tháng MM"
-                        month_year_full_match = re.search(r"tháng\s+(\d{1,2})(?:/(\d{4}))?", user_msg_lower)
-                        if month_year_full_match:
-                            target_month = month_year_full_match.group(1)
-                            target_year = month_year_full_match.group(2) # Có thể là None nếu chỉ có tháng
-
-                        # Nếu năm chưa được trích xuất từ "tháng MM/YYYY", cố gắng trích xuất từ "nămYYYY"
-                        if not target_year:
-                            year_only_match = re.search(r"năm\s+(\d{4})", user_msg_lower)
-                            if year_only_match:
-                                target_year = year_only_match.group(1)
-
-                        # Bổ sung logic trích xuất năm so sánh (ví dụ: "so sánh 2025 với 2024")
-                        compare_match = re.search(r"so sánh.*?(\d{4}).*?với.*?(\d{4})", user_msg_lower)
-                        if compare_match:
-                            target_year = compare_match.group(1)
-                            compare_year = compare_match.group(2)
-                            st.info(f"Đang so sánh sự cố năm {target_year} với năm {compare_year}.")
-                        # NEW: Handle "cùng kỳ" without explicit year
-                        elif "cùng kỳ" in user_msg_lower:
-                            # Try to find a year for "cùng kỳ" explicitly, otherwise default
-                            cung_ky_year_match = re.search(r"cùng kỳ\s+(\d{4})", user_msg_lower)
-                            if cung_ky_year_match:
-                                compare_year = cung_ky_year_match.group(1)
-
-                            # If target_year is not set yet, default to current year (e.g., 2025)
-                            if not target_year:
-                                # import datetime
-                                target_year = str(datetime.datetime.now().year)
-
-                            # If compare_year was not explicitly given, derive it from target_year
-                            if not compare_year:
-                                try:
-                                    compare_year = str(int(target_year) - 1)
-                                except (ValueError, TypeError):
-                                    st.warning("⚠️ Không thể xác định năm so sánh cho 'cùng kỳ'. Vui lòng cung cấp năm cụ thể hoặc đảm bảo năm mục tiêu hợp lệ.")
-                                    compare_year = None # Reset to None if calculation fails
-
-                            if target_year and compare_year:
-                                st.info(f"Đang so sánh sự cố năm {target_year} với cùng kỳ năm {compare_year}.")
-                            else:
-                                st.warning("⚠️ Không đủ thông tin để thực hiện so sánh 'cùng kỳ'. Vui lòng chỉ định năm hoặc đảm bảo cú pháp hợp lệ.")
-                                compare_year = None # Ensure compare_year is None if we can't form a valid comparison
-
-
-                        filtered_df_suco = df_suco # Khởi tạo với toàn bộ dataframe
-
-                        # Kiểm tra sự tồn tại của cột 'Tháng/Năm sự cố'
-                        if 'Tháng/Năm sự cố' not in df_suco.columns:
-                            st.warning("⚠️ Không tìm thấy cột 'Tháng/Năm sự cố' trong sheet 'Quản lý sự cố'. Không thể lọc theo tháng/năm.")
-                            # Nếu cột bị thiếu, không thể lọc theo tháng/năm, hiển thị toàn bộ dữ liệu hoặc không có gì
-                            if target_month or target_year or compare_year: # Nếu có yêu cầu lọc/so sánh nhưng cột thiếu
-                                st.info("Hiển thị toàn bộ dữ liệu sự cố (nếu có) do không tìm thấy cột lọc tháng/năm.")
-                                # filtered_df_suco vẫn là df_suco ban đầu
-                            else:
-                                pass # filtered_df_suco đã là df_suco
-                        else:
-                            # Thực hiện lọc dựa trên tháng và năm đã trích xuất
-                            # Chuẩn hóa cột 'Tháng/Năm sự cố' để đảm bảo kiểu dữ liệu chuỗi và xử lý NaN
-                            df_suco['Tháng/Năm sự cố'] = df_suco['Tháng/Năm sự cố'].astype(str).fillna('')
-
-                            if target_year and not compare_year: # Chỉ lọc theo một năm nếu không phải so sánh
-                                # Lọc theo hậu tố năm "/YYYY"
-                                year_suffix = f"/{target_year}"
-                                filtered_df_suco = df_suco[df_suco['Tháng/Năm sự cố'].str.endswith(year_suffix)]
-                                if target_month: # Nếu có cả tháng và năm
-                                    exact_match_str = f"{int(target_month):02d}/{target_year}"
-                                    filtered_df_suco = filtered_df_suco[filtered_df_suco['Tháng/Năm sự cố'] == exact_match_str]
-                            elif target_year and compare_year: # Xử lý so sánh hai năm
-                                # Lọc dữ liệu cho năm mục tiêu
-                                df_target_year = df_suco[df_suco['Tháng/Năm sự cố'].str.endswith(f"/{target_year}")].copy()
-                                # Lọc dữ liệu cho năm so sánh
-                                df_compare_year = df_suco[df_suco['Tháng/Năm sự cố'].str.endswith(f"/{compare_year}")].copy()
-
-                                # Nếu có tháng cụ thể, lọc thêm theo tháng
-                                if target_month:
-                                    month_prefix = f"{int(target_month):02d}/"
-                                    df_target_year = df_target_year[df_target_year['Tháng/Năm sự cố'].str.startswith(month_prefix)]
-                                    df_compare_year = df_compare_year[df_compare_year['Tháng/Năm sự cố'].str.startswith(month_prefix)]
-
-                                # Gộp dữ liệu của hai năm để hiển thị và vẽ biểu đồ so sánh
-                                filtered_df_suco = pd.concat([df_target_year.assign(Năm=target_year),
-                                                              df_compare_year.assign(Năm=compare_year)])
-                                # Đảm bảo cột 'Năm' được thêm vào để phân biệt dữ liệu khi vẽ biểu đồ
-
-                            elif target_month and not target_year: # Chỉ lọc theo tháng nếu không có năm
-                                # Lọc theo tiền tố tháng "MM/"
-                                month_prefix = f"{int(target_month):02d}/"
-                                filtered_df_suco = df_suco[df_suco['Tháng/Năm sự cố'].str.startswith(month_prefix)]
-
-
-                        if filtered_df_suco.empty and (target_month or target_year or compare_year):
-                            st.warning(f"⚠️ Không tìm thấy sự cố nào {'trong tháng ' + target_month if target_month else ''} {'năm ' + target_year if target_year else ''} {'hoặc năm ' + compare_year if compare_year else ''}.")
-                            # Không hiển thị toàn bộ dataframe nếu có yêu cầu tháng/năm cụ thể mà không tìm thấy
-
-                        if not filtered_df_suco.empty:
-                            subheader_text = "Dữ liệu từ sheet 'Quản lý sự cố'"
-                            if target_month and target_year and not compare_year:
-                                subheader_text += f" tháng {int(target_month):02d} năm {target_year}"
-                            elif target_year and not compare_year:
-                                subheader_text += f" năm {target_year}"
-                            elif target_month and not target_year:
-                                subheader_text += f" tháng {int(target_month):02d}"
-                            elif target_year and compare_year:
-                                subheader_text += f" so sánh năm {target_year} và năm {compare_year}"
-
-                            st.subheader(subheader_text + ":")
-                            st.dataframe(filtered_df_suco) # Hiển thị dữ liệu đã lọc hoặc toàn bộ
-
-                            # --- Bổ sung logic vẽ biểu đồ cho sheet "Quản lý sự cố" ---
-                            if "biểu đồ" in user_msg_lower or "vẽ biểu đồ" in user_msg_lower:
-                                chart_columns = []
-                                if "đường dây" in user_msg_lower and 'Đường dây' in filtered_df_suco.columns:
-                                    chart_columns.append('Đường dây')
-                                if "tính chất" in user_msg_lower and 'Tính chất' in filtered_df_suco.columns:
-                                    chart_columns.append('Tính chất')
-                                if "loại sự cố" in user_msg_lower and 'Loại sự cố' in filtered_df_suco.columns:
-                                    chart_columns.append('Loại sự cố')
-
-                                if chart_columns:
-                                    for col in chart_columns:
-                                        # Fix: Chuyển đổi cột thành chuỗi và điền NaN để tránh lỗi TypeError khi value_counts() hoặc sort_index()
-                                        if col in filtered_df_suco.columns and not filtered_df_suco[col].empty:
-                                            # Đảm bảo cột là chuỗi và điền giá trị rỗng cho NaN
-                                            col_data = filtered_df_suco[col].astype(str).fillna('Không xác định')
-
-                                            if compare_year and 'Năm' in filtered_df_suco.columns: # Vẽ biểu đồ so sánh
-                                                st.subheader(f"Biểu đồ so sánh số lượng sự cố theo '{col}' giữa năm {target_year} và năm {compare_year}")
-
-                                                # Tạo bảng tần suất cho từng năm, xử lý NaN trước khi value_counts()
-                                                counts_target = filtered_df_suco[filtered_df_suco['Năm'] == target_year][col].astype(str).fillna('Không xác định').value_counts().sort_index()
-                                                counts_compare = filtered_df_suco[filtered_df_suco['Năm'] == compare_year][col].astype(str).fillna('Không xác định').value_counts().sort_index()
-
-                                                # Gộp hai Series thành một DataFrame để dễ dàng vẽ biểu đồ nhóm
-                                                combined_counts = pd.DataFrame({
-                                                    f'Năm {target_year}': counts_target,
-                                                    f'Năm {compare_year}': counts_compare
-                                                }).fillna(0) # Điền 0 cho các giá trị không có trong một năm
-
-                                                fig, ax = plt.subplots(figsize=(14, 8))
-
-                                                # Vẽ biểu đồ cột nhóm
-                                                bars = combined_counts.plot(kind='bar', ax=ax, width=0.8, colormap='viridis')
-
-                                                # Thêm số liệu trên các cột biểu đồ nhóm
-                                                for container in ax.containers:
-                                                    ax.bar_label(container, fmt='%d', label_type='edge', fontsize=9, padding=3)
-
-                                                ax.set_xlabel(col)
-                                                ax.set_ylabel("Số lượng sự cố")
-                                                ax.set_title(f"Biểu đồ so sánh số lượng sự cố theo {col} giữa năm {target_year} và năm {compare_year}")
-                                                plt.xticks(rotation=45, ha='right')
-                                                plt.tight_layout()
-                                                st.pyplot(fig, dpi=400)
-
-                                            else: # Vẽ biểu đồ cho một năm như bình thường
-                                                st.subheader(f"Biểu đồ số lượng sự cố theo '{col}'")
-
-                                                # Đếm số lượng các giá trị duy nhất trong cột, xử lý NaN trước khi value_counts()
-                                                counts = col_data.value_counts()
-
-                                                fig, ax = plt.subplots(figsize=(12, 7))
-                                                colors = cm.get_cmap('tab10', len(counts.index))
-
-                                                # Đảm bảo x_labels và y_values được định nghĩa ở đây
-                                                x_labels = [str(item) for item in counts.index]
-                                                y_values = counts.values
-
-                                                bars = ax.bar(x_labels, y_values, color=colors.colors) # Sử dụng x_labels đã chuyển đổi
-
-                                                # Thêm số liệu trên các cột biểu đồ đơn
-                                                for bar in bars:
-                                                    yval = bar.get_height()
-                                                    ax.text(bar.get_x() + bar.get_width()/2, yval + 0.1, round(yval), ha='center', va='bottom', color='black')
-
-                                                ax.set_xlabel("Bộ phận công tác" if col == 'Tính chất' else col) # Điều chỉnh nhãn x nếu cần
-                                                ax.set_ylabel("Số lượng sự cố")
-                                                ax.set_title(f"Biểu đồ số lượng sự cố theo {col}")
-                                                plt.xticks(rotation=45, ha='right')
-                                                plt.tight_layout()
-                                                st.pyplot(fig, dpi=400)
-                                        else:
-                                            st.warning(f"⚠️ Cột '{col}' không có dữ liệu để vẽ biểu đồ hoặc không tồn tại.")
-                                else:
-                                    st.warning("⚠️ Vui lòng chỉ định cột bạn muốn vẽ biểu đồ (ví dụ: 'đường dây', 'tính chất', 'loại sự cố').")
-                            else:
-                                st.info("Để vẽ biểu đồ sự cố, bạn có thể thêm 'và vẽ biểu đồ theo [tên cột]' vào câu hỏi.")
-                        else:
-                            # Nếu filtered_df rỗng sau tất cả các bước lọc và không có thông báo cụ thể
-                            # Điều này xảy ra nếu có yêu cầu tháng/năm cụ thể mà không tìm thấy dữ liệu
-                            st.warning("⚠️ Không tìm thấy dữ liệu phù hợp với yêu cầu của bạn.")
-                    else:
-                        st.warning("⚠️ Không thể truy xuất dữ liệu từ sheet 'Quản lý sự cố'. Vui lòng kiểm tra tên sheet và quyền truy cập.")
-
-                # Xử lý truy vấn liên quan đến sheet "Danh sách lãnh đạo xã, phường" (Ưu tiên cao)
-                elif any(k in user_msg_lower for k in ["lãnh đạo xã", "lãnh đạo phường", "lãnh đạo định hóa", "danh sách lãnh đạo"]):
-                    records = get_sheet_data("Danh sách lãnh đạo xã, phường") # Tên sheet chính xác từ hình ảnh
-                    if records:
-                        df_lanhdao = pd.DataFrame(records)
-
-                        location_name = None
-                        match_xa_phuong = re.search(r"(xã|phường)\s+([a-zA-Z0-9\s]+)", user_msg_lower)
-                        if match_xa_phuong:
-                            location_name = match_xa_phuong.group(2).strip()
-                        elif "định hóa" in user_msg_lower: # Ưu tiên "Định Hóa" nếu được nhắc đến cụ thể
-                            location_name = "định hóa"
-
-                        filtered_df_lanhdao = df_lanhdao
-                        # Đảm bảo cột 'Thuộc xã/phường' tồn tại và lọc dữ liệu
-                        if location_name and 'Thuộc xã/phường' in df_lanhdao.columns:
-                            # Sử dụng str.contains để tìm kiếm linh hoạt hơn (không cần khớp chính xác)
-                            # asType(str) để đảm bảo cột là kiểu chuỗi trước khi dùng str.lower()
-                            filtered_df_lanhdao = df_lanhdao[df_lanhdao['Thuộc xã/phường'].astype(str).str.lower().str.contains(location_name.lower(), na=False)]
-
-                            if filtered_df_lanhdao.empty:
-                                st.warning(f"⚠️ Không tìm thấy lãnh đạo nào cho '{location_name.title()}'.")
-                                st.dataframe(df_lanhdao) # Vẫn hiển thị toàn bộ dữ liệu nếu không tìm thấy kết quả lọc
-
-                        if not filtered_df_lanhdao.empty:
-                            subheader_parts = ["Dữ liệu từ sheet 'Danh sách lãnh đạo xã, phường'"]
-                            if location_name:
-                                subheader_parts.append(f"cho {location_name.title()}")
-                            st.subheader(" ".join(subheader_parts) + ":")
-                            st.dataframe(filtered_df_lanhdao) # Hiển thị dữ liệu đã lọc hoặc toàn bộ
-
-                            # Bạn có thể thêm logic vẽ biểu đồ cho lãnh đạo xã/phường tại đây nếu cần
-                            # Ví dụ: if "biểu đồ" in user_msg_lower: ...
-                        else:
-                            st.warning("⚠️ Dữ liệu từ sheet 'Danh sách lãnh đạo xã, phường' rỗng.")
-                    else:
-                        st.warning("⚠️ Không thể truy xuất dữ liệu từ sheet 'Danh sách lãnh đạo xã, phường'. Vui lòng kiểm tra tên sheet và quyền truy cập.")
-
-                # Xử lý truy vấn liên quan đến sheet "Tên các TBA"
-                elif "tba" in user_msg_lower or "thông tin tba" in user_msg_lower:
-                    records = get_sheet_data("Tên các TBA")
-                    if records:
-                        df_tba = pd.DataFrame(records)
-
-                        line_name = None
-                        power_capacity = None # Biến mới để lưu công suất
-
-                        # Trích xuất tên đường dây
-                        line_match = re.search(r"đường dây\s+([a-zA-Z0-9\.]+)", user_msg_lower)
-                        if line_match:
-                            line_name = line_match.group(1).upper() # Lấy tên đường dây và chuyển thành chữ hoa để khớp
-
-                        # Trích xuất công suất (ví dụ: "560KVA", "250KVA")
-                        # Regex tìm số theo sau là "kva" (không phân biệt hoa thường)
-                        power_match = re.search(r"(\d+)\s*kva", user_msg_lower)
-                        if power_match:
-                            try:
-                                power_capacity = int(power_match.group(1)) # Chuyển đổi công suất sang số nguyên
-                            except ValueError:
-                                st.warning("⚠️ Công suất không hợp lệ. Vui lòng nhập một số nguyên.")
-                                power_capacity = None
-
-                        filtered_df_tba = df_tba.copy() # Bắt đầu với bản sao của toàn bộ DataFrame
-
-                        # Lọc theo tên đường dây nếu có
-                        if line_name and 'Tên đường dây' in filtered_df_tba.columns:
-                            filtered_df_tba = filtered_df_tba[filtered_df_tba['Tên đường dây'].astype(str).str.upper() == line_name]
-                            if filtered_df_tba.empty:
-                                st.warning(f"⚠️ Không tìm thấy TBA nào cho đường dây '{line_name}'.")
-                                # Nếu không tìm thấy theo đường dây, dừng lại và không lọc thêm
-                                filtered_df_tba = pd.DataFrame() # Đảm bảo nó rỗng để không hiển thị toàn bộ
-                        
-                        # Lọc theo công suất nếu có và cột 'Công suất' tồn tại
-                        if power_capacity is not None and 'Công suất' in filtered_df_tba.columns and not filtered_df_tba.empty:
-                            # Clean the 'Công suất' column by removing "KVA" and then convert to numeric
-                            # Áp dụng regex để trích xuất chỉ phần số trước khi chuyển đổi
-                            # Sử dụng .loc để tránh SettingWithCopyWarning
-                            filtered_df_tba.loc[:, 'Công suất_numeric'] = pd.to_numeric(
-                                filtered_df_tba['Công suất'].astype(str).str.extract(r'(\d+)')[0], # Lấy cột đầu tiên của DataFrame được trích xuất
-                                errors='coerce' # Chuy đổi các giá trị không phải số thành NaN
-                            )
-
-                            # Loại bỏ các hàng có giá trị NaN trong cột 'Công suất_numeric'
-                            filtered_df_tba = filtered_df_tba.dropna(subset=['Công suất_numeric'])
-
-                            # Lọc các hàng có công suất khớp
-                            filtered_df_tba = filtered_df_tba[filtered_df_tba['Công suất_numeric'] == power_capacity]
-
-                            # Xóa cột tạm thời
-                            filtered_df_tba = filtered_df_tba.drop(columns=['Công suất_numeric'])
-
-                            if filtered_df_tba.empty:
-                                st.warning(f"⚠️ Không tìm thấy TBA nào có công suất {power_capacity}KVA.")
-                                # filtered_df_tba vẫn rỗng ở đây
-
-                        if not filtered_df_tba.empty:
-                            subheader_parts = ["Dữ liệu từ sheet 'Tên các TBA'"]
-                            if line_name:
-                                subheader_parts.append(f"cho đường dây {line_name}")
-                            if power_capacity is not None:
-                                subheader_parts.append(f"có công suất {power_capacity}KVA")
-
-                            st.subheader(" ".join(subheader_parts) + ":")
-                            st.dataframe(filtered_df_tba) # Hiển thị dữ liệu đã lọc
-
-                            # Bạn có thể thêm logic vẽ biểu đồ cho TBA tại đây nếu cần
-                            # Ví dụ: if "biểu đồ" in user_msg_lower: ...
-                        else:
-                            # Nếu filtered_df_tba rỗng sau tất cả các bước lọc
-                            # Chỉ hiển thị toàn bộ danh sách nếu không có yêu cầu cụ thể nào được tìm thấy
-                            if not (line_name or (power_capacity is not None)): # Nếu không có yêu cầu đường dây hoặc công suất
-                                st.subheader("Toàn bộ thông tin TBA:")
-                                st.dataframe(df_tba)
-                            else:
-                                st.warning("⚠️ Không tìm thấy dữ liệu phù hợp với yêu cầu của bạn.")
-                    else:
-                        st.warning("⚠️ Không thể truy xuất dữ liệu từ sheet 'Tên các TBA'. Vui lòng kiểm tra tên sheet và quyền truy cập.")
-
-                # Xử lý truy vấn liên quan đến doanh thu và biểu đồ
-                elif "doanh thu" in user_msg_lower or "báo cáo tài chính" in user_msg_lower or "biểu đồ doanh thu" in user_msg_lower:
-                    records = get_sheet_data("DoanhThu") # Tên sheet DoanhThu
-                    if records:
-                        df = pd.DataFrame(records)
-                        if not df.empty:
-                            st.subheader("Dữ liệu Doanh thu")
-                            st.dataframe(df) # Hiển thị dữ liệu thô
-
-                            # Thử vẽ biểu đồ nếu có các cột cần thiết (ví dụ: 'Tháng', 'Doanh thu')
-                            # Bạn cần đảm bảo tên cột trong Google Sheet của bạn khớp với code
-                            if 'Tháng' in df.columns and 'Doanh thu' in df.columns:
-                                try:
-                                    # Chuyển đổi cột 'Doanh thu' sang dạng số
-                                    df['Doanh thu'] = pd.to_numeric(df['Doanh thu'], errors='coerce')
-                                    df = df.dropna(subset=['Doanh thu']) # Loại bỏ các hàng có giá trị NaN sau chuyển đổi
-
-                                    st.subheader("Biểu đồ Doanh thu theo tháng")
-                                    fig, ax = plt.subplots(figsize=(12, 7))
-
-                                    # Tạo danh sách màu sắc duy nhất cho mỗi tháng
-                                    colors = cm.get_cmap('viridis', len(df['Tháng'].unique()))
-
-                                    bars = ax.bar(df['Tháng'], df['Doanh thu'], color=colors.colors)
-
-                                    # Hiển thị giá trị trên đỉnh mỗi cột với màu đen
-                                    for bar in bars:
-                                        yval = bar.get_height()
-                                        ax.text(bar.get_x() + bar.get_width()/2, yval + 0.1, round(yval, 2), ha='center', va='bottom', color='black') # Màu chữ đen
-
-                                    ax.set_xlabel("Tháng")
-                                    ax.set_ylabel("Doanh thu (Đơn vị)") # Thay "Đơn vị" bằng đơn vị thực tế
-                                    ax.set_title("Biểu đồ Doanh thu thực tế theo tháng")
-                                    plt.xticks(rotation=45, ha='right')
-                                    plt.tight_layout()
-                                    st.pyplot(fig, dpi=400) # Tăng DPI để biểu đồ nét hơn
-                                except Exception as e:
-                                    st.error(f"❌ Lỗi khi vẽ biểu đồ doanh thu: {e}. Vui lòng kiểm tra định dạng dữ liệu trong sheet.")
-                            else:
-                                st.warning("⚠️ Không tìm thấy các cột 'Tháng' hoặc 'Doanh thu' trong sheet DoanhThu để vẽ biểu đồ.")
-                        else:
-                            st.warning("⚠️ Dữ liệu doanh thu rỗng, không thể hiển thị hoặc vẽ biểu đồ.")
-                    else:
-                        st.warning("⚠️ Không thể truy xuất dữ liệu từ sheet DoanhThu. Vui lòng kiểm tra tên sheet và quyền truy cập.")
-
-                # Xử lý truy vấn liên quan đến nhân sự (sheet CBCNV)
-                elif "cbcnv" in user_msg_lower or "danh sách" in user_msg_lower or any(k in user_msg_lower for k in ["tổ", "phòng", "đội", "nhân viên", "nhân sự", "thông tin", "độ tuổi", "trình độ chuyên môn", "giới tính"]):
-                    records = get_sheet_data("CBCNV") # Tên sheet CBCNV
-                    if records:
-                        df_cbcnv = pd.DataFrame(records) # Chuyển đổi thành DataFrame
-
-                        person_name = None
-                        bo_phan = None
-                        is_specific_query = False # Flag để kiểm tra nếu có yêu cầu tìm kiếm cụ thể
-
-                        # Regex để bắt tên người sau "thông tin" hoặc "của" (tham lam)
-                        name_match = re.search(r"(?:thông tin|của)\s+([a-zA-Z\s]+)", user_msg_lower)
-                        if name_match:
-                            person_name = name_match.group(1).strip()
-                            # Loại bỏ các từ khóa có thể bị bắt nhầm vào tên
-                            known_keywords = ["trong", "tổ", "phòng", "đội", "cbcnv", "tất cả", "độ tuổi", "trình độ chuyên môn", "giới tính"] # Thêm các từ khóa mới
-                            for kw in known_keywords:
-                                if kw in person_name:
-                                    person_name = person_name.split(kw, 1)[0].strip()
-                                    break
-                            is_specific_query = True
-
-                        # Logic lọc theo bộ phận
-                        for keyword in ["tổ ", "phòng ", "đội "]:
-                            if keyword in user_msg_lower:
-                                parts = user_msg_lower.split(keyword, 1)
-                                if len(parts) > 1:
-                                    remaining_msg = parts[1].strip()
-                                    bo_phan_candidate = remaining_msg.split(' ')[0].strip()
-                                    if "quản lý vận hành" in remaining_msg:
-                                        bo_phan = "quản lý vận hành"
-                                    elif "kinh doanh" in remaining_msg:
-                                        bo_phan = "kinh doanh"
-                                    else:
-                                        bo_phan = bo_phan_candidate
-                                    is_specific_query = True # Có yêu cầu bộ phận là yêu cầu cụ thể
-                                break
-
-                        df_to_process = df_cbcnv.copy() # Bắt đầu với bản sao của toàn bộ DataFrame
-
-                        if person_name and 'Họ và tên' in df_to_process.columns:
-                            temp_filtered_by_name = df_to_process[df_to_process['Họ và tên'].astype(str).str.lower() == person_name.lower()]
-                            if temp_filtered_by_name.empty:
-                                st.info(f"Không tìm thấy chính xác '{person_name.title()}'. Đang tìm kiếm gần đúng...")
-                                temp_filtered_by_name = df_to_process[df_to_process['Họ và tên'].astype(str).str.lower().str.contains(person_name.lower(), na=False)]
-                                if temp_filtered_by_name.empty:
-                                    st.warning(f"⚠️ Không tìm thấy người nào có tên '{person_name.title()}' hoặc tên gần giống.")
-                                    df_to_process = pd.DataFrame() # Set to empty if no name found
-                                else:
-                                    df_to_process = temp_filtered_by_name
-                            else:
-                                df_to_process = temp_filtered_by_name
-
-                        if bo_phan and 'Bộ phận công tác' in df_to_process.columns and not df_to_process.empty: # Apply department filter only if df_to_process is not already empty
-                            initial_filtered_count = len(df_to_process)
-                            df_to_process = df_to_process[df_to_process['Bộ phận công tác'].str.lower().str.contains(bo_phan.lower(), na=False)]
-                            if df_to_process.empty and initial_filtered_count > 0:
-                                st.warning(f"⚠️ Không tìm thấy kết quả cho bộ phận '{bo_phan.title()}' trong danh sách đã lọc theo tên.")
-                        elif bo_phan and 'Bộ phận công tác' in df_cbcnv.columns and not person_name: # Only filter by bo_phan if no person_name was specified
-                            df_to_process = df_cbcnv[df_cbcnv['Bộ phận công tác'].str.lower().str.contains(bo_phan.lower(), na=False)]
-                            if df_to_process.empty:
-                                st.warning(f"⚠️ Không tìm thấy dữ liệu cho bộ phận '{bo_phan.title()}'.")
-
-
-                        # Determine which DataFrame to display and chart
-                        df_to_show = df_to_process
-                        if df_to_show.empty and not is_specific_query: # Nếu không có truy vấn cụ thể (tên hoặc bộ phận) và df rỗng, hiển thị toàn bộ
-                            df_to_show = df_cbcnv
-                            st.subheader("Toàn bộ thông tin CBCNV:")
-                        elif not df_to_show.empty: # Nếu df_to_show có dữ liệu, hiển thị nó (đã lọc hoặc toàn bộ nếu không có truy vấn cụ thể)
-                            subheader_parts = ["Thông tin CBCNV"]
-                            if person_name:
-                                subheader_parts.append(f"của {person_name.title()}")
-                            if bo_phan:
-                                subheader_parts.append(f"thuộc {bo_phan.title()}")
-                            st.subheader(" ".join(subheader_parts) + ":")
-                        else: # df_to_show rỗng VÀ đó là một truy vấn cụ thể (is_specific_query là True)
-                            st.warning("⚠️ Không tìm thấy dữ liệu phù hợp với yêu cầu của bạn.")
-
-                        if not df_to_show.empty:
-                            reply_list = []
-                            for idx, r in df_to_show.iterrows():
-                                reply_list.append(
-                                    f"Họ và tên: {r.get('Họ và tên', 'N/A')}\n"
-                                    f"Ngày sinh: {r.get('Ngày sinh CBCNV', 'N/A')}\n"
-                                    f"Trình độ chuyên môn: {r.get('Trình độ chuyên môn', 'N/A')}\n"
-                                    f"Tháng năm vào ngành: {r.get('Tháng năm vào ngành', 'N/A')}\n"
-                                    f"Bộ phận công tác: {r.get('Bộ phận công tác', 'N/A')}\n"
-                                    f"Chức danh: {r.get('Chức danh', 'N/A')}\n"
-                                    f"---"
-                                )
-                            st.text_area("Kết quả", value="\n".join(reply_list), height=300)
-                            st.dataframe(df_to_show) # Also display as dataframe for clarity
-
-                        # --- Bổ sung logic vẽ biểu đồ CBCNV ---
-                        if ("biểu đồ" in user_msg_lower or "báo cáo" in user_msg_lower) and not df_to_show.empty:
-                            if 'Bộ phận công tác' in df_to_show.columns and not df_to_show['Bộ phận công tác'].empty:
-                                st.subheader("Biểu đồ số lượng nhân viên theo Bộ phận công tác")
-                                # Đảm bảo cột là chuỗi và điền giá trị rỗng cho NaN trước khi value_counts()
-                                bo_phan_counts = df_to_show['Bộ phận công tác'].astype(str).fillna('Không xác định').value_counts()
-
-                                # Biểu đồ cột mặc định
-                                if "biểu đồ tròn bộ phận công tác" not in user_msg_lower:
-                                    fig, ax = plt.subplots(figsize=(12, 7))
-
-                                    colors = cm.get_cmap('tab10', len(bo_phan_counts.index))
-
-                                    bars = ax.bar(bo_phan_counts.index, bo_phan_counts.values, color=colors.colors)
-
-                                    # Thêm số liệu trên các cột biểu đồ
-                                    for bar in bars:
-                                        yval = bar.get_height()
-                                        ax.text(bar.get_x() + bar.get_width()/2, yval + 0.1, round(yval), ha='center', va='bottom', color='black')
-
-                                    ax.set_xlabel("Bộ phận công tác")
-                                    ax.set_ylabel("Số lượng nhân viên")
-                                    ax.set_title("Biểu đồ số lượng CBCNV theo Bộ phận")
-                                    plt.xticks(rotation=45, ha='right')
-                                    plt.tight_layout()
-                                    st.pyplot(fig, dpi=400)
-                                else: # Biểu đồ tròn nếu được yêu cầu
-                                    st.subheader("Biểu đồ hình tròn số lượng nhân viên theo Bộ phận công tác")
-                                    fig, ax = plt.subplots(figsize=(8, 8))
-                                    colors = cm.get_cmap('tab10', len(bo_phan_counts.index))
-
-                                    wedges, texts, autotexts = ax.pie(bo_phan_counts.values, 
-                                                                        labels=bo_phan_counts.index, 
-                                                                        autopct='%1.1f%%', 
-                                                                        startangle=90, 
-                                                                        colors=colors.colors,
-                                                                        pctdistance=0.85)
-                                    for autotext in autotexts:
-                                        autotext.set_color('black')
-                                        autotext.set_fontsize(10)
-                                    ax.axis('equal')
-                                    ax.set_title("Biểu đồ hình tròn số lượng CBCNV theo Bộ phận")
-                                    plt.tight_layout()
-                                    st.pyplot(fig, dpi=400)
-
-                            else:
-                                st.warning("⚠️ Không tìm thấy cột 'Bộ phận công tác' hoặc dữ liệu rỗng để vẽ biểu đồ nhân sự.")
-                            
-                            # 1. Vẽ biểu đồ theo độ tuổi (cột Q: 'Ngày sinh CBCNV')
-                            if "độ tuổi" in user_msg_lower and 'Ngày sinh CBCNV' in df_to_show.columns:
-                                st.subheader("Biểu đồ số lượng nhân viên theo độ tuổi")
-                                
-                                # Lấy năm hiện tại
-                                current_year = datetime.datetime.now().year
-
-                                # Hàm tính tuổi từ ngày sinh
-                                def calculate_age(dob_str):
-                                    try:
-                                        # Cố gắng phân tích cú pháp ngày sinh theo nhiều định dạng
-                                        for fmt in ('%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y'):
-                                            try:
-                                                dob = datetime.datetime.strptime(str(dob_str), fmt)
-                                                return current_year - dob.year
-                                            except ValueError:
-                                                continue
-                                        return None # Trả về None nếu không khớp định dạng nào
-                                    except TypeError: # Xử lý trường hợp dob_str không phải là chuỗi
-                                        return None
-
-                                df_to_show['Tuổi'] = df_to_show['Ngày sinh CBCNV'].apply(calculate_age)
-                                df_to_show = df_to_show.dropna(subset=['Tuổi']) # Loại bỏ các hàng không tính được tuổi
-
-                                # Phân loại độ tuổi
-                                age_bins = [0, 30, 40, 50, 100] # Giới hạn trên của mỗi nhóm
-                                age_labels = ['<30 tuổi', '30 đến <40 tuổi', '40 đến <50 tuổi', '>50 tuổi']
-                                
-                                # Sử dụng pd.cut để phân loại và bao gồm cả biên phải (right=False) cho nhóm đầu tiên
-                                # và right=True cho các nhóm còn lại để khớp với yêu cầu "<30 tuổi" và "từ 30 đến <40 tuổi"
-                                df_to_show['Nhóm tuổi'] = pd.cut(df_to_show['Tuổi'], 
-                                                                 bins=age_bins, 
-                                                                 labels=age_labels, 
-                                                                 right=False, # Bao gồm biên trái
-                                                                 include_lowest=True) # Bao gồm giá trị thấp nhất
-
-                                # Đếm số lượng theo nhóm tuổi
-                                age_counts = df_to_show['Nhóm tuổi'].value_counts().reindex(age_labels, fill_value=0) # Đảm bảo thứ tự và điền 0 cho nhóm không có
-
-                                fig, ax = plt.subplots(figsize=(12, 7))
-                                colors = cm.get_cmap('viridis', len(age_counts.index))
-                                bars = ax.bar(age_counts.index, age_counts.values, color=colors.colors)
-
-                                for bar in bars:
-                                    yval = bar.get_height()
-                                    ax.text(bar.get_x() + bar.get_width()/2, yval + 0.1, round(yval), ha='center', va='bottom', color='black')
-
-                                ax.set_xlabel("Nhóm tuổi")
-                                ax.set_ylabel("Số lượng nhân viên")
-                                ax.set_title("Biểu đồ số lượng CBCNV theo Nhóm tuổi")
-                                plt.xticks(rotation=45, ha='right')
-                                plt.tight_layout()
-                                st.pyplot(fig, dpi=400)
-                            elif "độ tuổi" in user_msg_lower:
-                                st.warning("⚠️ Không tìm thấy cột 'Ngày sinh CBCNV' hoặc dữ liệu rỗng để vẽ biểu đồ độ tuổi.")
-
-                            # 2. Vẽ biểu đồ theo trình độ chuyên môn (cột I: 'Trình độ chuyên môn')
-                            if "trình độ chuyên môn" in user_msg_lower and 'Trình độ chuyên môn' in df_to_show.columns:
-                                st.subheader("Biểu đồ số lượng nhân viên theo Trình độ chuyên môn")
-                                # Đảm bảo cột là chuỗi và điền giá trị rỗng cho NaN trước khi value_counts()
-                                trinh_do_counts = df_to_show['Trình độ chuyên môn'].astype(str).fillna('Không xác định').value_counts()
-
-                                fig, ax = plt.subplots(figsize=(12, 7))
-                                colors = cm.get_cmap('plasma', len(trinh_do_counts.index))
-                                bars = ax.bar(trinh_do_counts.index, trinh_do_counts.values, color=colors.colors)
-
-                                for bar in bars:
-                                    yval = bar.get_height()
-                                    ax.text(bar.get_x() + bar.get_width()/2, yval + 0.1, round(yval), ha='center', va='bottom', color='black')
-
-                                ax.set_xlabel("Trình độ chuyên môn")
-                                ax.set_ylabel("Số lượng nhân viên")
-                                ax.set_title("Biểu đồ số lượng CBCNV theo Trình độ chuyên môn")
-                                plt.xticks(rotation=45, ha='right')
-                                plt.tight_layout()
-                                st.pyplot(fig, dpi=400)
-                            elif "trình độ chuyên môn" in user_msg_lower:
-                                st.warning("⚠️ Không tìm thấy cột 'Trình độ chuyên môn' hoặc dữ liệu rỗng để vẽ biểu đồ trình độ chuyên môn.")
-
-                            # 3. Vẽ biểu đồ theo Giới tính (cột D: 'Giới tính')
-                            if "giới tính" in user_msg_lower and 'Giới tính' in df_to_show.columns:
-                                st.subheader("Biểu đồ số lượng nhân viên theo Giới tính")
-                                # Đảm bảo cột là chuỗi và điền giá trị rỗng cho NaN trước khi value_counts()
-                                gioi_tinh_counts = df_to_show['Giới tính'].astype(str).fillna('Không xác định').value_counts()
-
-                                fig, ax = plt.subplots(figsize=(8, 8)) # Hình tròn thường đẹp hơn với tỷ lệ 1:1
-                                colors = ['#66b3ff', '#ff9999', '#99ff99', '#ffcc99'] # Màu sắc tùy chỉnh
-
-                                wedges, texts, autotexts = ax.pie(gioi_tinh_counts.values, 
-                                                                    labels=gioi_tinh_counts.index, 
-                                                                    autopct='%1.1f%%', 
-                                                                    startangle=90, 
-                                                                    colors=colors[:len(gioi_tinh_counts)], # Sử dụng đủ màu cho số lượng phần tử
-                                                                    pctdistance=0.85) # Khoảng cách của phần trăm từ tâm
-
-                                # Đảm bảo phần trăm được hiển thị rõ ràng
-                                for autotext in autotexts:
-                                    autotext.set_color('black')
-                                    autotext.set_fontsize(10)
-
-                                ax.axis('equal') # Đảm bảo biểu đồ hình tròn là hình tròn
-                                ax.set_title("Biểu đồ số lượng CBCNV theo Giới tính")
-                                plt.tight_layout()
-                                st.pyplot(fig, dpi=400)
-                            elif "giới tính" in user_msg_lower:
-                                st.warning("⚠️ Không tìm thấy cột 'Giới tính' hoặc dữ liệu rỗng để vẽ biểu đồ giới tính.")
-
-                        elif ("biểu đồ" in user_msg_lower or "báo cáo" in user_msg_lower) and df_to_show.empty:
-                            st.warning("⚠️ Không có dữ liệu để vẽ biểu đồ.")
-
-                    else:
-                        st.warning("⚠️ Không thể truy xuất dữ liệu từ sheet CBCNV.")
-
-                # Xử lý các câu hỏi chung bằng OpenAI
+                st.warning("⚠️ Vui lòng nhập 'Tên cuộc họp' và 'Nội dung'.")
+
+    # Hiển thị & Xoá họp
+    if os.path.exists(MEETINGS_FILE):
+        st.subheader("📚 Danh sách cuộc họp")
+        try:
+            df_lich_su_hop_display = pd.read_csv(MEETINGS_FILE, dtype=str)
+            if not df_lich_su_hop_display.empty:
+                for idx, row in df_lich_su_hop_display.iterrows():
+                    with st.expander(f"📌 {row['Tên cuộc họp']} – {row['Ngày']} {row['Giờ']}"):
+                        st.write("📝", row["Nội dung"])
+                        file_list_hop = str(row.get("Tệp", "")).split(";")
+                        for file_name_hop in file_list_hop:
+                            file_path_hop = os.path.join(UPLOAD_FOLDER, file_name_hop)
+                            if os.path.exists(file_path_hop) and file_name_hop:
+                                st.write(f"📎 {file_name_hop}")
+                                with open(file_path_hop, "rb") as f_hop:
+                                    st.download_button("⬇️ Tải", f_hop.read(), file_name=file_name_hop, key=f"dl_hop_{idx}_{file_name_hop}")
+                        with st.form(f"form_xoa_hop_{idx}"):
+                            confirm_hop = st.checkbox("🗑️ Xác nhận xóa cuộc họp này", key=f"xoa_ck_hop_{idx}")
+                            do_delete_hop = st.form_submit_button("❗ Xác nhận xoá")
+                            if confirm_hop and do_delete_hop:
+                                df_lich_su_hop_display.drop(index=idx, inplace=True)
+                                df_lich_su_hop_display.to_csv(MEETINGS_FILE, index=False)
+                                st.success("🗑️ Đã xoá cuộc họp.")
+                                st.rerun()
+            else:
+                st.info("Chưa có cuộc họp nào được lưu.")
+        except pd.errors.EmptyDataError:
+            st.info("File lịch sử họp trống. Hãy thêm một cuộc họp mới.")
+        except Exception as e:
+            st.error(f"❌ Lỗi khi hiển thị cuộc họp: {e}")
+
+    # Xuất / Nhập Excel (Phục vụ họp)
+    st.markdown("### 📤 Xuất / Nhập Excel (Phục vụ họp)")
+    col_export_hop, col_import_hop = st.columns(2)
+
+    with col_export_hop:
+        if os.path.exists(MEETINGS_FILE):
+            df_export_hop = pd.read_csv(MEETINGS_FILE)
+            towrite_hop = io.BytesIO()
+            with pd.ExcelWriter(towrite_hop, engine='xlsxwriter') as writer:
+                df_export_hop.to_excel(writer, index=False, sheet_name='CuocHop')
+            towrite_hop.seek(0)
+            st.download_button("  Tải Excel cuộc họp", data=towrite_hop, file_name="phuc_vu_hop.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    with col_import_hop:
+        file_hop = st.file_uploader("📁 Nhập từ Excel (Phục vụ họp)", type=["xlsx"], key="upload_hop")
+        if file_hop:
+            try:
+                df_import_hop = pd.read_excel(file_hop, dtype=str)
+                df_import_hop.to_csv(MEETINGS_FILE, index=False)
+                st.success("✅ Đã nhập lại danh sách cuộc họp.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Lỗi khi nhập file Excel cuộc họp: {e}")
+
+elif chon_modul == '📍 Dự báo điểm sự cố':
+    st.title("📍 Dự báo điểm sự cố")
+
+    # ===== QUẢN LÝ DỮ LIỆU SỰ CỐ TỪ FILE EXCEL CỤC BỘ =====
+    STORAGE_FILE_SUCO = "storage_bao_cao_su_co.xlsx" # Đã định nghĩa ở trên, nhưng giữ lại để rõ ràng
+
+    uploaded_excel_suco = st.file_uploader("📥 Tải dữ liệu lịch sử từ file Excel (.xlsx)", type="xlsx", key="upload_suco_data")
+
+    # Chỉ xử lý file nếu có file mới được tải lên và chưa được xử lý trong lần chạy này
+    if uploaded_excel_suco is not None and not st.session_state.file_uploaded_flag_suco:
+        try:
+            df_uploaded_suco = pd.read_excel(uploaded_excel_suco)
+            st.session_state.suco_data = df_uploaded_suco.to_dict(orient="records")
+            # Ghi dữ liệu mới vào file lưu trữ để duy trì
+            pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
+            st.success("✅ Đã ghi và nạp dữ liệu sự cố từ file thành công. Ứng dụng sẽ tải lại để áp dụng.")
+            st.session_state.file_uploaded_flag_suco = True # Đặt cờ để ngăn xử lý lại ngay lập tức
+            st.rerun() # GỌI st.rerun() TẠI ĐÂY để đảm bảo trạng thái nhất quán sau khi upload
+        except Exception as e:
+            st.warning(f"⚠️ Không thể xử lý file đã tải lên: {e}. Vui lòng kiểm tra định dạng file.")
+            st.session_state.suco_data = [] # Reset về danh sách trống nếu quá trình upload/xử lý lỗi
+            st.session_state.file_uploaded_flag_suco = False # Reset cờ để cho phép thử lại
+    # Nếu file uploader rỗng (ví dụ: sau khi rerun, hoặc người dùng đã xóa file), đặt lại cờ
+    elif uploaded_excel_suco is None:
+        st.session_state.file_uploaded_flag_suco = False
+
+
+    # Đảm bảo file KMZ luôn được xử lý độc lập
+    marker_locations = {}
+    kmz_file = st.file_uploader("  Tải file KMZ để lấy dữ liệu tọa độ cột", type="kmz")
+    if kmz_file is not None:
+        try:
+            with zipfile.ZipFile(kmz_file, 'r') as z:
+                for filename in z.namelist():
+                    if filename.endswith('.kml'):
+                        with z.open(filename) as f:
+                            tree = ET.parse(f)
+                            root = tree.getroot()
+                            ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+                            for pm in root.findall('.//kml:Placemark', ns):
+                                name_tag = pm.find('kml:name', ns)
+                                point = pm.find('.//kml:Point/kml:coordinates', ns)
+                                if name_tag is not None and point is not None:
+                                    name = name_tag.text.strip()
+                                    coords = point.text.strip().split(',')
+                                    lon, lat = float(coords[0]), float(coords[1])
+                                    marker_locations[name] = (lat, lon)
+            st.success(f"✅ Đã trích xuất {len(marker_locations)} điểm từ file KMZ.")
+        except Exception as e:
+            st.error(f"❌ Lỗi khi đọc file KMZ: {e}. Đảm bảo file KMZ hợp lệ và chứa KML có Placemark/Point/coordinates.")
+
+    st.subheader("📝 Nhập các vụ sự cố lịch sử")
+
+    # Form nhập sự cố mới
+    # Để khắc phục lỗi "Missing Submit Button", bạn cần đảm bảo st.form_submit_button được đặt bên trong st.form
+
+    with st.form(key="my_form"):
+        ten_mc = st.text_input("Tên máy cắt")
+        ngay = st.date_input("Ngày xảy ra sự cố")
+        dong_suco = st.text_input("Dòng sự cố")
+        loai_suco = st.selectbox("Loại sự cố", [
+            "1 pha chạm đất (Io)",
+            "2 pha chạm đất (Ia+Ib)",
+            "3 pha chạm đất (Ia+Ib+Ic)",
+            "Ngắn mạch 2 pha (Ia+Ib)",
+            "Ngắn mạch 3 pha (Ia+Ib+Ic)",
+            "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
+            "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
+            "Ngắn mạch 1 pha có Io (Ia+Io)",
+            "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
+            "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
+        ])
+        vi_tri = st.text_input("Vị trí sự cố")
+        nguyen_nhan = st.text_input("Nguyên nhân")
+        thoi_tiet = st.text_input("Thời tiết")
+
+        submitted = st.form_submit_button("Lưu vụ sự cố")
+
+    if submitted:
+        if ten_mc and dong_suco and vi_tri:
+            st.success("✔️ Đã lưu vụ sự cố!")
+        else:
+            st.warning("⚠️ Vui lòng điền đầy đủ các trường bắt buộc.")
+
+        # Luôn tạo DataFrame cho data_editor, ngay cả khi st.session_state.suco_data trống
+    df_for_editor = pd.DataFrame(st.session_state.suco_data)
+
+    with st.expander("📋 Danh sách sự cố đã nhập", expanded=True):
+        # BEGIN FIX FOR INDENTATION ERROR
+        if not df_for_editor.empty:
+            edited_df_suco = st.data_editor(
+                df_for_editor,
+                num_rows="dynamic",
+                use_container_width=True,
+                key="suco_data_editor"
+            )
+
+            if st.button("Cập nhật dữ liệu đã sửa", key="update_edited_suco"):
+                st.session_state.suco_data = edited_df_suco.to_dict(orient="records")
+                st.success("✔️ Đã cập nhật danh sách sau khi chỉnh sửa!")
+                pd.DataFrame(st.session_state.suco_data).to_excel(STORAGE_FILE_SUCO, index=False)
+
+            def convert_df_to_excel(df):
+                output = io.BytesIO()
+                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                    df.to_excel(writer, sheet_name='SuCo', index=False)
+                return output.getvalue()
+
+            st.download_button(
+                label="📤 Xuất báo cáo Excel",
+                data=convert_df_to_excel(edited_df_suco),
+                file_name="bao_cao_su_co.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="download_suco_excel"
+            )
+        else:
+            st.info("Chưa có sự cố nào được nhập. Vui lòng nhập dữ liệu sự cố ở trên để hiển thị tại đây.")
+        # END FIX FOR INDENTATION ERROR
+
+
+    # ============================
+    # TÍNH TOÁN KHOẢNG CÁCH SỰ CỐ
+    # ============================
+    def extract_current(dong_suco_str, loai_suco):
+        """Trích xuất dòng sự cố từ chuỗi nhập vào."""
+        try:
+            # Tìm tất cả các số trong chuỗi
+            values = re.findall(r'\d+', dong_suco_str)
+            values = [int(v) for v in values]
+            if not values:
+                return None
+            if "Io" in loai_suco:
+                # Nếu loại sự cố có Io, giả định Io là giá trị cuối cùng được nhập
+                return values[-1]
+            else:
+                # Ngược lại, tính tổng các dòng pha
+                return sum(values)
+        except:
+            return None
+
+    def tinh_khoang_cach(I_suco, U0_V, z_ohm_per_km):
+        """Tính khoảng cách dự kiến đến điểm sự cố."""
+        try:
+            if I_suco == 0 or z_ohm_per_km == 0: return None
+            return round((U0_V / (I_suco * z_ohm_per_km)), 2)
+        except:
+            return None
+
+    st.subheader("🔍 Dự báo điểm sự cố từ dòng điện")
+    ten_mc_input = st.text_input("Tên máy cắt muốn dự báo", key="ten_mc_du_bao")
+    dong_input = st.text_input("Dòng sự cố (ví dụ: Ia=500, Ib=600, Ic=50, Io=400)", key="dong_suco_du_bao")
+    cap_dien_ap = st.selectbox("Cấp điện áp đường dây", ["22kV", "35kV", "110kV"], key="cap_dien_ap_du_bao")
+    z_default = 4.0  # suất trở hỗn hợp đã cập nhật theo yêu cầu
+    loai_suco_input = st.selectbox("Loại sự cố (để tính toán)", [
+        "1 pha chạm đất (Io)",
+        "2 pha chạm đất (Ia+Ib)",
+        "3 pha chạm đất (Ia+Ib+Ic)",
+        "Ngắn mạch 2 pha (Ia+Ib)",
+        "Ngắn mạch 3 pha (Ia+Ib+Ic)",
+        "Ngắn mạch 2 pha có Io (Ia+Ib+Io)",
+        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)",
+        "Ngắn mạch 1 pha có Io (Ia+Io)",
+        "Ngắn mạch 2 pha có Io (Ib+Ic+Io)",
+        "Ngắn mạch 3 pha có Io (Ia+Ib+Ic+Io)"
+    ], key="loai_suco_input_du_bao")
+
+    if st.button("Phân tích dòng sự cố", key="phan_tich_dong_suco"):
+        U0_map = {"22kV": 22000 / math.sqrt(3), "35kV": 35000 / math.sqrt(3), "110kV": 110000 / math.sqrt(3)}
+        I = extract_current(dong_input, loai_suco_input)
+        if I is not None:
+            d = tinh_khoang_cach(I, U0_map[cap_dien_ap], z_default)
+            if d is not None:
+                st.success(f"✅ Khoảng cách dự kiến đến điểm sự cố: {d} km")
+            else:
+                st.warning("⚠️ Không tính được khoảng cách. Dòng sự cố hoặc suất trở có thể bằng 0.")
+        else:
+            st.warning("⚠️ Không nhận diện được dòng sự cố hợp lệ từ 'Dòng sự cố' đã nhập.")
+
+    # BỔ SUNG: Dự báo từ dữ liệu lịch sử (Sử dụng dữ liệu từ session_state.suco_data)
+    st.subheader("📚 Dự báo điểm sự cố từ dữ liệu lịch sử")
+    ten_mc_ls = st.text_input("🔎 Nhập tên máy cắt để lọc dữ liệu (Lịch sử)", key="ten_mc_ls_filter")
+    dong_moi = st.text_input("Nhập dòng sự cố mới (Ia, Ib, Ic, Io) để tìm lịch sử", key="dong_moi_ls")
+    if dong_moi:
+        try:
+            # Chuyển đổi chuỗi dòng sự cố mới thành danh sách số
+            input_values = [int(x.strip()) for x in re.findall(r'\d+', dong_moi)]
+
+            def euclidean(a, b):
+                # Đảm bảo hai danh sách có cùng độ dài trước khi tính toán
+                if len(a) != len(b):
+                    return float('inf') # Trả về vô cực nếu độ dài không khớp để không chọn
+                return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
+
+            min_dist = float('inf')
+            nearest_case = None
+
+            if st.session_state.suco_data: # Chỉ lặp nếu có dữ liệu lịch sử
+                for case in st.session_state.suco_data:
+                    try:
+                        # Lọc theo tên máy cắt nếu được nhập
+                        if ten_mc_ls and ten_mc_ls.lower() not in case.get("Tên máy cắt", "").lower():
+                            continue
+                        # Trích xuất dòng sự cố từ trường 'Dòng sự cố' trong lịch sử
+                        case_values = [int(x.strip()) for x in re.findall(r'\d+', case.get("Dòng sự cố", ""))]
+                        if case_values: # Chỉ tính toán nếu có giá trị
+                            dist = euclidean(input_values, case_values)
+                            if dist < min_dist:
+                                min_dist = dist
+                                nearest_case = case
+                    except Exception as e:
+                        # st.warning(f"Lỗi xử lý dữ liệu lịch sử: {e} trong vụ sự cố {case}") # Gỡ bỏ để tránh nhiều lỗi nhỏ
+                        continue # Bỏ qua vụ sự cố bị lỗi định dạng
+
+            if nearest_case:
+                st.success(f"✅ Dự báo gần nhất theo lịch sử: {nearest_case['Vị trí']} – Nguyên nhân: {nearest_case['Nguyên nhân']} – Dòng sự cố lịch sử: {nearest_case['Dòng sự cố']}")
+            else:
+                st.warning("⚠️ Không tìm thấy dòng sự cố tương đồng trong dữ liệu lịch sử hoặc dữ liệu lịch sử trống. Hãy thử nhập nhiều dữ liệu hơn.")
+        except Exception as e:
+            st.warning(f"⚠️ Định dạng dòng sự cố mới không hợp lệ. Vui lòng nhập theo dạng: 500, 600, 50, 400. Lỗi: {e}")
+
+    # ============================
+    # TIỆN ÍCH: DỰ BÁO THEO ĐIỀU KIỆN CHỌN (CÓ GHI NHỚ FILE SAU F5)
+    # ============================
+    st.markdown("---")
+    st.subheader("📈 Dự báo điểm sự cố theo điều kiện chọn")
+
+    DATA_FILE_PATH_TRA_CUU = "du_bao_su_co_day_du_voi_3uo.xlsx"
+    TEMP_UPLOAD_PATH_TRA_CUU = "uploaded_tra_cuu.xlsx"
+
+    df_tra_cuu = None
+    uploaded_file_tra_cuu = st.file_uploader("📁 Tải file Excel dự báo (có thể thay đổi z')", type=["xlsx"], key="tra_cuu_file_uploader")
+
+    if uploaded_file_tra_cuu:
+        with open(TEMP_UPLOAD_PATH_TRA_CUU, "wb") as f:
+            f.write(uploaded_file_tra_cuu.read())
+        df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH_TRA_CUU)
+        st.success("✅ Đã ghi và nạp dữ liệu tra cứu từ file thành công.")
+        st.dataframe(df_tra_cuu, use_container_width=True)
+    elif os.path.exists(TEMP_UPLOAD_PATH_TRA_CUU):
+        df_tra_cuu = pd.read_excel(TEMP_UPLOAD_PATH_TRA_CUU)
+        st.dataframe(df_tra_cuu, use_container_width=True)
+    else:
+        try:
+            df_tra_cuu = pd.read_excel(DATA_FILE_PATH_TRA_CUU)
+            st.dataframe(df_tra_cuu, use_container_width=True)
+        except FileNotFoundError:
+            st.warning(f"❌ Không tìm thấy file mẫu '{DATA_FILE_PATH_TRA_CUU}'.")
+
+    if df_tra_cuu is not None and not df_tra_cuu.empty:
+        with st.expander("🔍 Tra cứu theo điều kiện chọn"):
+            col1, col2 = st.columns(2)
+
+            with col1:
+                selected_line = st.selectbox("🔌 Chọn đường dây", sorted(df_tra_cuu["Đường dây"].unique()))
+                selected_fault = st.selectbox("⚡ Chọn loại sự cố", sorted(df_tra_cuu["Loại sự cố"].unique()))
+
+            with col2:
+                Ia = st.number_input("Ia (A)", min_value=0)
+                Ib = st.number_input("Ib (A)", min_value=0)
+                Ic = st.number_input("Ic (A)", min_value=0)
+                Io = st.number_input("Io (A)", min_value=0)
+                Uo3 = st.number_input("3Uo (A)", min_value=0)
+
+            if st.button("🔍 Tra cứu"):
+                input_sum = sum([v for v in [Ia, Ib, Ic, Io, Uo3] if v > 0])
+
+                if input_sum == 0:
+                    st.warning("⚠️ Vui lòng nhập ít nhất một dòng sự cố để tra cứu.")
                 else:
-                    if client_ai:
-                        try:
-                            response = client_ai.chat.completions.create(
-                                model="gpt-3.5-turbo",
-                                messages=[
-                                    {"role": "system", "content": "Bạn là trợ lý ảo của Đội QLĐLKV Định Hóa, chuyên hỗ trợ trả lời các câu hỏi kỹ thuật, nghiệp vụ, đoàn thể và cộng đồng liên quan đến ngành điện. Luôn cung cấp thông tin chính xác và hữu ích."},
-                                    {"role": "user", "content": user_msg}
-                                ]
-                            )
-                            st.session_state.current_qa_display = response.choices[0].message.content # Display AI response here
-                        except Exception as e:
-                            st.error(f"❌ Lỗi khi gọi OpenAI: {e}. Vui lòng kiểm tra API key hoặc quyền truy cập mô hình.")
+                    df_tra_cuu["Dòng tổng (A)"] = pd.to_numeric(df_tra_cuu["Dòng tổng (A)"], errors='coerce')
+                    df_temp = df_tra_cuu.dropna(subset=["Dòng tổng (A)"])
+
+                    if not df_temp.empty:
+                        closest_idx = df_temp["Dòng tổng (A)"].sub(input_sum).abs().idxmin()
+                        dong_co_so_found = df_temp.loc[closest_idx, "Dòng cơ sở (A)"]
+
+                        ket_qua = df_tra_cuu[
+                            (df_tra_cuu["Đường dây"] == selected_line) &
+                            (df_tra_cuu["Loại sự cố"] == selected_fault) &
+                            (df_tra_cuu["Dòng cơ sở (A)"] == dong_co_so_found)
+                        ]
+
+                        if not ket_qua.empty:
+                            st.success(f"✅ Dòng gần nhất: {int(input_sum)} A → Dòng cơ sở: {int(dong_co_so_found)} A")
+                            st.dataframe(ket_qua.reset_index(drop=True), use_container_width=True)
+                        else:
+                            st.warning("⚠️ Không tìm thấy kết quả phù hợp với các điều kiện đã chọn.")
                     else:
-                        st.warning("Không có API key OpenAI. Vui lòng thêm vào st.secrets để sử dụng chatbot cho các câu hỏi tổng quát.")
+                        st.warning("⚠️ Không có dữ liệu hợp lệ để tra cứu.")
 
-    # Always display the current QA answer if available
-    if st.session_state.current_qa_display:
-        st.info("Câu trả lời:")
-        st.write(st.session_state.current_qa_display)
+# ================== MODULE AI TRỢ LÝ TỔN THẤT ==================
+elif chon_modul == '⚡ AI Trợ lý tổn thất':
+    st.title("📥 AI Trợ lý tổn thất")
 
-    # Nút "Tìm tiếp" chỉ hiển thị khi có nhiều hơn một kết quả QA và chưa hiển thị hết
-    if st.session_state.qa_results and st.session_state.qa_index < len(st.session_state.qa_results):
-        if st.button("Tìm tiếp"):
-            st.session_state.current_qa_display = st.session_state.qa_results[st.session_state.qa_index]
-            st.session_state.qa_index += 1
-            st.rerun() # Rerun để hiển thị kết quả tiếp theo
-    elif st.session_state.qa_results and st.session_state.qa_index >= len(st.session_state.qa_results) and len(st.session_state.qa_results) > 1:
-        st.info("Đã hiển thị tất cả các câu trả lời tương tự.")
+    # Các nút điều hướng chính cho module tổn thất
+    st.markdown("### Chọn loại tổn thất để phân tích:")
+    with st.expander("🔌 Tổn thất các TBA công cộng", expanded=True):
+        st.header("Phân tích dữ liệu TBA công cộng")
+        # ID thư mục Google Drive chứa file Excel TBA
+        FOLDER_ID_TBA = '165Txi8IyqG50uFSFHzWidSZSG9qpsbaq' # Cập nhật ID thư mục nếu cần
 
-# Hàm OCR: đọc text từ ảnh
-def extract_text_from_image(image_path):
-    reader = easyocr.Reader(['vi'])
-    result = reader.readtext(image_path, detail=0)
-    text = " ".join(result)
-    return text
+        col_tba_1, col_tba_2, col_tba_3 = st.columns(3)
+        with col_tba_1:
+            mode_tba = st.radio("Chế độ phân tích", ["Theo tháng", "Lũy kế", "So sánh cùng kỳ", "Lũy kế cùng kỳ"], key="tba_mode")
+        with col_tba_2:
+            thang_from_tba = st.selectbox("Từ tháng", list(range(1, 13)), index=0, key="tba_thang_from")
+            thang_to_options_tba = list(range(thang_from_tba, 13))
+            default_index_thang_to_tba = 0
+            if "Lũy kế" in mode_tba:
+                if 5 in thang_to_options_tba:
+                    default_index_thang_to_tba = thang_to_options_tba.index(5)
+                elif len(thang_to_options_tba) > 4:
+                     default_index_thang_to_tba = 4
+                else:
+                     default_index_thang_to_tba = len(thang_to_options_tba) - 1 if thang_to_options_tba else 0 # Ensure default_index is not None
+                thang_to_tba = st.selectbox("Đến tháng", thang_to_options_tba, index=default_index_thang_to_tba, key="tba_thang_to")
+            else:
+                thang_to_tba = thang_from_tba
 
-# --- Đặt đoạn này vào cuối file app.py ---
-st.markdown("### 📸 Hoặc tải ảnh chứa câu hỏi (nếu có)")
-uploaded_image = st.file_uploader("Tải ảnh câu hỏi", type=["jpg", "png", "jpeg"])
+        with col_tba_3:
+            nam_tba = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0, key="tba_nam")
+            nam_cungkỳ_tba = nam_tba - 1 if "cùng kỳ" in mode_tba.lower() else None
 
-if uploaded_image is not None:
-    temp_image_path = Path("temp_uploaded_image.jpg")
-    with open(temp_image_path, "wb") as f:
-        f.write(uploaded_image.getbuffer())
+        nguong_display_tba = st.selectbox("Ngưỡng tổn thất", ["(All)", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], key="tba_nguong_display")
 
-    extracted_text = extract_text_from_image(str(temp_image_path))
-    st.success("✅ Đã quét được nội dung từ ảnh:")
-    st.write(extracted_text)
+        all_files_tba = list_excel_files_from_folder(FOLDER_ID_TBA)
 
-    st.session_state.user_input_value = extracted_text
-    st.rerun()
+        # Load current year data
+        files_tba = generate_filenames(nam_tba, thang_from_tba, thang_to_tba, "TBA")
+        df_tba_raw = load_data_from_drive(files_tba, all_files_tba, "Thực hiện")
+
+        df_tba = pd.DataFrame() # Initialize df_tba as an empty DataFrame for final processed data
+        
+        # Process current year data (Thực hiện)
+        if not df_tba_raw.empty:
+            required_cols_raw = ["Tên TBA", "Điện nhận", "Điện tổn thất"]
+            if all(col in df_tba_raw.columns for col in required_cols_raw):
+                df_tba_raw["Điện nhận"] = pd.to_numeric(df_tba_raw["Điện nhận"].astype(str).str.replace(',', '.'), errors='coerce')
+                df_tba_raw["Điện tổn thất"] = pd.to_numeric(df_tba_raw["Điện tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                df_tba_raw.dropna(subset=["Điện nhận", "Điện tổn thất"], inplace=True)
+
+                if "Lũy kế" in mode_tba:
+                    df_tba_agg = df_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
+                        Tong_Dien_Nhan=('Điện nhận', 'sum'),
+                        Tong_Dien_Ton_That=('Điện tổn thất', 'sum')
+                    ).reset_index()
+                    df_tba_agg["Tỷ lệ tổn thất"] = (df_tba_agg["Tong_Dien_Ton_That"] / df_tba_agg["Tong_Dien_Nhan"] * 100).round(2)
+                    df_tba = df_tba_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
+                else:
+                    if "Tỷ lệ tổn thất" in df_tba_raw.columns:
+                        df_tba_raw["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba_raw["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                    else:
+                        df_tba_raw["Tỷ lệ tổn thất"] = (df_tba_raw["Điện tổn thất"] / df_tba_raw["Điện nhận"] * 100).round(2)
+                    df_tba = df_tba_raw
+            else:
+                missing_cols = [col for col in required_cols_raw if col not in df_tba_raw.columns]
+                st.error(f"Lỗi: Dữ liệu TBA 'Thực hiện' thiếu các cột cần thiết ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel.")
+                df_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"])
+
+        # Load and process previous year data (Cùng kỳ)
+        df_ck_tba = pd.DataFrame() # Initialize df_ck_tba as an empty DataFrame for processed data
+        if "cùng kỳ" in mode_tba.lower() and nam_cungkỳ_tba:
+            files_ck_tba = generate_filenames(nam_cungkỳ_tba, thang_from_tba, thang_to_tba, "TBA")
+            df_ck_tba_raw = load_data_from_drive(files_ck_tba, all_files_tba, "Cùng kỳ")
+            if not df_ck_tba_raw.empty:
+                required_cols_ck = ["Tên TBA", "Điện nhận", "Điện tổn thất"]
+                if all(col in df_ck_tba_raw.columns for col in required_cols_ck):
+                    df_ck_tba_raw["Điện nhận"] = pd.to_numeric(df_ck_tba_raw["Điện nhận"].astype(str).str.replace(',', '.'), errors='coerce')
+                    df_ck_tba_raw["Điện tổn thất"] = pd.to_numeric(df_ck_tba_raw["Điện tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                    df_ck_tba_raw.dropna(subset=["Điện nhận", "Điện tổn thất"], inplace=True)
+
+                    if "Lũy kế" in mode_tba: # This condition now correctly applies to "Lũy kế cùng kỳ"
+                        df_ck_tba_agg = df_ck_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
+                            Tong_Dien_Nhan=('Điện nhận', 'sum'),
+                            Tong_Dien_Ton_That=('Điện tổn thất', 'sum')
+                        ).reset_index()
+                        df_ck_tba_agg["Tỷ lệ tổn thất"] = (df_ck_tba_agg["Tong_Dien_Ton_That"] / df_ck_tba_agg["Tong_Dien_Nhan"] * 100).round(2)
+                        df_ck_tba = df_ck_tba_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
+                    else: # For "So sánh cùng kỳ" (monthly)
+                        if "Tỷ lệ tổn thất" in df_ck_tba_raw.columns:
+                            df_ck_tba_raw["Tỷ lệ tổn thất"] = pd.to_numeric(df_ck_tba_raw["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+                        else:
+                            df_ck_tba_raw["Tỷ lệ tổn thất"] = (df_ck_tba_raw["Điện tổn thất"] / df_ck_tba_raw["Điện nhận"] * 100).round(2)
+                        df_ck_tba = df_ck_tba_raw
+                else:
+                    missing_cols = [col for col in required_cols_ck if col not in df_ck_tba_raw.columns]
+                    st.error(f"Lỗi: Dữ liệu TBA 'Cùng kỳ' thiếu các cột cần thiết ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel.")
+                    df_ck_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"])
+            
+        # Concatenate df_tba and df_ck_tba if df_ck_tba has data
+        if not df_ck_tba.empty and not df_tba.empty: # Only concatenate if both have data
+            df_tba = pd.concat([df_tba, df_ck_tba])
+        elif df_ck_tba.empty and df_tba.empty: # If both are empty, keep df_tba empty
+            df_tba = pd.DataFrame()
+        elif not df_ck_tba.empty and df_tba.empty: # If only df_ck_tba has data, use it
+            df_tba = df_ck_tba
+
+
+        # Ensure 'Tỷ lệ tổn thất' is numeric and handle missing values
+        if not df_tba.empty and "Tỷ lệ tổn thất" in df_tba.columns:
+            df_tba["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
+            
+            # Define all possible categories for 'Ngưỡng tổn thất'
+            loss_categories = ["<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"]
+            # Convert 'Ngưỡng tổn thất' to a Categorical type with all defined categories
+            df_tba["Ngưỡng tổn thất"] = df_tba["Tỷ lệ tổn thất"].apply(classify_nguong)
+            df_tba["Ngưỡng tổn thất"] = pd.Categorical(df_tba["Ngưỡng tổn thất"], categories=loss_categories, ordered=True)
+
+            # Ensure "Tên TBA" and "Kỳ" exist before dropping duplicates
+            required_tba_columns_for_unique = ["Tên TBA", "Kỳ"]
+            if all(col in df_tba.columns for col in required_tba_columns_for_unique):
+                df_unique_tba = df_tba.drop_duplicates(subset=["Tên TBA", "Kỳ"])
+            else:
+                st.error(f"Lỗi: Dữ liệu TBA thiếu các cột cần thiết để xác định TBA duy nhất ({', '.join(required_tba_columns_for_unique)}).")
+                df_unique_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"]) # Provide a fallback empty DataFrame
+
+            if not df_unique_tba.empty:
+                # Group by and pivot. The categorical type will ensure all categories are present.
+                count_df_tba = df_unique_tba.groupby(["Ngưỡng tổn thất", "Kỳ"], observed=False).size().reset_index(name="Số lượng")
+                pivot_df_tba = count_df_tba.pivot(index="Ngưỡng tổn thất", columns="Kỳ", values="Số lượng").fillna(0).astype(int)
+                # The reindex is no longer strictly necessary here if the categorical type is handled correctly,
+                # but keeping it ensures the order.
+                pivot_df_tba = pivot_df_tba.reindex(loss_categories) # Reindex to ensure all categories are present, even if 0
+
+                # Tăng DPI và điều chỉnh fontsize
+                fig_tba, (ax_bar_tba, ax_pie_tba) = plt.subplots(1, 2, figsize=(12, 5), dpi=1200) # Tăng figsize và DPI
+
+                x_tba = range(len(pivot_df_tba))
+                width_tba = 0.35
+                colors_tba = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728']
+                for i, col in enumerate(pivot_df_tba.columns):
+                    offset_tba = (i - (len(pivot_df_tba.columns)-1)/2) * width_tba
+                    bars_tba = ax_bar_tba.bar([xi + offset_tba for xi in x_tba], pivot_df_tba[col], width_tba, label=col, color=colors_tba[i % len(colors_tba)])
+                    for bar in bars_tba:
+                        height = bar.get_height()
+                        if height > 0:
+                            ax_bar_tba.text(bar.get_x() + bar.get_width()/2, height + 0.5, f'{int(height)}', ha='center', va='bottom', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
+
+                ax_bar_tba.set_ylabel("Số lượng", fontsize=9) # Tăng fontsize
+                ax_bar_tba.set_title("Số lượng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+                ax_bar_tba.set_xticks(list(x_tba))
+                ax_bar_tba.set_xticklabels(pivot_df_tba.index, fontsize=8) # Tăng fontsize
+                ax_bar_tba.tick_params(axis='y', labelsize=8) # Tăng labelsize
+                ax_bar_tba.legend(title="Kỳ", fontsize=8) # Tăng fontsize
+                ax_bar_tba.grid(axis='y', linestyle='--', linewidth=0.7, alpha=0.6)
+
+                pie_data_tba = pd.Series(0, index=pivot_df_tba.index)
+                if 'Thực hiện' in df_unique_tba['Kỳ'].unique():
+                    df_latest_tba = df_unique_tba[df_unique_tba['Kỳ'] == 'Thực hiện']
+                    pie_data_tba = df_latest_tba["Ngưỡng tổn thất"].value_counts().reindex(pivot_df_tba.index, fill_value=0)
+                elif not df_unique_tba.empty and not pivot_df_tba.empty:
+                    first_col_data_tba = pivot_df_tba.iloc[:, 0]
+                    if first_col_data_tba.sum() > 0:
+                        pie_data_tba = first_col_data_tba
+
+                if pie_data_tba.sum() > 0:
+                    wedges, texts, autotexts = ax_pie_tba.pie(
+                        pie_data_tba,
+                        labels=pivot_df_tba.index,
+                        autopct='%1.1f%%',
+                        startangle=90,
+                        colors=colors_tba,
+                        pctdistance=0.75,
+                        wedgeprops={'width': 0.3, 'edgecolor': 'w'}
+                    )
+                    for text in texts: text.set_fontsize(7); text.set_fontweight('bold') # Tăng fontsize
+                    for autotext in autotexts: autotext.set_color('black'); autotext.set_fontsize(7); autotext.set_fontweight('bold') # Tăng fontsize
+                    ax_pie_tba.text(0, 0, f"Tổng số TBA\\n{pie_data_tba.sum()}", ha='center', va='center', fontsize=8, fontweight='bold', color='black') # Tăng fontsize
+                    ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+                else:
+                    ax_pie_tba.text(0.5, 0.5, "Không có dữ liệu tỷ trọng phù hợp", horizontalalignment='center', verticalalignment='center', transform=ax_pie_tba.transAxes, fontsize=9) # Tăng fontsize
+                    ax_pie_tba.set_title("Tỷ trọng TBA theo ngưỡng tổn thất", fontsize=11, weight='bold') # Tăng fontsize
+
+                st.pyplot(fig_tba)
+
+                nguong_filter_tba = st.selectbox("Chọn ngưỡng để lọc danh sách TBA", ["(All)", "<2%", ">=2 và <3%", ">=3 và <4%", ">=4 và <5%", ">=5 và <7%", ">=7%"], key="tba_detail_filter")
+                if nguong_filter_tba != "(All)":
+                    df_filtered_tba = df_tba[df_tba["Ngưỡng tổn thất"] == nguong_filter_tba]
+                else:
+                    df_filtered_tba = df_tba
+
+                st.markdown("### 📋 Danh sách chi tiết TBA")
+                st.dataframe(df_filtered_tba.reset_index(drop=True), use_container_width=True)
+            else:
+                st.warning("Không có dữ liệu TBA duy nhất để hiển thị biểu đồ. Vui lòng kiểm tra dữ liệu đầu vào.")
+        else:
+            if df_tba.empty:
+                st.warning("Không có dữ liệu TBA được tải về. Vui lòng kiểm tra các file Excel trên Google Drive và ID thư mục.")
+            else:
+                # This error message should be more general as df_tba might be empty due to issues in df_tba_raw or df_ck_tba_raw
+                # The specific missing column checks are already handled above in the raw data processing.
+                st.error("Lỗi: Không thể phân tích dữ liệu TBA. Vui lòng kiểm tra cấu trúc file Excel và đảm bảo có đủ dữ liệu.")
+
+    with st.expander("⚡ Tổn thất hạ thế"):
+        st.header("Phân tích dữ liệu tổn thất hạ thế")
+        FOLDER_ID_HA = '1_rAY5T-unRyw20YwMgKuG1C0y7oq6GkK' # Cập nhật ID thư mục nếu cần
+
+        all_files_ha = list_excel_files_from_folder(FOLDER_ID_HA)
+        nam_ha = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0, key="ha_nam")
+        loai_bc_ha = st.radio("Loại báo cáo", ["Tháng", "Lũy kế"], horizontal=True, key="ha_loai_bc")
+        thang_ha = st.selectbox("Chọn tháng", list(range(1, 13)), index=0, key="ha_thang")
+
+        months_ha = list(range(1, 13))
+        df_th_ha = pd.DataFrame({"Tháng": months_ha, "Tỷ lệ": [None]*12})
+        df_ck_ha = pd.DataFrame({"Tháng": months_ha, "Tỷ lệ": [None]*12})
+
+        tong_ton_that_ha = 0
+        tong_thuong_pham_ha = 0
+
+        for i in range(1, 13):
+            fname_ha = f"HA_{nam_ha}_{i:02}.xlsx"
+            file_id_ha = all_files_ha.get(fname_ha)
+
+            if file_id_ha and i <= thang_ha:
+                df_curr_ha = download_excel_from_drive(file_id_ha)
+                if not df_curr_ha.empty and df_curr_ha.shape[0] >= 1:
+                    try:
+                        ty_le_th_ha = float(str(df_curr_ha.iloc[0, 4]).replace(",", "."))
+                        ton_that_ha = float(str(df_curr_ha.iloc[0, 3]).replace(",", "."))
+                        thuong_pham_ha = float(str(df_curr_ha.iloc[0, 1]).replace(",", "."))
+
+                        if loai_bc_ha == "Lũy kế":
+                            tong_ton_that_ha += ton_that_ha
+                            tong_thuong_pham_ha += thuong_pham_ha
+                            ty_le_lk_ha = (tong_ton_that_ha / tong_thuong_pham_ha) * 100 if tong_thuong_pham_ha > 0 else 0
+                            df_th_ha.loc[df_th_ha["Tháng"] == i, "Tỷ lệ"] = ty_le_lk_ha
+                        else:
+                            df_th_ha.loc[df_th_ha["Tháng"] == i, "Tỷ lệ"] = ty_le_th_ha
+                    except Exception as e:
+                        st.warning(f"Lỗi đọc dữ liệu từ file hạ thế: {fname_ha}. Lỗi: {e}")
+
+            fname_ck_ha = f"HA_{nam_ha - 1}_{i:02}.xlsx"
+            file_id_ck_ha = all_files_ha.get(fname_ck_ha)
+            if file_id_ck_ha:
+                df_ck_file_ha = download_excel_from_drive(file_id_ck_ha)
+                if not df_ck_file_ha.empty and df_ck_file_ha.shape[0] >= 1:
+                    try:
+                        ty_le_ck_ha = float(str(df_ck_file_ha.iloc[0, 4]).replace(",", "."))
+                        df_ck_ha.loc[df_ck_ha["Tháng"] == i, "Tỷ lệ"] = ty_le_ck_ha
+                    except Exception as e:
+                        # st.warning(f"Lỗi đọc dữ liệu cùng kỳ file hạ thế: {fname_ck_ha}. Lỗi: {e}") # Bỏ bớt thông báo lỗi nhỏ
+                        pass
+
+        if df_th_ha["Tỷ lệ"].notna().any():
+            fig_ha, ax_ha = plt.subplots(figsize=(6, 3), dpi=600)
+
+            ax_ha.plot(df_th_ha["Tháng"], df_th_ha["Tỷ lệ"], color='#1f77b4', label='Thực hiện', linewidth=1, markersize=3, marker='o')
+            if df_ck_ha["Tỷ lệ"].notna().any():
+                ax_ha.plot(df_ck_ha["Tháng"], df_ck_ha["Tỷ lệ"], color='#ff7f0e', label='Cùng kỳ', linewidth=1, markersize=3, marker='o')
+
+            for i, v in df_th_ha.dropna(subset=["Tỷ lệ"]).iterrows():
+                ax_ha.text(v["Tháng"], v["Tỷ lệ"] + 0.05, f"{v['Tỷ lệ']:.2f}", ha='center', fontsize=6, color='black')
+
+            if df_ck_ha["Tỷ lệ"].notna().any():
+                for i, v in df_ck_ha.dropna(subset=["Tỷ lệ"]).iterrows():
+                    ax_ha.text(v["Tháng"], v["Tỷ lệ"] + 0.05, f"{v['Tỷ lệ']:.2f}", ha='center', fontsize=6, color='black')
+
+            ax_ha.set_ylabel("Tỷ lệ (%)", fontsize=7, color='black')
+            ax_ha.set_xlabel("Tháng", fontsize=7, color='black')
+            ax_ha.set_xticks(months_ha)
+            ax_ha.tick_params(axis='both', colors='black', labelsize=6)
+            ax_ha.grid(True, linestyle='--', linewidth=0.5, alpha=0.7)
+            ax_ha.set_title("Biểu đồ tỷ lệ tổn thất hạ thế", fontsize=9, color='black')
+            ax_ha.legend(fontsize=7, frameon=False)
+
+            st.pyplot(fig_ha)
+            st.dataframe(df_th_ha.dropna(subset=["Tỷ lệ"]).reset_index(drop=True)) # Chỉ hiển thị dữ liệu có tỷ lệ
+
+        else:
+            st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Hạ thế) và định dạng của chúng.")
+
+    with st.expander("⚡ Tổn thất trung thế"):
+        st.header("Phân tích dữ liệu TBA Trung thế")
+        FOLDER_ID_TRUNG = '1-Ph2auxlinL5Y3bxE7AeeAeYE2KDALJT' # Cập nhật ID thư mục nếu cần
+
+        all_files_trung = list_excel_files_from_folder(FOLDER_ID_TRUNG)
+        nam_trung = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0, key="trung_nam")
+        loai_bc_trung = st.radio("Loai báo cáo", ["Tháng", "Lũy kế"], horizontal=True, key="trung_loai_bc")
+        thang_trung = st.selectbox("Chọn tháng", list(range(1, 13)), index=0, key="trung_thang")
+
+        months_trung = list(range(1, 13))
+        df_th_trung = pd.DataFrame({"Tháng": months_trung, "Tỷ lệ": [None]*12})
+        df_ck_trung = pd.DataFrame({"Tháng": months_trung, "Tỷ lệ": [None]*12})
+
+        tong_ton_that_trung = 0
+        tong_thuong_pham_trung = 0
+
+        # Khởi tạo tổng lũy kế cho dữ liệu "Cùng kỳ" (năm trước)
+        tong_ton_that_ck_trung = 0
+        tong_thuong_pham_ck_trung = 0
+
+        for i in range(1, 13):
+            # --- Xử lý dữ liệu năm hiện tại (Thực hiện) ---
+            fname_trung = f"TA_{nam_trung}_{i:02}.xlsx"
+            file_id_trung = all_files_trung.get(fname_trung)
+
+            if file_id_trung and i <= thang_trung:
+                df_curr_trung = download_excel_from_drive(file_id_trung)
+                if not df_curr_trung.empty and df_curr_trung.shape[0] >= 1:
+                    try:
+                        ty_le_th_trung = float(str(df_curr_trung.iloc[0, 4]).replace(",", "."))
+                        ton_that_trung = float(str(df_curr_trung.iloc[0, 3]).replace(",", "."))
+                        thuong_pham_trung = float(str(df_curr_trung.iloc[0, 1]).replace(",", "."))
+
+                        if loai_bc_trung == "Lũy kế":
+                            tong_ton_that_trung += ton_that_trung
+                            tong_thuong_pham_trung += thuong_pham_trung
+                            ty_le_lk_trung = (tong_ton_that_trung / tong_thuong_pham_trung) * 100 if tong_thuong_pham_trung > 0 else 0
+                            df_th_trung.loc[df_th_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_lk_trung
+                        else:
+                            df_th_trung.loc[df_th_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_th_trung
+                    except Exception as e:
+                        st.warning(f"Lỗi đọc dữ liệu từ file trung thế: {fname_trung}. Lỗi: {e}")
+
+            # --- Xử lý dữ liệu "Cùng kỳ" (năm trước) ---
+            fname_ck_trung = f"TA_{nam_trung - 1}_{i:02}.xlsx"
+            file_id_ck_trung = all_files_trung.get(fname_ck_trung)
+            # **Đã bỏ điều kiện `and i <= thang_trung` ở đây để vẽ cả năm cùng kỳ**
+            if file_id_ck_trung:
+                df_ck_file_trung = download_excel_from_drive(file_id_ck_trung)
+                if not df_ck_file_trung.empty and df_ck_file_trung.shape[0] >= 1:
+                    try:
+                        # Đọc các giá trị tổn thất và thương phẩm của năm trước
+                        ty_le_ck_trung_thang = float(str(df_ck_file_trung.iloc[0, 4]).replace(",", ".")) # Tỷ lệ tháng năm trước
+                        ton_that_ck_trung = float(str(df_ck_file_trung.iloc[0, 3]).replace(",", ".")) # Tổn thất tháng năm trước
+                        thuong_pham_ck_trung = float(str(df_ck_file_trung.iloc[0, 1]).replace(",", ".")) # Thương phẩm tháng năm trước
+
+                        if loai_bc_trung == "Lũy kế":
+                            # Tính lũy kế cho dữ liệu năm trước
+                            tong_ton_that_ck_trung += ton_that_ck_trung
+                            tong_thuong_pham_ck_trung += thuong_pham_ck_trung
+                            ty_le_lk_ck_trung = (tong_ton_that_ck_trung / tong_thuong_pham_ck_trung) * 100 if tong_thuong_pham_ck_trung > 0 else 0
+                            df_ck_trung.loc[df_ck_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_lk_ck_trung
+                        else:
+                            # Nếu không phải lũy kế, dùng tỷ lệ tháng của năm trước
+                            df_ck_trung.loc[df_ck_trung["Tháng"] == i, "Tỷ lệ"] = ty_le_ck_trung_thang
+                    except Exception as e:
+                        # st.warning(f"Lỗi đọc dữ liệu cùng kỳ file trung thế: {fname_ck_trung}. Lỗi: {e}")
+                        pass # Suppress minor warnings for cleaner output
+
+        if df_th_trung["Tỷ lệ"].notna().any():
+            fig_trung, ax_trung = plt.subplots(figsize=(6, 3), dpi=600)
+
+            ax_trung.plot(df_th_trung["Tháng"], df_th_trung["Tỷ lệ"], color='#1f77b4', label='Thực hiện', linewidth=1, markersize=3, marker='o')
+            if df_ck_trung["Tỷ lệ"].notna().any():
+                ax_trung.plot(df_ck_trung["Tháng"], df_ck_trung["Tỷ lệ"], color='#ff7f0e', label='Cùng kỳ', linewidth=1, markersize=3, marker='o')
+
+            for i, v in df_th_trung.dropna(subset=["Tỷ lệ"]).iterrows():
+                ax_trung.text(v["Tháng"], v["Tỷ lệ"] + 0.05, f"{v['Tỷ lệ']:.2f}", ha='center', fontsize=6, color='black')
+
+            if df_ck_trung["Tỷ lệ"].notna().any():
+                for i, v in df_ck_trung.dropna(subset=["Tỷ lệ"]).iterrows():
+                    ax_trung.text(v["Tháng"], v["Tỷ lệ"] + 0.05, f"{v['Tỷ lệ']:.2f}", ha='center', fontsize=6, color='black')
+
+            ax_trung.set_ylabel("Tỷ lệ (%)", fontsize=7, color='black')
+            ax_trung.set_xlabel("Tháng", fontsize=7, color='black')
+            ax_trung.set_xticks(months_trung)
+            ax_trung.tick_params(axis='both', colors='black', labelsize=6)
+            ax_trung.grid(True, linestyle='--', linewidth=0.5, alpha=0.7)
+            ax_trung.set_title("Biểu đồ tỷ lệ tổn thất trung thế", fontsize=9, color='black')
+            ax_trung.legend(fontsize=7, frameon=False)
+
+            st.pyplot(fig_trung)
+            st.dataframe(df_th_trung.dropna(subset=["Tỷ lệ"]).reset_index(drop=True))
+
+        else:
+            st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Trung thế) và định dạng của chúng.")
+
+    with st.expander("⚡ Tổn thất các đường dây trung thế"):
+        st.header("Phân tích dữ liệu tổn thất đường dây trung thế")
+        FOLDER_ID_DY = '1ESynjLXJrw8TaF3zwlQm-BR3mFf4LIi9' # Cập nhật ID thư mục nếu cần
+
+        all_files_dy = list_excel_files_from_folder(FOLDER_ID_DY)
+
+        all_years_dy = sorted({int(fname.split("_")[1]) for fname in all_files_dy.keys() if "_" in fname and len(fname.split("_")) == 3}) # Ensure filename format like DD_YYYY_MM.xlsx
+
+        selected_year_dy = st.selectbox("Chọn năm", all_years_dy, key="dy_nam") if all_years_dy else None
+        if not selected_year_dy:
+            st.warning("Không có dữ liệu năm cho tổn thất đường dây trung thế.")
+        else:
+            include_cungkỳ_dy = st.checkbox("So sánh cùng kỳ năm trước", value=True, key="dy_cung_ky")
+            mode_dy = st.radio("Chọn chế độ báo cáo", ["Tháng", "Lũy kế"], horizontal=True, key="dy_loai_bc")
+            chart_type_dy = st.radio("Chọn kiểu biểu đồ", ["Cột", "Đường line"], horizontal=True, key="dy_chart_type")
+
+            data_list_dy = []
+
+            for fname, file_id in all_files_dy.items():
+                try:
+                    parts = fname.split("_")
+                    if len(parts) == 3: # Expecting format like PREFIX_YYYY_MM.xlsx
+                        year = int(parts[1])
+                        month = int(parts[2].split(".")[0])
+                    else:
+                        continue # Skip files with unexpected naming conventions
+                except ValueError:
+                    continue
+
+                if year == selected_year_dy or (include_cungkỳ_dy and year == selected_year_dy - 1):
+                    df_curr_dy = download_excel_from_drive(file_id)
+
+                    for idx, row in df_curr_dy.iterrows():
+                        if len(row) > 5: # Ensure row has enough columns
+                            ten_dd = str(row.iloc[1]).strip()
+                            dien_ton_that = pd.to_numeric(str(row.iloc[5]).replace(",", "."), errors='coerce')
+                            thuong_pham = pd.to_numeric(str(row.iloc[2]).replace(",", "."), errors='coerce')
+                            ky = "Cùng kỳ" if year == selected_year_dy - 1 else "Thực hiện"
+
+                            data_list_dy.append({
+                                "Năm": year,
+                                "Tháng": month,
+                                "Đường dây": ten_dd,
+                                "Điện tổn thất": dien_ton_that,
+                                "Thương phẩm": thuong_pham,
+                                "Kỳ": ky
+                            })
+
+            df_all_dy = pd.DataFrame(data_list_dy)
+            df_all_dy.dropna(subset=["Điện tổn thất", "Thương phẩm"], inplace=True) # Remove rows with invalid numbers
+
+            if not df_all_dy.empty:
+                duong_day_list_dy = df_all_dy["Đường dây"].unique()
+
+                for dd in duong_day_list_dy:
+                    df_dd_filtered = df_all_dy[df_all_dy["Đường dây"] == dd].copy() # Use .copy() to avoid SettingWithCopyWarning
+
+                    df_dd_filtered.sort_values("Tháng", inplace=True)
+
+                    if mode_dy == "Lũy kế":
+                        df_dd_filtered["Tổng Điện tổn thất"] = df_dd_filtered.groupby(["Kỳ"])["Điện tổn thất"].cumsum()
+                        df_dd_filtered["Tổng Thương phẩm"] = df_dd_filtered.groupby(["Kỳ"])["Thương phẩm"].cumsum()
+                        df_dd_filtered["Tổn thất (%)"] = (df_dd_filtered["Tổng Điện tổn thất"] / df_dd_filtered["Tổng Thương phẩm"] * 100).round(2)
+                    else:
+                        df_dd_filtered["Tổn thất (%)"] = (df_dd_filtered["Điện tổn thất"] / df_dd_filtered["Thương phẩm"] * 100).round(2)
+
+                    # Removed .fillna(0) here to prevent plotting spurious zeros
+                    pivot_df_dy = df_dd_filtered.pivot(index="Tháng", columns="Kỳ", values="Tổn thất (%)").reindex(range(1, 13))
+
+                    st.write(f"### Biểu đồ tỷ lệ tổn thất - Đường dây {dd}")
+
+                    fig_dy, ax_dy = plt.subplots(figsize=(10, 4), dpi=150)
+
+                    if chart_type_dy == "Cột":
+                        pivot_df_dy.plot(kind="bar", ax=ax_dy)
+                        ax_dy.set_xticklabels(pivot_df_dy.index, rotation=0, ha='center')
+                        ax_dy.tick_params(axis='y', labelrotation=0)
+                        for container in ax_dy.containers:
+                            for bar in container:
+                                height = bar.get_height()
+                                if height > 0:
+                                    ax_dy.text(bar.get_x() + bar.get_width()/2, height + 0.2, f"{height:.2f}", ha='center', fontsize=7)
+                    else:
+                        for col in pivot_df_dy.columns:
+                            # Only plot non-NaN values, keeping legitimate zeros
+                            valid_data_dy = pivot_df_dy[col].dropna() # Changed from pivot_dy to pivot_df_dy
+                            if not valid_data_dy.empty: # Check if there's any valid data to plot
+                                ax_dy.plot(valid_data_dy.index, valid_data_dy.values, marker='o', label=col)
+                                for x, y in zip(valid_data_dy.index, valid_data_dy.values):
+                                    ax_dy.text(x, y + 0.2, f"{y:.2f}", ha='center', fontsize=7)
+                        ax_dy.set_xticks(range(1, 13))
+                        ax_dy.set_xticklabels(range(1, 13), rotation=0, ha='center')
+                        ax_dy.tick_params(axis='y', labelrotation=0)
+
+                    ax_dy.set_xlabel("Tháng")
+                    ax_dy.set_ylabel("Tổn thất (%)")
+                    ax_dy.set_title(f"Đường dây {dd} - Năm {selected_year_dy}")
+                    ax_dy.legend()
+                    ax_dy.grid(axis='y', linestyle='--', alpha=0.7)
+
+                    st.pyplot(fig_dy, use_container_width=True)
+
+            else:
+                st.warning("Không có dữ liệu để hiển thị cho năm đã chọn hoặc đường dây đã lọc. Vui lòng kiểm tra lại dữ liệu trên Google Drive.")
+
+    with st.expander("⚡ Tổn thất toàn đơn vị"):
+        st.header("Phân tích dữ liệu toàn đơn vị")
+        FOLDER_ID_TOAN_DON_VI = '1bPmINKlAHJMWUcxonMSnuLGz9ErlPEUi' # Cập nhật ID thư mục nếu cần
+
+        all_files_dv = list_excel_files_from_folder(FOLDER_ID_TOAN_DON_VI)
+        nam_dv = st.selectbox("Chọn năm", list(range(2020, datetime.now().year + 1))[::-1], index=0, key="dv_nam")
+        loai_bc_dv = st.radio("Loại báo cáo", ["Tháng", "Lũy kế"], horizontal=True, key="dv_loai_bc")
+        thang_dv = st.selectbox("Chọn tháng", list(range(1, 13)), index=0, key="dv_thang")
+
+        months_dv = list(range(1, 13))
+        df_th_dv = pd.DataFrame({"Tháng": months_dv, "Tỷ lệ": [None]*12})
+        df_ck_dv = pd.DataFrame({"Tháng": months_dv, "Tỷ lệ": [None]*12})
+
+        tong_ton_that_dv = 0
+        tong_thuong_pham_dv = 0
+
+        for i in range(1, 13):
+            fname_dv = f"DV_{nam_dv}_{i:02}.xlsx"
+            file_id_dv = all_files_dv.get(fname_dv)
+
+            if file_id_dv and i <= thang_dv:
+                df_curr_dv = download_excel_from_drive(file_id_dv)
+                if not df_curr_dv.empty and df_curr_dv.shape[0] >= 1:
+                    try:
+                        ty_le_th_dv = float(str(df_curr_dv.iloc[0, 4]).replace(",", "."))
+                        ton_that_dv = float(str(df_curr_dv.iloc[0, 3]).replace(",", "."))
+                        thuong_pham_dv = float(str(df_curr_dv.iloc[0, 1]).replace(",", "."))
+
+                        if loai_bc_dv == "Lũy kế":
+                            tong_ton_that_dv += ton_that_dv
+                            tong_thuong_pham_dv += thuong_pham_dv
+                            ty_le_lk_dv = (tong_ton_that_dv / tong_thuong_pham_dv) * 100 if tong_thuong_pham_dv > 0 else 0
+                            df_th_dv.loc[df_th_dv["Tháng"] == i, "Tỷ lệ"] = ty_le_lk_dv
+                        else:
+                            df_th_dv.loc[df_th_dv["Tháng"] == i, "Tỷ lệ"] = ty_le_th_dv
+                    except Exception as e:
+                        st.warning(f"Lỗi đọc dữ liệu từ file toàn đơn vị: {fname_dv}. Lỗi: {e}")
+
+            fname_ck_dv = f"DV_{nam_dv - 1}_{i:02}.xlsx"
+            file_id_ck_dv = all_files_dv.get(fname_ck_dv)
+            if file_id_ck_dv:
+                df_ck_file_dv = download_excel_from_drive(file_id_ck_dv)
+                if not df_ck_file_dv.empty and df_ck_file_dv.shape[0] >= 1:
+                    try:
+                        ty_le_ck_dv = float(str(df_ck_file_dv.iloc[0, 4]).replace(",", "."))
+                        df_ck_dv.loc[df_ck_dv["Tháng"] == i, "Tỷ lệ"] = ty_le_ck_dv
+                    except Exception as e:
+                        # st.warning(f"Lỗi đọc dữ liệu cùng kỳ file toàn đơn vị: {fname_ck_dv}. Lỗi: {e}") # Bỏ bớt thông báo lỗi nhỏ
+                        pass
+
+        if df_th_dv["Tỷ lệ"].notna().any():
+            fig_dv, ax_dv = plt.subplots(figsize=(6, 3), dpi=600)
+
+            ax_dv.plot(df_th_dv["Tháng"], df_th_dv["Tỷ lệ"], color='#1f77b4', label='Thực hiện', linewidth=1, markersize=3, marker='o')
+            if df_ck_dv["Tỷ lệ"].notna().any():
+                ax_dv.plot(df_ck_dv["Tháng"], df_ck_dv["Tỷ lệ"], color='#ff7f0e', label='Cùng kỳ', linewidth=1, markersize=3, marker='o')
+
+            for i, v in df_th_dv.dropna(subset=["Tỷ lệ"]).iterrows():
+                ax_dv.text(v["Tháng"], v["Tỷ lệ"] + 0.05, f"{v['Tỷ lệ']:.2f}", ha='center', fontsize=6, color='black')
+
+            if df_ck_dv["Tỷ lệ"].notna().any():
+                for i, v in df_ck_dv.dropna(subset=["Tỷ lệ"]).iterrows():
+                    ax_dv.text(v["Tháng"], v["Tỷ lệ"] + 0.05, f"{v['Tỷ lệ']:.2f}", ha='center', fontsize=6, color='black')
+
+            ax_dv.set_ylabel("Tỷ lệ (%)", fontsize=7, color='black')
+            ax_dv.set_xlabel("Tháng", fontsize=7, color='black')
+            ax_dv.set_xticks(months_dv)
+            ax_dv.tick_params(axis='both', colors='black', labelsize=6)
+            ax_dv.grid(True, linestyle='--', linewidth=0.5, alpha=0.7)
+            ax_dv.set_title("Biểu đồ tỷ lệ tổn thất toàn đơn vị", fontsize=9, color='black')
+            ax_dv.legend(fontsize=7, frameon=False)
+
+            st.pyplot(fig_dv)
+            st.dataframe(df_th_dv.dropna(subset=["Tỷ lệ"]).reset_index(drop=True))
+
+        else:
+            st.warning("Không có dữ liệu phù hợp để hiển thị. Vui lòng kiểm tra các file Excel trên Google Drive (thư mục Toàn đơn vị) và định dạng của chúng.")
+ 
