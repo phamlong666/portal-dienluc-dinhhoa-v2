@@ -156,7 +156,7 @@ try:
 
     st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
     for group_name, group_data in grouped_menu:
-        with st.sidebar.expander(f"  {group_name}", expanded=False):
+        with st.sidebar.expander(f"📁 {group_name}", expanded=False):
             for _, row in group_data.iterrows():
                 label = row['Tên ứng dụng']
                 link = row['Liên kết']
@@ -520,7 +520,7 @@ elif chon_modul == '📑 Phục vụ họp':
             with pd.ExcelWriter(towrite_hop, engine='xlsxwriter') as writer:
                 df_export_hop.to_excel(writer, index=False, sheet_name='CuocHop')
             towrite_hop.seek(0)
-            st.download_button("📥 Tải Excel cuộc họp", data=towrite_hop, file_name="phuc_vu_hop.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("  Tải Excel cuộc họp", data=towrite_hop, file_name="phuc_vu_hop.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     with col_import_hop:
         file_hop = st.file_uploader("📁 Nhập từ Excel (Phục vụ họp)", type=["xlsx"], key="upload_hop")
@@ -860,39 +860,40 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
 
         all_files_tba = list_excel_files_from_folder(FOLDER_ID_TBA)
 
+        # Load current year data
         files_tba = generate_filenames(nam_tba, thang_from_tba, thang_to_tba, "TBA")
         df_tba_raw = load_data_from_drive(files_tba, all_files_tba, "Thực hiện")
 
-        df_tba = pd.DataFrame() # Initialize df_tba as an empty DataFrame
+        df_tba = pd.DataFrame() # Initialize df_tba as an empty DataFrame for final processed data
+        
+        # Process current year data (Thực hiện)
         if not df_tba_raw.empty:
-            # Check for required columns for 'Thực hiện' data
             required_cols_raw = ["Tên TBA", "Điện nhận", "Điện tổn thất"]
             if all(col in df_tba_raw.columns for col in required_cols_raw):
                 df_tba_raw["Điện nhận"] = pd.to_numeric(df_tba_raw["Điện nhận"].astype(str).str.replace(',', '.'), errors='coerce')
                 df_tba_raw["Điện tổn thất"] = pd.to_numeric(df_tba_raw["Điện tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
                 df_tba_raw.dropna(subset=["Điện nhận", "Điện tổn thất"], inplace=True)
 
-                if mode_tba == "Lũy kế":
-                    # Calculate cumulative sum for 'Điện nhận' and 'Điện tổn thất'
-                    df_tba_raw_agg = df_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
+                if "Lũy kế" in mode_tba:
+                    df_tba_agg = df_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
                         Tong_Dien_Nhan=('Điện nhận', 'sum'),
                         Tong_Dien_Ton_That=('Điện tổn thất', 'sum')
                     ).reset_index()
-                    df_tba_raw_agg["Tỷ lệ tổn thất"] = (df_tba_raw_agg["Tong_Dien_Ton_That"] / df_tba_raw_agg["Tong_Dien_Nhan"] * 100).round(2)
-                    df_tba = df_tba_raw_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
-                else: # Theo tháng, So sánh cùng kỳ, Lũy kế cùng kỳ
-                    # For monthly or other comparisons, use existing 'Tỷ lệ tổn thất' if available, or calculate if not
+                    df_tba_agg["Tỷ lệ tổn thất"] = (df_tba_agg["Tong_Dien_Ton_That"] / df_tba_agg["Tong_Dien_Nhan"] * 100).round(2)
+                    df_tba = df_tba_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
+                else:
                     if "Tỷ lệ tổn thất" in df_tba_raw.columns:
                         df_tba_raw["Tỷ lệ tổn thất"] = pd.to_numeric(df_tba_raw["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
-                    else: # Fallback calculation if 'Tỷ lệ tổn thất' is missing
+                    else:
                         df_tba_raw["Tỷ lệ tổn thất"] = (df_tba_raw["Điện tổn thất"] / df_tba_raw["Điện nhận"] * 100).round(2)
                     df_tba = df_tba_raw
             else:
                 missing_cols = [col for col in required_cols_raw if col not in df_tba_raw.columns]
                 st.error(f"Lỗi: Dữ liệu TBA 'Thực hiện' thiếu các cột cần thiết ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel.")
-                df_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"]) # Ensure df_tba has expected columns
+                df_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"])
 
-        df_ck_tba = pd.DataFrame() # Initialize df_ck_tba as an empty DataFrame
+        # Load and process previous year data (Cùng kỳ)
+        df_ck_tba = pd.DataFrame() # Initialize df_ck_tba as an empty DataFrame for processed data
         if "cùng kỳ" in mode_tba.lower() and nam_cungkỳ_tba:
             files_ck_tba = generate_filenames(nam_cungkỳ_tba, thang_from_tba, thang_to_tba, "TBA")
             df_ck_tba_raw = load_data_from_drive(files_ck_tba, all_files_tba, "Cùng kỳ")
@@ -903,27 +904,32 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
                     df_ck_tba_raw["Điện tổn thất"] = pd.to_numeric(df_ck_tba_raw["Điện tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
                     df_ck_tba_raw.dropna(subset=["Điện nhận", "Điện tổn thất"], inplace=True)
 
-                    if "Lũy kế" in mode_tba: # If 'Lũy kế cùng kỳ'
+                    if "Lũy kế" in mode_tba: # This condition now correctly applies to "Lũy kế cùng kỳ"
                         df_ck_tba_agg = df_ck_tba_raw.groupby(["Tên TBA", "Kỳ"]).agg(
                             Tong_Dien_Nhan=('Điện nhận', 'sum'),
                             Tong_Dien_Ton_That=('Điện tổn thất', 'sum')
                         ).reset_index()
                         df_ck_tba_agg["Tỷ lệ tổn thất"] = (df_ck_tba_agg["Tong_Dien_Ton_That"] / df_ck_tba_agg["Tong_Dien_Nhan"] * 100).round(2)
                         df_ck_tba = df_ck_tba_agg.rename(columns={'Tong_Dien_Nhan': 'Điện nhận', 'Tong_Dien_Ton_That': 'Điện tổn thất'})
-                    else: # If 'So sánh cùng kỳ' (monthly)
+                    else: # For "So sánh cùng kỳ" (monthly)
                         if "Tỷ lệ tổn thất" in df_ck_tba_raw.columns:
                             df_ck_tba_raw["Tỷ lệ tổn thất"] = pd.to_numeric(df_ck_tba_raw["Tỷ lệ tổn thất"].astype(str).str.replace(',', '.'), errors='coerce')
-                        else: # Fallback calculation if 'Tỷ lệ tổn thất' is missing
+                        else:
                             df_ck_tba_raw["Tỷ lệ tổn thất"] = (df_ck_tba_raw["Điện tổn thất"] / df_ck_tba_raw["Điện nhận"] * 100).round(2)
                         df_ck_tba = df_ck_tba_raw
                 else:
                     missing_cols = [col for col in required_cols_ck if col not in df_ck_tba_raw.columns]
                     st.error(f"Lỗi: Dữ liệu TBA 'Cùng kỳ' thiếu các cột cần thiết ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel.")
-                    df_ck_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"]) # Ensure df_ck_tba has expected columns
+                    df_ck_tba = pd.DataFrame(columns=["Tên TBA", "Kỳ", "Tỷ lệ tổn thất", "Ngưỡng tổn thất"])
             
         # Concatenate df_tba and df_ck_tba if df_ck_tba has data
-        if not df_ck_tba.empty:
+        if not df_ck_tba.empty and not df_tba.empty: # Only concatenate if both have data
             df_tba = pd.concat([df_tba, df_ck_tba])
+        elif df_ck_tba.empty and df_tba.empty: # If both are empty, keep df_tba empty
+            df_tba = pd.DataFrame()
+        elif not df_ck_tba.empty and df_tba.empty: # If only df_ck_tba has data, use it
+            df_tba = df_ck_tba
+
 
         # Ensure 'Tỷ lệ tổn thất' is numeric and handle missing values
         if not df_tba.empty and "Tỷ lệ tổn thất" in df_tba.columns:
@@ -1016,8 +1022,9 @@ elif chon_modul == '⚡ AI Trợ lý tổn thất':
             if df_tba.empty:
                 st.warning("Không có dữ liệu TBA được tải về. Vui lòng kiểm tra các file Excel trên Google Drive và ID thư mục.")
             else:
-                missing_cols = [col for col in required_tba_columns if col not in df_tba.columns]
-                st.error(f"Lỗi: Dữ liệu TBA không có đủ các cột cần thiết để phân tích ({', '.join(missing_cols)}). Vui lòng kiểm tra cấu trúc file Excel cho tháng {thang_to_tba} năm {nam_tba}. Cần có các cột: {', '.join(required_tba_columns)}.")
+                # This error message should be more general as df_tba might be empty due to issues in df_tba_raw or df_ck_tba_raw
+                # The specific missing column checks are already handled above in the raw data processing.
+                st.error("Lỗi: Không thể phân tích dữ liệu TBA. Vui lòng kiểm tra cấu trúc file Excel và đảm bảo có đủ dữ liệu.")
 
     with st.expander("⚡ Tổn thất hạ thế"):
         st.header("Phân tích dữ liệu tổn thất hạ thế")
