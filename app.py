@@ -42,7 +42,7 @@ def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
         📅 Ngày: {ngay}
         ⏰ Giờ: {gio}
 
-        Hệ thống điều hành số - Đội quản lý Điện lực khu vực Định Hóa.
+        Hệ thống điều hành số - Điện lực Định Hóa.
         """
         # Gửi email tới người nhận với tiêu đề và nội dung đã cho
         yag.send(to=nguoinhan, subject=subject, contents=body)
@@ -52,7 +52,7 @@ def gui_email_nhac_viec(viec, ngay, gio, nguoinhan):
 
 # ================== CẤU HÌNH CHUNG CỦA ỨNG DỤNG STREAMLIT ==================
 st.set_page_config(
-    page_title="Cổng điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa",
+    page_title="Cổng điều hành số - phần mềm Điện lực Định Hóa",
     layout="wide",
     initial_sidebar_state="auto" # Giúp sidebar luôn mở theo mặc định
 )
@@ -141,7 +141,7 @@ with col1:
 with col2:
     st.markdown("""
         <h1 style='color:#003399; font-size:42px; margin-top:18px;'>
-        Trung tâm điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa
+        Trung tâm điều hành số - phần mềm Điện lực Định Hóa
         </h1>
         <p style='font-size:13px; color:gray;'>Bản quyền © 2025 by Phạm Hồng Long & Brown Eyes</p>
     """, unsafe_allow_html=True)
@@ -170,7 +170,7 @@ except Exception as e:
 
 # ================== GIỚI THIỆU CHUNG ==================
 st.info("""
-👋 Chào mừng đến với Trung tâm điều hành số - phần mềm Đội quản lý Điện lực khu vực Định Hóa
+👋 Chào mừng đến với Trung tâm điều hành số - phần mềm Điện lực Định Hóa
 
 📌 **Các tính năng nổi bật:**
 - Quản lý nhắc việc và lịch sử họp
