@@ -57,15 +57,66 @@ st.set_page_config(
     initial_sidebar_state="auto" # Giúp sidebar luôn mở theo mặc định
 )
 
-# ================== KHỞI TẠO TRẠNG THÁI MẬT KHẨU CHO DANH MỤC THƯ MỤC ==================
-# Lưu trữ trạng thái mở khóa của các thư mục để người dùng không phải nhập lại nhiều lần
+import streamlit as st
+
+import streamlit as st
+
+# ==============================================================================
+# KHỞI TẠO TRẠNG THÁI MẬT KHẨU CHO DANH MỤC THƯ MỤC
+# ==============================================================================
 if "unlocked_folders" not in st.session_state:
     st.session_state["unlocked_folders"] = {}
 
-# Mật khẩu chung cấu hình cho các thư mục (Bạn có thể đổi mật khẩu tại đây)
 MAT_KHAU_HE_THONG = "123456@"
-# Điền tên thư mục "Công đoàn" vào danh sách cần khóa ở đây:
 DANH_MUC_CAN_KHOA = ["📁 Đảng"]
+
+# Danh sách đầy đủ các thư mục trong hệ thống của bạn
+danh_sach_thu_muc = [
+    "📁 ATVSLĐ", "📁 An toàn", "📁 Báo cáo", "📁 Công nghệ thông tin", 
+    "📁 Công đoàn", "📁 Giảm tổn thất", "📁 Kinh doanh", "📁 Kế hoạch", 
+    "📁 Kỹ thuật", "📁 Quy định, Quy trình EVN", "📁 Quy định, Quy trình EVNNPC", 
+    "📁 Quy định, Quy trình PCTN", "📁 Quản trị nội bộ", "📁 Thiên tai - cứu nạn", 
+    "📁 Văn hóa doanh nghiệp", "📁 Điều độ", "📁 Đảng"
+]
+
+st.markdown("## 📚 Danh mục hệ thống")
+
+# ==============================================================================
+# VÒNG LẶP KIỂM TRA ĐIỀU KIỆN KHÓA VÀ HIỂN THỊ
+# ==============================================================================
+for folder in danh_sach_thu_muc:
+    # Mặc định tất cả thư mục đều được phép mở trực tiếp
+    duoc_phep_xem = True
+    
+    # CHỈ KIỂM TRA MẬT KHẨU NẾU THƯ MỤC NẰM TRONG DANH SÁCH CẦN KHÓA ("📁 Đảng")
+    if folder in DANH_MUC_CAN_KHOA:
+        is_unlocked = st.session_state["unlocked_folders"].get(folder, False)
+        
+        if not is_unlocked:
+            duoc_phep_xem = False  # Khóa nội dung lại, bắt nhập mật khẩu
+            
+            with st.expander(folder, expanded=True):
+                mk_input = st.text_input(
+                    f"Mật khẩu cho {folder.replace('📁 ', '')}:", 
+                    type="password", 
+                    key=f"pass_{folder}"
+                )
+                if mk_input == MAT_KHAU_HE_THONG:
+                    st.session_state["unlocked_folders"][folder] = True
+                    st.rerun()
+                elif mk_input:
+                    st.error("Sai mật khẩu! Vui lòng kiểm tra lại.")
+
+    # NẾU ĐƯỢC PHÉP XEM (Các thư mục khác HOẶC thư mục "📁 Đảng" sau khi đã mở khóa thành công)
+    if duoc_phep_xem:
+        with st.expander(folder):
+            # Phần này hiển thị nội dung bên trong của từng thư mục
+            if folder == "📁 Đảng":
+                st.write("🔓 Nội dung tài liệu Đảng (Đã mở khóa thành công):")
+                # Chèn các đường link, file hoặc code hiển thị tài liệu Đảng của bạn tại đây
+            else:
+                st.write(f"Nội dung công khai của thư mục: {folder}")
+                # Chèn nội dung của các thư mục thông thường tại đây
 
 # ================== CUSTOM CSS CHO GIAO DIỆN ==================
 st.markdown('''
