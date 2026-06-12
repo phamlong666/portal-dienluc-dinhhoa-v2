@@ -58,12 +58,6 @@ st.markdown('''
     html, body, [class*="css"] {
         font-size: 1.1em !important;
     }
-/* Phiên bản tối ưu hơn để đảm bảo không bị lỗi tràn khung bọc ngoài */
-    [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child img {
-        margin-top: 15px !important; /* Dùng margin kèm !important để đè style mặc định */
-        object-fit: contain !important;
-        max-height: 70px; /* Đảm bảo chiều cao không vượt quá kích thước gốc */
-    }
     section[data-testid="stSidebar"] h3 {
         font-size: 1.4em !important;
         font-weight: bold;
@@ -140,80 +134,40 @@ with col2:
     """, unsafe_allow_html=True)
 
 # ================== MENU TỪ GOOGLE SHEET (SIDEBAR) ==================
-st.markdown('''
-<style>
-    html, body, [class*="css"] {
-        font-size: 1.1em !important;
-    }
-    /* 1. Đoạn code sửa lỗi cắt Logo (đã làm ở bước trước) */
-    [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child img {
-        margin-top: 15px !important; 
-        object-fit: contain !important;
-        max-height: 70px;
-    }
-    
-    /* 2. ĐOẠN CODE MỚI: Giữ màu cho icon 🗂️ trên MacBook */
-    section[data-testid="stSidebar"] summary stMarkdown p {
-        font-family: "Apple Color Emoji", "Segoe UI Emoji", sans-serif !important;
-        -webkit-text-fill-color: initial !important; /* Ép Mac hiển thị màu gốc của Emoji */
-        color: inherit;
-    }
-    
-    section[data-testid="stSidebar"] h3 {
-        font-size: 1.4em !important;
-        font-weight: bold;
-        margin-top: 1em;
-    }
-    .sidebar-button {
-        display: block;
-        background-color: #42A5F5;
-        color: #ffffff !important;
-        padding: 10px 15px;
-        border-radius: 8px;
-        margin: 6px 0;
-        font-weight: bold;
-        font-size: 1.1em;
-        text-shadow: 0px 0px 2px rgba(0,0,0,0.5);
-        box-shadow: 1px 1px 3px rgba(0,0,0,0.25);
-        transition: all 0.2s ease-in-out;
-        text-decoration: none;
-    }
-    .sidebar-button:hover {
-        background-color: #1E88E5 !important;
-        transform: translateY(-1px);
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
-    }
-    h2, h3, h4 {
-        font-weight: bold !important;
-        color: #1a237e;
-    }
-    .block-container {
-        padding: 2rem 2rem 4rem 2rem;
-    }
-    .main-button {
-        display: inline-block;
-        background-color: #FFCC80;
-        color: white;
-        text-align: center;
-        padding: 20px 28px;
-        border-radius: 12px;
-        font-weight: bold;
-        text-decoration: none;
-        margin: 12px;
-        transition: 0.3s;
-        font-size: 22px;
-        box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
-    }
-    .main-button:hover {
-        transform: scale(1.03);
-        box-shadow: 3px 3px 10px rgba(0,0,0,0.25);
-    }
-    section[data-testid="stSidebar"] > div:first-child {
-        max-height: 95vh;
-        overflow-y: auto;
-    }
-</style>
-''', unsafe_allow_html=True)
+SHEET_URL_MENU = "https://docs.google.com/spreadsheets/d/18kYr8DmDLnUUYzJJVHxzit5KCY286YozrrrIpOeojXI/gviz/tq?tqx=out:csv"
+try:
+    df_menu = pd.read_csv(SHEET_URL_MENU)
+    df_menu = df_menu[['Tên ứng dụng', 'Liên kết', 'Nhóm chức năng']].dropna()
+    grouped_menu = df_menu.groupby('Nhóm chức năng')
+
+    st.sidebar.markdown("<h3 style='color:#003399'>📚 Danh mục hệ thống</h3>", unsafe_allow_html=True)
+    for group_name, group_data in grouped_menu:
+        with st.sidebar.expander(f"📁 {group_name}", expanded=False):
+            # Kiểm tra nếu tên nhóm là "Đảng"
+            if group_name.strip() == "Đảng":
+                mat_khau = st.text_input("🔑 Nhập mật khẩu thư mục Đảng:", type="password", key="pass_folder_dang")
+                if mat_khau == "123456@":
+                    st.success("🔓 Truy cập thành công!")
+                    for _, row in group_data.iterrows():
+                        label = row['Tên ứng dụng']
+                        link = row['Liên kết']
+                        st.markdown(f"""
+                            <a href="{link}" target="_blank" class="sidebar-button">
+                                🚀 {label}
+                            </a>
+                        """, unsafe_allow_html=True)
+                elif mat_khau != "":
+                    st.error("❌ Mật khẩu không chính xác!")
+            else:
+                # Các thư mục khác hiển thị hoàn toàn bình thường không cần pass
+                for _, row in group_data.iterrows():
+                    label = row['Tên ứng dụng']
+                    link = row['Liên kết']
+                    st.markdown(f"""
+                        <a href="{link}" target="_blank" class="sidebar-button">
+                            🚀 {label}
+                        </a>
+                    """, unsafe_allow_html=True)
 except Exception as e:
     st.sidebar.error(f"🚫 Không thể tải menu từ Google Sheet. Lỗi: {e}. Vui lòng kiểm tra URL hoặc quyền truy cập.")
 
